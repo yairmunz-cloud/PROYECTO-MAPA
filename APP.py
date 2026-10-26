@@ -130,7 +130,8 @@ def limpiar_filtro_sucursal_callback():
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
 
-col_buscador, col_espacio_libre = st.columns()
+# CORRECCIÓN EN ESTA LÍNEA: Se asignan las proporciones explícitas de espacio para evitar el TypeError
+col_buscador, col_espacio_libre = st.columns([1, 2])
 with col_buscador:
     idx_actual = 0
     if st.session_state["selector_estado_maestro"] in lista_estados:
@@ -215,13 +216,11 @@ if not df_resultado.empty:
             else:
                 badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
 
-            # --- CORRECCIÓN: CONSTRUCCIÓN DE LA LISTA DE TELÉFONOS EN UNA SOLA CADENA HTML ---
+            # Construcción segura de la lista de teléfonos como HTML integrado
             telefonos_html = ""
             tel_raw = str(fila[col_tel]).strip()
             if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
                 telefonos_html = '<div class="tel-item"><i>Sin líneas registradas</i></div>'
             else:
-                # Separar por salto de línea o diagonal según venga del origen de datos
                 lista_tels = tel_raw.replace("\r", "").replace(" / ", "\n").split("\n")
-
 

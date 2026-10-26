@@ -9,22 +9,22 @@ st.markdown("Los datos se leen directamente en tiempo real desde tu archivo **BD
 
 # 2. FUNCIÓN CONECTADA EN VIVO A GOOGLE SHEETS
 def cargar_datos_desde_sheets():
-    # >>> ATENCIÓN: BORRA LA URL DE ABAJO COMPLETAMENTE Y PEGA TU ENLACE QUE TERMINA EN output=csv <<<
+    # Enlace publicado directamente en formato CSV (.csv)
     url_maestra = "https://google.com"
     
     # Lectura del archivo en la nube
     df_sheets = pd.read_csv(url_maestra)
     
-    # Convertimos los encabezados a MAYÚSCULAS y quitamos espacios invisibles
+    # BLINDAJE 1: Limpiamos espacios e igualamos los encabezados a MAYÚSCULAS para evitar caídas
     df_sheets.columns = df_sheets.columns.str.strip().str.upper()
     
-    # Rellenar los estados hacia abajo automáticamente (Corrige celdas combinadas vacías)
+    # Rellenar los estados hacia abajo de forma automática (Corrige celdas combinadas vacías)
     if 'ESTADO' in df_sheets.columns:
         df_sheets['ESTADO'] = df_sheets['ESTADO'].ffill()
     
     return df_sheets
 
-# Ejecución segura de la base de datos
+# Ejecución forzada de la base de datos
 try:
     df = cargar_datos_desde_sheets()
 except Exception as e:
@@ -34,8 +34,11 @@ except Exception as e:
 
 st.markdown("---")
 
-# Verificar si las columnas principales existen en tu Google Sheets tras la limpieza
-if 'ESTADO' in df.columns and 'SUCURSAL' in df.columns and 'NO. REPORTE' in df.columns:
+# BLINDAJE 2: Verificación estricta de estructura para mitigar pantallas en blanco o con código basura
+columnas_validas = ['ESTADO', 'SUCURSAL', 'NO. REPORTE']
+errores_encabezado = [col for col in columnas_validas if col not in df.columns]
+
+if not errores_encabezado:
     
     # 3. INTERFAZ: BARRA DE BÚSQUEDA POR ESTADO
     lista_estados = sorted(df['ESTADO'].dropna().unique())
@@ -60,10 +63,10 @@ if 'ESTADO' in df.columns and 'SUCURSAL' in df.columns and 'NO. REPORTE' in df.c
                 col_tel = col
                 break
                 
-    # Recorremos todas las sucursales del estado seleccionado hacia abajo
+    # Recorremos todas las sucursales de arriba a abajo
     for idx, fila in df_resultado.iterrows():
         with st.container():
-            # Dividimos la pantalla en 2 columnas (Izquierda: Datos / Derecha: Alertas de Reporte)
+            # Dividimos la sección en 2 bloques limpios en paralelo
             col_izq, col_der = st.columns(2)
             
             with col_izq:
@@ -91,7 +94,7 @@ if 'ESTADO' in df.columns and 'SUCURSAL' in df.columns and 'NO. REPORTE' in df.c
                 # REGLA 2: Si tiene un reporte, calculamos el atraso contra la fecha actual
                 else:
                     rep_actual = str(fila['NO. REPORTE']).strip()
-                    fecha_raw = str(fila['FECHA DE REPORTE']).strip()
+                    fecha_raw = str(fila['FECHA DE REPORTE']).strip() if 'FECHA DE REPORTE' in df.columns else ""
                     
                     if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
                         st.warning(f"🟡 **Reporte Registrado: {rep_actual}**\n\nFecha de levantamiento pendiente de capturar en Google Sheets.")
@@ -126,6 +129,13 @@ if 'ESTADO' in df.columns and 'SUCURSAL' in df.columns and 'NO. REPORTE' in df.c
                             
             st.markdown("---")
 else:
-    st.error("No se encontraron las columnas necesarias en tu archivo.")
-    st.info(f"Asegúrate de que los encabezados de tu Excel incluyan exactamente los nombres: 'ESTADO', 'SUCURSAL', 'LINEA TELMEX', 'No. REPORTE' y 'FECHA DE REPORTE'.")
-    st.info(f"Columnas detectadas actualmente: {list(df.columns)}")
+    st.error("⚠️ El enlace copiado desde Google Sheets no es correcto.")
+    st.info("El sistema está leyendo el código de diseño de la página de Google en lugar de tus datos limpios.")
+    st.markdown("""
+    **Cómo solucionarlo en 1 minuto:**
+    1. Abre tu Google Sheets **BDSUCRSALES**.
+    2. Ve a **Archivo** > **Compartir** > **Publicar en la web**.
+    3. En el desplegable que dice *Página Web*, cámbialo obligatoriamente por **Valores separados por comas (.csv)**.
+    4. Copia ese nuevo enlace y pégalo en la línea 13 de tu GitHub reemplazando el anterior.
+    """)
+

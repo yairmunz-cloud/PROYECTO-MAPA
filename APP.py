@@ -38,7 +38,7 @@ def obtener_datos_sucursales():
         {"ESTADO": "CDMX", "SUCURSAL": "CENTRO HISTORICO", "TEL": "555-521-8224"},
         {"ESTADO": "CDMX", "SUCURSAL": "CORDOBA", "TEL": "551-102-2050 / 555-080-0095"},
         {"ESTADO": "CDMX", "SUCURSAL": "LINDAVISTA", "TEL": "Sin Teléfono Registrado"},
-        {"ESTADO": "CDMX", "LA VIGA", "TEL": "Sin Teléfono Registrado"},
+        {"ESTADO": "CDMX", "SUCURSAL": "LA VIGA", "TEL": "Sin Teléfono Registrado"},
         {"ESTADO": "CDMX", "SUCURSAL": "POLANCO", "TEL": "Sin Teléfono Registrado"},
         {"ESTADO": "CDMX", "SUCURSAL": "COAPA", "TEL": "555-920-3849 / 555-920-3829 / 555-528-5487"},
         {"ESTADO": "CDMX", "SUCURSAL": "AEROPUERTO", "TEL": "Sin Teléfono Registrado"},
@@ -171,4 +171,4 @@ sucursal_seleccionada = st.selectbox(
     index=0
 )
 
-# Filtrar los datos de la sucursal elegida empleando .iloc[0] corregido
+# Filtrar los datos de la sucursal elegida empleando .iloc

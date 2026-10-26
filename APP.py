@@ -5,7 +5,7 @@ from streamlit_folium import st_folium
 from datetime import datetime
 from geopy.geocoders import Nominatim
 
-# Configuración inicial del Tablero de Control de manera extendida
+# Configuración del diseño del tablero ejecutivo
 st.set_page_config(page_title="Monitoreo de Sucursales", layout="wide")
 
 # 1. BASE DE DATOS MAESTRA DE SUCURSALES (CON ESTADOS RELLENADOS)
@@ -81,17 +81,13 @@ def obtener_datos_sucursales():
         {"ESTADO": "ZACATECAS", "SUCURSAL": "ZACATECAS", "TEL": "492-925-3987 / 492-922-1236"}
     ]
     df = pd.DataFrame(datos)
-    
     df["No. REPORTE"] = None
     df["FECHA DE REPORTE"] = None
-    
-    # Casos simulados de prueba:
-    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]       # Amarillo (2 días)
-    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]       # Naranja (4 días)
-    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]    # Rojo (11 días)
+    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]
+    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]
+    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]
     df.loc[df["SUCURSAL"] == "MEXICALI", ["No. REPORTE", "FECHA DE REPORTE"]] = ["0", None]
     df.loc[df["SUCURSAL"] == "SALTILLO", ["No. REPORTE", "FECHA DE REPORTE"]] = ["sin reporte", None]
-    
     return df
 
 df = obtener_datos_sucursales()
@@ -99,7 +95,7 @@ df = obtener_datos_sucursales()
 # 2. CACHÉ DE COORDENADAS PARA EVITAR TIEMPOS DE ESPERA
 @st.cache_data
 def buscar_coordenadas(sucursal, estado):
-    geolocator = Nominatim(user_agent="mexico_final_monitor_v4")
+    geolocator = Nominatim(user_agent="mexico_final_monitor_v6")
     try:
         direccion = f"{sucursal}, {estado}, Mexico"
         location = geolocator.geocode(direccion, timeout=10)
@@ -109,7 +105,7 @@ def buscar_coordenadas(sucursal, estado):
         pass
     return None, None
 
-# 3. VERIFICADOR LÓGICO DE REPORTES ACTIVOS
+# 3. COMPROBADOR LOGICO DE REPORTES ACTIVOS
 def tiene_reporte_activo(valor_reporte):
     if pd.isna(valor_reporte):
         return False
@@ -118,43 +114,51 @@ def tiene_reporte_activo(valor_reporte):
         return False
     return True
 
-# 4. CÁLCULO DE COLORES POR RANGOS ESTRICTOS
+# 4. NUEVO CÁLCULO DE COLORES POR DÍAS
 def calcular_color(valor_reporte, fecha_str):
     if not tiene_reporte_activo(valor_reporte):
-        return "#1E90FF"  # Azul (Operación Normal)
+        return "#1E90FF"
     if pd.isna(fecha_str) or not fecha_str:
-        return "#FFD700"  # Amarillo de respaldo
+        return "#FFD700"
     try:
         fecha_rep = pd.to_datetime(fecha_str)
         hoy = datetime.now()
         dias = (hoy - fecha_rep).days
         if dias <= 3:
-            return "#FFD700"  # Amarillo (1-3 días)
+            return "#FFD700"
         elif dias <= 5:
-            return "#FF8C00"  # Naranja (3-5 días)
+            return "#FF8C00"
         else:
-            return "#FF0000"  # Rojo (6 días en adelante)
+            return "#FF0000"
     except:
         return "#FFD700"
 
-# --- PANEL DE CONTROL LATERAL IZQUIERDO ---
+# --- DISEÑO DE LA BARRA LATERAL IZQUIERDA ---
 with st.sidebar:
-    st.header("🔍 Selecciona un Estado")
-    st.markdown("Selecciona filtros geográficos:")
+    st.header("🔍 Buscador de Sucursales")
+    st.markdown("Filtra ubicaciones y consulta el estatus Telmex:")
     
-    # 1. Selector de Estado
     lista_estados = sorted(df['ESTADO'].unique())
     estado_sel = st.selectbox("1. Selecciona el Estado:", options=lista_estados, index=0)
     
     df_filtrado_est = df[df['ESTADO'] == estado_sel]
     lista_sucursales = sorted(df_filtrado_est['SUCURSAL'].unique())
     
-    # 2. Selector de Sucursal
-    sucursal_sel = st.selectbox("2. Selecciona la Sucursal:", options=lista_sucursales, index=0)
-    
+    suc_sel = st.selectbox("2. Selecciona la Sucursal:", options=lista_sucursales, index=0)
     st.markdown("---")
     
-    # FILTRADO LINEAL DIRECTO SIN ÍNDICES ANIDADOS (Cero Errores)
-    subset = df_filtrado_est[df_filtrado_est['SUCURSAL'] == sucursal_sel]
+    subset = df_filtrado_est[df_filtrado_est['SUCURSAL'] == suc_sel]
     
     if not subset.empty:
+        fila = subset.iloc[0]
+        st.subheader(f"🏢 {fila['SUCURSAL']}")
+        st.markdown(f"**📍 Ubicación:** {fila['ESTADO']}, México")
+        st.markdown("**📞 Líneas Telmex:**")
+        for t in str(fila['TEL']).split(" / "):
+            st.markdown(f"• {t}")
+        st.markdown("---")
+        
+        rep_no = fila['No. REPORTE']
+        fecha_rep = fila['FECHA DE REPORTE']
+        
+        if not tiene_reporte_activo(rep_no):

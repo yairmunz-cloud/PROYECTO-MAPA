@@ -136,6 +136,13 @@ def tiene_reporte_activo(valor_reporte):
         return False
     return True
 
+# Helper para limpiar los decimales .0 de los IDs de reporte de forma segura como texto plano
+def limpiar_reporte_id(valor_reporte):
+    texto = str(valor_reporte).strip()
+    if texto.endswith('.0'):
+        return texto[:-2]
+    return texto
+
 # --- LISTA GLOBAL DE ESTADOS ---
 lista_estados = sorted(df[col_est].dropna().unique())
 
@@ -157,7 +164,7 @@ def limpiar_filtro_sucursal_callback():
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
 
-col_buscador, col_espacio_libre = st.columns([1, 2])
+col_buscador, col_espacio_libre = st.columns()
 with col_buscador:
     idx_actual = 0
     if st.session_state["selector_estado_maestro"] in lista_estados:
@@ -222,8 +229,8 @@ if not df_resultado.empty:
                 if not tiene_reporte_activo(rep_raw):
                     badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
                 else:
-                    # CORRECCIÓN: Se extrae el primer elemento del split para evitar que imprima corchetes de lista
-                    rep_actual = rep_raw.split('.')[0] if '.' in rep_raw else rep_raw
+                    # Usamos la nueva función helper segura para limpiar el ID del reporte
+                    rep_actual = limpiar_reporte_id(rep_raw)
                     fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
                     
                     if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
@@ -243,6 +250,4 @@ if not df_resultado.empty:
                                 else:
                                     badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
                         except Exception:
-                            badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Error fecha</span>'
-            else:
 

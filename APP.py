@@ -126,10 +126,10 @@ def obtener_datos_sucursales():
 
 df = obtener_datos_sucursales()
 
-# 2. CACHÉ DE COORDENADAS COMPLETAMENTE SEGURA
+# 2. CACHÉ DE COORDENADAS COMPLETAMENTE EN UNA LÍNEA
 @st.cache_data
 def buscar_coordenadas(sucursal, estado):
-    geolocator = Nominatim(user_agent="mexico_final_monitor_v12")
+    geolocator = Nominatim(user_agent="mexico_final_monitor_v15")
     try:
         direccion = f"{sucursal}, {estado}, Mexico"
         location = geolocator.geocode(direccion, timeout=10)
@@ -148,5 +148,4 @@ def tiene_reporte_activo(valor_reporte):
         return False
     return True
 
-# 4. CÁLCULO DE COLORES POR RANGOS ESTRICTOS
-def calcular_color(valor_reporte, fecha_str):
+# 4. CÁLCULO DE COLORES POR RANGOS ESTRICTOS (CORREGIDA SANGRE INTERNA)

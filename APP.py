@@ -127,8 +127,18 @@ def calcular_color(fecha_str):
     except:
         return "#FFD700"
 
-# --- DIBUJAR MAPA PRINCIPAL ---
-m = folium.Map(location=[23.6345, -102.5528], zoom_start=5)
+# --- CONFIGURACIÓN DE LÍMITES GEOGRÁFICOS DE MÉXICO ---
+# Coordenadas esquinas suroeste [Lat, Lon] y noreste [Lat, Lon] para encuadrar la República Mexicana
+limites_mexico = [[14.0, -118.0], [33.0, -86.0]]
+
+m = folium.Map(
+    location=[23.6345, -102.5528], 
+    zoom_start=5,
+    min_zoom=5,                   # No permite alejarse más allá de ver a todo México
+    max_bounds=True,              # Bloquea el mapa a los límites establecidos
+    bounds_viscosity=1.0,         # Si arrastran hacia afuera, el mapa rebota con fuerza al centro
+    max_bounds_list=limites_mexico
+)
 
 for idx, fila in df.iterrows():
     suc = fila['SUCURSAL']
@@ -157,18 +167,4 @@ for idx, fila in df.iterrows():
 st_folium(m, width="100%", height=500)
 
 st.markdown("---")
-
-# --- SECCIÓN DEL BUSCADOR DESPLEGABLE ---
-st.subheader("🔍 Buscador de Sucursales")
-
-# Creamos las opciones del desplegable uniendo Sucursal + Estado
-df['OPCION_BUSQUEDA'] = df['SUCURSAL'] + " (" + df['ESTADO'] + ")"
-opciones = sorted(df['OPCION_BUSQUEDA'].unique())
-
-sucursal_seleccionada = st.selectbox(
-    "Selecciona una sucursal para consultar sus líneas y reportes activos:",
-    options=opciones,
-    index=0
-)
-
 

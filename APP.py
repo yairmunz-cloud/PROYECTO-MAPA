@@ -5,7 +5,7 @@ from datetime import datetime
 # 1. CONFIGURACIÓN DE LA PÁGINA
 st.set_page_config(page_title="Consulta BDSUCRSALES", layout="wide")
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
-st.markdown("Los datos se leen directamente en tiempo real desde tu archivo **BDSUCRSALES** en Google Sheets.")
+
 
 # 2. FUNCIÓN CONECTADA EN VIVO A GOOGLE SHEETS
 def cargar_datos_desde_sheets():

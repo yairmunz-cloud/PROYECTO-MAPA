@@ -13,7 +13,7 @@ st.markdown("""
 <style>
     /* Efecto Cristal Traslúcido con Blur (Glassmorphism) */
     .glass-panel {
-        background: rgba(255, 255, 255, 0.75) !important;
+        background: rgba(255, 255, 255, 0.80) !important;
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-radius: 16px;
@@ -117,7 +117,6 @@ def obtener_datos_sucursales():
     df["No. REPORTE"] = None
     df["FECHA DE REPORTE"] = None
     
-    # Casos de prueba simulados
     df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]
     df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]
     df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]
@@ -127,10 +126,10 @@ def obtener_datos_sucursales():
 
 df = obtener_datos_sucursales()
 
-# 2. CACHÉ DE COORDENADAS COMPLETAMENTE LINEAL (INMUNE A ERRORES)
+# 2. CACHÉ DE COORDENADAS COMPLETAMENTE SEGURA
 @st.cache_data
 def buscar_coordenadas(sucursal, estado):
-    geolocator = Nominatim(user_agent="mexico_final_monitor_v10")
+    geolocator = Nominatim(user_agent="mexico_final_monitor_v12")
     try:
         direccion = f"{sucursal}, {estado}, Mexico"
         location = geolocator.geocode(direccion, timeout=10)
@@ -150,3 +149,4 @@ def tiene_reporte_activo(valor_reporte):
     return True
 
 # 4. CÁLCULO DE COLORES POR RANGOS ESTRICTOS
+def calcular_color(valor_reporte, fecha_str):

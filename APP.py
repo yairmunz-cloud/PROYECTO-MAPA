@@ -8,13 +8,13 @@ st.markdown("Los datos se leen directamente en tiempo real desde tu archivo **BD
 
 # 2. FUNCIÓN CONECTADA EN VIVO A GOOGLE SHEETS
 def cargar_datos_desde_sheets():
-    # Enlace maestro directo en formato CSV
-    url_maestra = "https://google.com"
+    # BORRA EL ENLACE DE ABAJO Y PEGA TU NUEVO ENLACE PUBLICADO COMO FORMATO .CSV (.csv)
+    url_maestra = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
     
-    # Lectura forzada del archivo en la nube
+    # Lectura del archivo en la nube
     df_sheets = pd.read_csv(url_maestra)
     
-    # BLINDAJE: Limpiamos espacios en blanco y convertimos todos los encabezados a MAYÚSCULAS automáticas
+    # Limpiamos espacios en blanco y convertimos todos los encabezados a MAYÚSCULAS automáticas
     df_sheets.columns = df_sheets.columns.str.strip().str.upper()
     
     # Rellenar los estados hacia abajo automáticamente (Corrige celdas combinadas vacías)
@@ -23,7 +23,7 @@ def cargar_datos_desde_sheets():
     
     return df_sheets
 
-# Ejecución directa y obligatoria de la base de datos
+# Ejecución directa de la base de datos
 try:
     df = cargar_datos_desde_sheets()
     st.success("🔄 Conexión en vivo y exitosa con el archivo BDSUCRSALES.")
@@ -55,7 +55,6 @@ if 'ESTADO' in df.columns and 'SUCURSAL' in df.columns:
     # Identificar la columna de teléfonos de manera flexible (por si se llama diferente)
     col_tel = 'LINEA TELMEX'
     if 'LINEA TELMEX' not in df.columns:
-        # Si no se llama LINEA TELMEX, busca una columna que contenga la palabra TEL o LÍNEA
         for col in df.columns:
             if 'TEL' in col or 'LINEA' in col:
                 col_tel = col
@@ -76,7 +75,7 @@ if 'ESTADO' in df.columns and 'SUCURSAL' in df.columns:
             if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
                 st.markdown("_Sin teléfono registrado_")
             else:
-                # Separar los números por renglones limpios si vienen juntos con saltos de línea en la celda
+                # Separar los números por renglones limpios si vienen juntos o con saltos de línea
                 lista_telefonos = tel_raw.replace("\r", "").split("\n")
                 for tel in lista_telefonos:
                     if tel.strip():

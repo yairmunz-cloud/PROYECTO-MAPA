@@ -10,7 +10,7 @@ st.markdown("Los datos se leen directamente en tiempo real desde tu archivo **BD
 # 2. FUNCIÓN CONECTADA EN VIVO A GOOGLE SHEETS
 def cargar_datos_desde_sheets():
     # Enlace publicado directamente en formato CSV (.csv)
-    url_maestra = "https://google.com"
+    url_maestra = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
     
     # Lectura del archivo en la nube
     df_sheets = pd.read_csv(url_maestra)

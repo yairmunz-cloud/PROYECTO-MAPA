@@ -171,4 +171,4 @@ sucursal_seleccionada = st.selectbox(
     index=0
 )
 
-# Filtrar los datos de la sucursal elegida empleando .iloc
+

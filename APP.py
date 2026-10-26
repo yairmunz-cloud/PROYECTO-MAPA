@@ -7,22 +7,9 @@ st.set_page_config(page_title="Tablero BDSUCRSALES", layout="wide")
 
 st.markdown("""
 <style>
-    /* CORRECCIÓN: Ajustamos el padding-top a 2rem para dar espacio al título principal */
-    .block-container { 
-        padding-top: 2rem !important; 
-        padding-bottom: 0rem !important; 
-        margin-top: 0px !important; 
-    }
-    
-    /* Aseguramos que el título principal sea visible y tenga buena separación */
-    h1 { 
-        font-size: 1.8rem !important; 
-        padding-top: 5px !important; 
-        margin-top: 0px !important; 
-        margin-bottom: 12px !important; 
-        color: #0f172a !important;
-    }
-    
+    /* Forzar compresión absoluta de márgenes en toda la pantalla con espacio para el título */
+    .block-container { padding-top: 2rem !important; padding-bottom: 0rem !important; margin-top: 0px !important; }
+    h1 { font-size: 1.8rem !important; padding-top: 5px !important; margin-top: 0px !important; margin-bottom: 12px !important; color: #0f172a !important; }
     h3 { font-size: 1.1rem !important; margin-top: 2px !important; margin-bottom: 2px !important; }
     h4 { font-size: 1.0rem !important; margin-top: 2px !important; margin-bottom: 2px !important; }
     hr { margin-top: 4px !important; margin-bottom: 4px !important; padding: 0px !important; }
@@ -53,10 +40,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # 2. FUNCIÓN CONECTADA EN VIVO A GOOGLE SHEETS
 def cargar_datos_desde_sheets():
-    url_maestra = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
+    url_maestra = "https://google.com"
     df_sheets = pd.read_csv(url_maestra)
     df_sheets.columns = df_sheets.columns.str.strip().str.upper()
     return df_sheets
@@ -114,10 +100,10 @@ if "sucursal_filtrada" not in st.session_state:
 # --- FUNCIONES CALLBACK DE NAVEGACIÓN ---
 def cambiar_estado_callback(nuevo_estado, nueva_sucursal):
     st.session_state["selector_estado_maestro"] = nuevo_estado
-    st.session_state["sucursal_filtrada"] = nueva_sucursal  # Guarda la sucursal seleccionada
+    st.session_state["sucursal_filtrada"] = nueva_sucursal
 
 def limpiar_filtro_sucursal_callback():
-    st.session_state["sucursal_filtrada"] = None  # Al mover el selectbox manual, limpia el filtro de sucursal única
+    st.session_state["sucursal_filtrada"] = None
 
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
@@ -127,7 +113,6 @@ with col_buscador:
     if st.session_state["selector_estado_maestro"] in lista_estados:
         idx_actual = lista_estados.index(st.session_state["selector_estado_maestro"])
 
-    # Al cambiar manualmente el selector de estados, se ejecuta 'on_change' para restablecer la vista de todas las sucursales
     estado_actual = st.selectbox(
         "🔍 Filtrar por Estado:",
         options=lista_estados,
@@ -151,7 +136,6 @@ if not df_con_reporte.empty:
             btn_suc = str(fila_rep[col_suc])
             btn_est = str(fila_rep[col_est])
             
-            # Ahora el callback recibe tanto el Estado como el nombre específico de la Sucursal
             st.button(
                 f"🚨 {btn_suc}", 
                 key=f"btn_{btn_suc}_{i}", 
@@ -165,15 +149,12 @@ else:
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # --- FILA 3: CUADRÍCULA DE TARJETAS EN 3 COLUMNAS MÁXIMO ---
-# 1. Filtramos primero por el estado seleccionado
 df_resultado = df[df[col_est] == st.session_state["selector_estado_maestro"]]
 
-# 2. NUEVA LÓGICA: Si viene de un botón de alerta, filtramos para que SÓLO se quede esa sucursal
 if st.session_state["sucursal_filtrada"] is not None:
     df_resultado = df_resultado[df_resultado[col_suc] == st.session_state["sucursal_filtrada"]]
     texto_monitoreo = f"#### 📍 Monitoreo Exclusivo Alerta: {st.session_state['sucursal_filtrada']} ({st.session_state['selector_estado_maestro']})"
     
-    # Agregamos un botón dinámico para volver a ver todas las sucursales del estado si el usuario lo desea
     if st.button("⬅️ Mostrar todas las sucursales de este Estado", on_click=limpiar_filtro_sucursal_callback):
         st.rerun()
 else:
@@ -200,7 +181,7 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
                 if t.strip():
                     st.markdown(f'<div class="tel-item">• {t.strip()}</div>', unsafe_allow_html=True)
         
-        # Despliegue de Alertas
+        # Despliegue de Alertas y su Número de Reporte correspondiente
         rep_raw = str(fila[col_rep]).strip()
         
         if not tiene_reporte_activo(rep_raw):
@@ -224,4 +205,8 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
                         elif dias_atraso <= 7:
                             st.markdown(f'<div class="badge-orange">🟠 Rep: {rep_actual} | {dias_atraso} días</div>', unsafe_allow_html=True)
                         else:
-
+                            st.markdown(f'<div class="badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</div>', unsafe_allow_html=True)
+                except Exception:
+                    st.markdown(f'<div class="badge-yellow">🟡 Rep: {rep_actual} | Error al procesar fecha</div>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)

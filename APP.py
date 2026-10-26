@@ -115,7 +115,7 @@ def limpiar_filtro_sucursal_callback():
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
 
-col_buscador, col_espacio_libre = st.columns([1, 2])
+col_buscador, col_espacio_libre = st.columns()
 with col_buscador:
     idx_actual = 0
     if st.session_state["selector_estado_maestro"] in lista_estados:
@@ -211,7 +211,7 @@ if not df_resultado.empty:
                     if t.strip():
                         telefonos_html += f'<div class="tel-item">• {t.strip()}</div>'
 
-            # Renderizado final atómico y bien cerrado
+            # Renderizado final atómico de la tarjeta
             st.markdown(f"""
             <div class="glass-card">
                 {badge_html}
@@ -222,4 +222,3 @@ if not df_resultado.empty:
             </div>
             """, unsafe_allow_html=True)
 else:
-

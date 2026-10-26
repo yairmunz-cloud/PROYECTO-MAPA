@@ -89,7 +89,6 @@ def tiene_reporte_activo(valor_reporte):
 def formatear_reporte_id(valor_reporte):
     texto = str(valor_reporte).strip()
     try:
-        # Si es un número flotante válido o entero, aseguramos que termine en .0 tal como lo solicitas
         float_val = float(texto)
         return f"{int(float_val)}.0"
     except ValueError:
@@ -181,7 +180,6 @@ if not df_resultado.empty:
                 if not tiene_reporte_activo(rep_raw):
                     badge_html = '<span class="badge-text-top" style="color: #27ae60;">🟢 OK (Sin Reportes Activos)</span>'
                 else:
-                    # Aplicamos el formateador explícito para mantener el decimal .0
                     rep_actual = formatear_reporte_id(rep_raw)
                     fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
                     
@@ -202,7 +200,7 @@ if not df_resultado.empty:
             else:
                 badge_html = '<span class="badge-text-top" style="color: #27ae60;">🟢 OK (Sin Reportes Activos)</span>'
 
-            # Construcción e integración de las líneas telefónicas
+            # Construcción segura de los números telefónicos
             telefonos_html = ""
             tel_raw = str(fila[col_tel]).strip()
             if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
@@ -213,11 +211,15 @@ if not df_resultado.empty:
                     if t.strip():
                         telefonos_html += f'<div class="tel-item">• {t.strip()}</div>'
 
-            # ESTRUCTURA EXACTA:
-            # 1. Alerta / Días (Texto plano arriba)
-            # 2. Nombre de la Sucursal (Centro)
-            # 3. Teléfonos (Abajo)
+            # Renderizado final atómico y bien cerrado
             st.markdown(f"""
             <div class="glass-card">
                 {badge_html}
+                <span class="suc-title">🏢 {fila[col_suc]}</span>
+                <div class="tel-container">
+                    {telefonos_html}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+else:
 

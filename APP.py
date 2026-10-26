@@ -96,6 +96,7 @@ if "selector_estado_maestro" not in st.session_state:
 
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 # CORRECCIÓN EN ESTA LÍNEA: Se añade la proporción estricta [1, 2] para evitar el error de desempaquetado
+st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
 col_buscador, col_espacio_libre = st.columns([1, 2])
 with col_buscador:
     estado_actual = st.selectbox(

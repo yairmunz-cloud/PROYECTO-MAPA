@@ -40,7 +40,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 1. BASE DE DATOS MAESTRA CON COORDENADAS INTEGRADAS (EVITA RETRASOS DE CARGA)
+# 1. BASE DE DATOS MAESTRA CON COORDENADAS INTEGRADAS Y REVISADAS
 @st.cache_data
 def obtener_datos_sucursales():
     datos = [

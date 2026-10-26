@@ -2,140 +2,164 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# 1. CONFIGURACIÓN DE LA PÁGINA
-st.set_page_config(page_title="Consulta BDSUCRSALES", layout="wide")
-st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
+# 1. CONFIGURACIÓN DE PÁGINA ANCHA Y ESTILOS COMPACTOS (Glassmorphism)
+st.set_page_config(page_title="Tablero BDSUCRSALES", layout="wide")
 
+st.markdown("""
+<style>
+    /* Forzar que el contenedor principal use menos espacio superior */
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 0rem !important; }
+    
+    /* Tarjetas compactas con efecto cristal traslúcido */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(8px);
+        border-radius: 12px;
+        padding: 14px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        margin-bottom: 10px;
+        height: 100%;
+    }
+    
+    /* Tamaños de texto ajustados para evitar scroll */
+    .suc-title { font-size: 1.1rem !important; font-weight: bold; margin-bottom: 4px; color: #1e293b; }
+    .tel-item { font-size: 0.9rem !important; margin: 2px 0; color: #475569; }
+    
+    /* Semáforos de alertas compactos */
+    .badge-normal { padding: 6px; background: rgba(46,204,113,0.12); border-left: 4px solid #2ecc71; border-radius: 4px; color: #27ae60; font-size: 0.85rem; font-weight: bold; }
+    .badge-yellow { padding: 6px; background: rgba(241,196,15,0.12); border-left: 4px solid #f1c40f; border-radius: 4px; color: #b7950b; font-size: 0.85rem; font-weight: bold; }
+    .badge-orange { padding: 6px; background: rgba(230,126,34,0.12); border-left: 4px solid #e67e22; border-radius: 4px; color: #d35400; font-size: 0.85rem; font-weight: bold; }
+    .badge-red { padding: 6px; background: rgba(231,76,60,0.12); border-left: 5px solid #e74c3c; border-radius: 4px; color: #c0392b; font-size: 0.85rem; font-weight: bold; }
+</style>
+""", unsafe_allow_html=True)
 
 # 2. FUNCIÓN CONECTADA EN VIVO A GOOGLE SHEETS
 def cargar_datos_desde_sheets():
-    # Enlace publicado directamente en formato CSV (.csv)
-    url_maestra = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
-    
-    # Lectura del archivo en la nube
+    url_maestra = "https://google.com"
     df_sheets = pd.read_csv(url_maestra)
-    
-    # BLINDAJE 1: Limpiamos espacios e igualamos los encabezados a MAYÚSCULAS para evitar caídas
     df_sheets.columns = df_sheets.columns.str.strip().str.upper()
-    
-    # Rellenar los estados hacia abajo de forma automática (Corrige celdas combinadas vacías)
     if 'ESTADO' in df_sheets.columns:
         df_sheets['ESTADO'] = df_sheets['ESTADO'].ffill()
-    
     return df_sheets
 
-# Ejecución forzada de la base de datos
 try:
     df = cargar_datos_desde_sheets()
 except Exception as e:
-    st.error(f"Error crítico al conectar con Google Sheets: {e}")
-    st.info("Por favor, asegúrate de que el enlace de la línea 13 sea el correcto y termine en output=csv.")
+    st.error(f"Error al conectar con Google Sheets: {e}")
     st.stop()
+
+# Helper para validar si una sucursal tiene un reporte activo
+def tiene_reporte_activo(valor_reporte):
+    if pd.isna(valor_reporte):
+        return False
+    val = str(valor_reporte).strip().lower()
+    if val in ["", "0", "sin reporte", "none", "nan", "vacio"]:
+        return False
+    return True
+
+# --- LÓGICA DE CONTROL DE ESTADOS DE SELECCIÓN ---
+# Inicializar variables de estado en la memoria de la app para permitir el clic directo
+if "estado_seleccionado" not in st.session_state:
+    st.session_state.estado_seleccionado = sorted(df['ESTADO'].dropna().unique())[0]
+
+# --- FILA SUPERIOR: MURO DE ALERTAS RÁPIDAS ---
+st.markdown("### ⚠️ Sucursales con Reporte Activo (Clic para acceso rápido)")
+
+# Escaneamos todo el dataframe para buscar qué sucursales tienen incidencias actualmente
+df_con_reporte = df[df['NO. REPORTE'].apply(tiene_reporte_activo)]
+
+if not df_con_reporte.empty:
+    # Creamos una fila de botones en paralelo (hasta 7 botones por fila para ahorrar espacio)
+    columnas_botones = st.columns(min(len(df_con_reporte), 7))
+    for i, (_, fila_rep) in enumerate(df_con_reporte.iterrows()):
+        col_idx = i % 7
+        with columnas_botones[col_idx]:
+            # El botón muestra el nombre de la sucursal con un emoji de advertencia
+            if st.button(f"🚨 {fila_rep['SUCURSAL']}", key=f"btn_{fila_rep['SUCURSAL']}", use_container_width=True):
+                # Al darle clic, guardamos el estado de esa sucursal en la memoria para que el buscador cambie solo
+                st.session_state.estado_seleccionado = fila_rep['ESTADO']
+                st.rerun()
+else:
+    st.success("🟢 No se registran reportes activos en ninguna sucursal de la República Mexicana.")
 
 st.markdown("---")
 
-# BLINDAJE 2: Verificación estricta de estructura para mitigar pantallas en blanco o con código basura
-columnas_validas = ['ESTADO', 'SUCURSAL', 'NO. REPORTE']
-errores_encabezado = [col for col in columnas_validas if col not in df.columns]
+# --- FILA MEDIA: BUSCADOR COMPACTO ---
+lista_estados = sorted(df['ESTADO'].dropna().unique())
 
-if not errores_encabezado:
-    
-    # 3. INTERFAZ: BARRA DE BÚSQUEDA POR ESTADO
-    lista_estados = sorted(df['ESTADO'].dropna().unique())
-    estado_seleccionado = st.selectbox(
-        "🔍 Selecciona un Estado para consultar todas sus sucursales:",
+# Buscamos la posición del estado que está guardado en memoria para centrar el buscador
+try:
+    default_index = lista_estados.index(st.session_state.estado_seleccionado)
+except ValueError:
+    default_index = 0
+
+# Contenedor pequeño para el selector
+col_buscador, _ = st.columns([2, 2])
+with col_buscador:
+    estado_actual = st.selectbox(
+        "🔍 Filtrar por Estado:",
         options=lista_estados,
-        index=0
+        index=default_index,
+        key="selector_estado_maestro"
     )
-    
-    st.markdown("---")
-    
-    # 4. FILTRADO Y DESPLIEGUE EN PANTALLA
-    df_resultado = df[df['ESTADO'] == estado_seleccionado]
-    
-    st.subheader(f"📍 Sucursales registradas en: {estado_seleccionado}")
-    
-    # Identificar la columna de teléfonos de manera flexible
-    col_tel = 'LINEA TELMEX'
-    if 'LINEA TELMEX' not in df.columns:
-        for col in df.columns:
-            if 'TEL' in col or 'LINEA' in col:
-                col_tel = col
-                break
-                
-    # Recorremos todas las sucursales de arriba a abajo
-    for idx, fila in df_resultado.iterrows():
-        with st.container():
-            # Dividimos la sección en 2 bloques limpios en paralelo
-            col_izq, col_der = st.columns(2)
-            
-            with col_izq:
-                st.markdown(f"### 🏢 Sucursal: {fila['SUCURSAL']}")
-                st.markdown("**📞 Líneas Telmex asignadas:**")
-                
-                tel_raw = str(fila[col_tel]).strip()
-                if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
-                    st.markdown("_Sin teléfono registrado_")
-                else:
-                    lista_telefonos = tel_raw.replace("\r", "").split("\n")
-                    for tel in lista_telefonos:
-                        if tel.strip():
-                            st.markdown(f"• {tel.strip()}")
-            
-            with col_der:
-                st.markdown("### 📊 Estatus de Incidencia")
-                
-                rep_raw = str(fila['NO. REPORTE']).strip().lower()
-                
-                # REGLA 1: Si la celda está vacía, es 0, o dice sin reporte -> MARGEN VERDE
-                if rep_raw == "" or rep_raw in ["nan", "none", "0", "sin reporte", "vacio"]:
-                    st.success("🟢 **Sin Reporte Activo**\n\nEsta sucursal opera con normalidad y no registra incidencias.")
-                
-                # REGLA 2: Si tiene un reporte, calculamos el atraso contra la fecha actual
-                else:
-                    rep_actual = str(fila['NO. REPORTE']).strip()
-                    fecha_raw = str(fila['FECHA DE REPORTE']).strip() if 'FECHA DE REPORTE' in df.columns else ""
-                    
-                    if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
-                        st.warning(f"🟡 **Reporte Registrado: {rep_actual}**\n\nFecha de levantamiento pendiente de capturar en Google Sheets.")
-                    else:
-                        try:
-                            # Convertimos la fecha de la celda de forma flexible
-                            fecha_rep = pd.to_datetime(fecha_raw, errors='coerce')
-                            
-                            if pd.isna(fecha_rep):
-                                st.warning(f"🟡 **Reporte Registrado: {rep_actual}**\n\nFormato de fecha no válido en el Excel. Escríbela como AAAA-MM-DD.")
-                            else:
-                                # Restamos la fecha actual menos la fecha del reporte
-                                hoy = datetime.now()
-                                dias_atraso = (hoy - fecha_rep).days
-                                
-                                # Clasificación estricta por rangos de días
-                                if dias_atraso <= 3:
-                                    st.warning(f"🟡 **Alerta Inicial (Atraso: {dias_atraso} días)**\n\n**No. Reporte:** {rep_actual}\n\n**Fecha Levantamiento:** {fecha_rep.strftime('%Y-%m-%d')}")
-                                elif dias_atraso <= 5:
-                                    st.markdown(f"""
-                                    <div style='padding:12px; background-color:rgba(230,126,34,0.15); border-left:5px solid #e67e22; border-radius:4px; color:#d35400; font-weight:bold;'>
-                                        <h3>🟠 Alerta Intermedia</h3>
-                                        <b>Tiempo transcurrido:</b> {dias_atraso} días de atraso<br><br>
-                                        <b>No. Reporte:</b> {rep_actual}<br>
-                                        <b>Fecha Levantamiento:</b> {fecha_rep.strftime('%Y-%m-%d')}
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                else:
-                                    st.error(f"🔴 **Alerta Crítica (Atraso: {dias_atraso} días)**\n\n**No. Reporte:** {rep_actual}\n\n**Fecha Levantamiento:** {fecha_rep.strftime('%Y-%m-%d')}")
-                        except:
-                            st.warning(f"🟡 **Reporte Registrado: {rep_actual}**\n\nVerifica el formato de la fecha en el Excel.")
-                            
-            st.markdown("---")
-else:
-    st.error("⚠️ El enlace copiado desde Google Sheets no es correcto.")
-    st.info("El sistema está leyendo el código de diseño de la página de Google en lugar de tus datos limpios.")
-    st.markdown("""
-    **Cómo solucionarlo en 1 minuto:**
-    1. Abre tu Google Sheets **BDSUCRSALES**.
-    2. Ve a **Archivo** > **Compartir** > **Publicar en la web**.
-    3. En el desplegable que dice *Página Web*, cámbialo obligatoriamente por **Valores separados por comas (.csv)**.
-    4. Copia ese nuevo enlace y pégalo en la línea 13 de tu GitHub reemplazando el anterior.
-    """)
+    # Si el usuario cambia manualmente el buscador, actualizamos la memoria interna
+    st.session_state.estado_seleccionado = estado_actual
 
+# --- FILA INFERIOR: CUADRÍCULA DE SUCURSALES (3 COLUMNAS MÁXIMO) ---
+df_resultado = df[df['ESTADO'] == st.session_state.estado_seleccionado]
+
+st.markdown(f"#### 📍 Monitoreo: {st.session_state.estado_seleccionado} ({len(df_resultado)} Sucursales)")
+
+# Creamos una grilla matemática de 3 columnas para organizar las tarjetas lado a lado
+columnas_grilla = st.columns(3)
+
+for idx, (_, fila) in enumerate(df_resultado.iterrows()):
+    # Decidimos en qué columna (0, 1 o 2) acomodar la tarjeta actual
+    col_destino = idx % 3
+    
+    with columnas_grilla[col_destino]:
+        # Estructura de la tarjeta compacta usando HTML/CSS personalizado
+        st.markdown('<div class="glass-card animated-fade-in">', unsafe_allow_html=True)
+        st.markdown(f'<div class="suc-title">🏢 {fila["SUCURSAL"]}</div>', unsafe_allow_html=True)
+        
+        # Procesar números telefónicos
+        tel_raw = str(fila['LINEA TELMEX']).strip()
+        if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
+            st.markdown('<div class="tel-item"><i>Sin líneas asignadas</i></div>', unsafe_allow_html=True)
+        else:
+            lista_tels = tel_raw.replace("\r", "").split("\n")
+            for t in lista_tels:
+                if t.strip():
+                    st.markdown(f'<div class="tel-item">• {t.strip()}</div>', unsafe_allow_html=True)
+        
+        # Procesar estatus del reporte para pintar la alerta correspondiente
+        rep_raw = str(fila['NO. REPORTE']).strip().lower()
+        
+        if not tiene_reporte_activo(rep_raw):
+            st.markdown('<div class="badge-normal">🟢 Operando Normal (Sin Incidencias)</div>', unsafe_allow_html=True)
+        else:
+            rep_actual = str(fila['NO. REPORTE']).strip()
+            fecha_raw = str(fila['FECHA DE REPORTE']).strip() if 'FECHA DE REPORTE' in df.columns else ""
+            
+            if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
+                st.markdown(f'<div class="badge-yellow">🟡 Reporte: {rep_actual}<br>Levantamiento pendiente</div>', unsafe_allow_html=True)
+            else:
+                try:
+                    fecha_dt = pd.to_datetime(fecha_raw, errors='coerce')
+                    if pd.isna(fecha_dt):
+                        st.markdown(f'<div class="badge-yellow">🟡 Reporte: {rep_actual}<br>Fecha con formato incorrecto</div>', unsafe_allow_html=True)
+                    else:
+                        dias_atraso = (datetime.now() - fecha_dt).days
+                        
+                        # Clasificación de alertas compactas por rangos de días en la tarjeta
+                        if dias_atraso <= 3:
+                            st.markdown(f'<div class="badge-yellow">🟡 Alerta Inicial ({dias_atraso} días)<br>Rep: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
+                        elif dias_atraso <= 5:
+                            st.markdown(f'<div class="badge-orange">🟠 Alerta Intermedia ({dias_atraso} días)<br>Rep: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
+                        else:
+                            st.markdown(f'<div class="badge-red">🔴 Alerta Crítica ({dias_atraso} días)<br>Rep: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
+                except:
+                    st.markdown(f'<div class="badge-yellow">🟡 Reporte: {rep_actual}<br>Error al calcular fecha</div>', unsafe_allow_html=True)
+                    
+        st.markdown('</div>', unsafe_allow_html=True) # Cierre glass-card

@@ -90,18 +90,28 @@ def tiene_reporte_activo(valor_reporte):
 # --- LISTA GLOBAL DE ESTADOS ---
 lista_estados = sorted(df[col_est].dropna().unique())
 
+# --- NUEVA FUNCIÓN CALLBACK ---
+# Esta función cambia el estado de manera segura antes de que se instancie el selectbox de nuevo
+def cambiar_estado_callback(nuevo_estado):
+    st.session_state["selector_estado_maestro"] = nuevo_estado
+
 # Inicializamos la clave del selectbox con el primer estado si no existe en memoria
 if "selector_estado_maestro" not in st.session_state:
-    st.session_state["selector_estado_maestro"] = lista_estados if lista_estados else ""
+    st.session_state["selector_estado_maestro"] = lista_estados[0] if lista_estados else ""
 
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
-# CORRECCIÓN EN ESTA LÍNEA: Se añade la proporción estricta [1, 2] para evitar el error de desempaquetado
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
 col_buscador, col_espacio_libre = st.columns([1, 2])
 with col_buscador:
+    # Se busca el índice del estado actual para evitar desajustes visuales en el componente
+    idx_actual = 0
+    if st.session_state["selector_estado_maestro"] in lista_estados:
+        idx_actual = lista_estados.index(st.session_state["selector_estado_maestro"])
+
     estado_actual = st.selectbox(
         "🔍 Filtrar por Estado:",
         options=lista_estados,
+        index=idx_actual,
         key="selector_estado_maestro"
     )
 
@@ -121,10 +131,14 @@ if not df_con_reporte.empty:
             btn_suc = str(fila_rep[col_suc])
             btn_est = str(fila_rep[col_est])
             
-            # El botón altera directamente la clave asignada al selectbox y recarga de inmediato
-            if st.button(f"🚨 {btn_suc}", key=f"btn_{btn_suc}_{i}", use_container_width=True):
-                st.session_state["selector_estado_maestro"] = btn_est
-                st.rerun()
+            # SOLUCIÓN: Usamos on_click llamando a la función callback y enviando el estado por args
+            st.button(
+                f"🚨 {btn_suc}", 
+                key=f"btn_{btn_suc}_{i}", 
+                use_container_width=True,
+                on_click=cambiar_estado_callback,
+                args=(btn_est,)
+            )
 else:
     st.success("🟢 Sin reportes activos en la República Mexicana.")
 
@@ -167,20 +181,19 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
                 st.markdown(f'<div class="badge-yellow">🟡 Rep: {rep_actual} | Fecha pendiente</div>', unsafe_allow_html=True)
             else:
                 try:
-                    fecha_dt = pd.to_datetime(fecha_raw, errors='coerce')
+                    fecha_dt = pd.to_datetime(fecha_raw, errors='coerce', dayfirst=True)
                     if pd.isna(fecha_dt):
                         st.markdown(f'<div class="badge-yellow">🟡 Rep: {rep_actual} | Formato de fecha inválido</div>', unsafe_allow_html=True)
                     else:
                         dias_atraso = (datetime.now() - fecha_dt).days
                         
-                        # Alertas compactas mostrando el Número del Reporte
+                        # Alertas basadas en los días de retraso encontrados
                         if dias_atraso <= 3:
-                            st.markdown(f'<div class="badge-yellow">🟡 Rango 1-3 ({dias_atraso}d) - Rep: {rep_actual} ({fecha_dt.strftime("%m-%d")})</div>', unsafe_allow_html=True)
-                        elif dias_atraso <= 5:
-                            st.markdown(f'<div class="badge-orange">🟠 Rango 3-5 ({dias_atraso}d) - Rep: {rep_actual} ({fecha_dt.strftime("%m-%d")})</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="badge-yellow">🟡 Rep: {rep_actual} | {dias_atraso} días</div>', unsafe_allow_html=True)
+                        elif dias_atraso <= 7:
+                            st.markdown(f'<div class="badge-orange">🟠 Rep: {rep_actual} | {dias_atraso} días</div>', unsafe_allow_html=True)
                         else:
-                            st.markdown(f'<div class="badge-red">🔴 Rango 6+ ({dias_atraso}d) - Rep: {rep_actual} ({fecha_dt.strftime("%m-%d")})</div>', unsafe_allow_html=True)
-                except:
-                    st.markdown(f'<div class="badge-yellow">🟡 Rep: {rep_actual} | Error matemático fecha</div>', unsafe_allow_html=True)
-                    
-        st.markdown('</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</div>', unsafe_allow_html=True)
+                except Exception:
+                    st.markdown(f'<div class="badge-yellow">🟡 Rep: {rep_actual} | Error al procesar fecha</div>', unsafe_allow_html=True)
+

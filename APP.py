@@ -162,7 +162,7 @@ st.markdown("---")
 st.subheader("🔍 Buscador de Sucursales")
 
 # Creamos las opciones del desplegable uniendo Sucursal + Estado para que no haya confusiones
-df['OPCION_BUSQUEDA'] = df['SUCURSAL'] + " (" + df['ESTADO'] + ")"
-opciones = sorted(df['OPCION_BUSQUEDA'].unique())
+fila_seleccionada = df[df['OPCION_BUSQUEDA'] == sucursal_seleccionada].iloc
+fila_seleccionada = df[df['OPCION_BUSQUEDA'] == sucursal_seleccionada].iloc[0]
 
 sucursal_seleccionada = st.selectbox(

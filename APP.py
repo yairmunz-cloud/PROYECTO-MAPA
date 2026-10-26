@@ -5,10 +5,61 @@ from streamlit_folium import st_folium
 from datetime import datetime
 from geopy.geocoders import Nominatim
 
-# Configuración del diseño del tablero ejecutivo
+# Configuración de pantalla completa para el Dashboard corporativo
 st.set_page_config(page_title="Monitoreo de Sucursales", layout="wide")
 
-# 1. BASE DE DATOS MAESTRA DE SUCURSALES (CON ESTADOS RELLENADOS)
+# --- ESTILOS CSS AVANZADOS: GLASSMORPHISM Y ANIMACIONES ---
+# Este bloque inyecta el diseño traslúcido, el efecto Blur de fondo y la animación de transición
+st.markdown("""
+<style>
+    /* Estilo del contenedor del Panel de Control (Efecto Cristal Traslúcido con Blur) */
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.65) !important;
+        backdrop-filter: blur(12px) -webkit-backdrop-filter: blur(12px);
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+        margin-bottom: 20px;
+    }
+    
+    /* Animación de desvanecimiento y despliegue suave para los detalles */
+    .animated-fade-in {
+        animation: fadeInAction 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    @keyframes fadeInAction {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Estilización de tarjetas internas de estatus */
+    .status-box-normal {
+        padding: 12px; background-color: rgba(46, 204, 113, 0.15); 
+        border-left: 5px solid #2ecc71; border-radius: 4px; color: #27ae60; font-weight: bold;
+    }
+    .status-box-yellow {
+        padding: 12px; background-color: rgba(241, 196, 15, 0.15); 
+        border-left: 5px solid #f1c40f; border-radius: 4px; color: #d4ac0d; font-weight: bold;
+    }
+    .status-box-orange {
+        padding: 12px; background-color: rgba(230, 126, 34, 0.15); 
+        border-left: 5px solid #e67e22; border-radius: 4px; color: #d35400; font-weight: bold;
+    }
+    .status-box-red {
+        padding: 12px; background-color: rgba(231, 76, 60, 0.15); 
+        border-left: 5px solid #e74c3c; border-radius: 4px; color: #c0392b; font-weight: bold;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# 1. BASE DE DATOS MAESTRA DE SUCURSALES
 @st.cache_data
 def obtener_datos_sucursales():
     datos = [
@@ -81,13 +132,17 @@ def obtener_datos_sucursales():
         {"ESTADO": "ZACATECAS", "SUCURSAL": "ZACATECAS", "TEL": "492-925-3987 / 492-922-1236"}
     ]
     df = pd.DataFrame(datos)
+    
     df["No. REPORTE"] = None
     df["FECHA DE REPORTE"] = None
-    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]
-    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]
-    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]
+    
+    # Casos simulados de prueba:
+    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]       # Amarillo (2 días)
+    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]       # Naranja (4 días)
+    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]    # Rojo (11 días)
     df.loc[df["SUCURSAL"] == "MEXICALI", ["No. REPORTE", "FECHA DE REPORTE"]] = ["0", None]
     df.loc[df["SUCURSAL"] == "SALTILLO", ["No. REPORTE", "FECHA DE REPORTE"]] = ["sin reporte", None]
+    
     return df
 
 df = obtener_datos_sucursales()
@@ -95,70 +150,8 @@ df = obtener_datos_sucursales()
 # 2. CACHÉ DE COORDENADAS PARA EVITAR TIEMPOS DE ESPERA
 @st.cache_data
 def buscar_coordenadas(sucursal, estado):
-    geolocator = Nominatim(user_agent="mexico_final_monitor_v6")
+    geolocator = Nominatim(user_agent="mexico_final_monitor_v7")
     try:
         direccion = f"{sucursal}, {estado}, Mexico"
         location = geolocator.geocode(direccion, timeout=10)
         if location:
-            return location.latitude, location.longitude
-    except:
-        pass
-    return None, None
-
-# 3. COMPROBADOR LOGICO DE REPORTES ACTIVOS
-def tiene_reporte_activo(valor_reporte):
-    if pd.isna(valor_reporte):
-        return False
-    val = str(valor_reporte).strip().lower()
-    if val in ["", "0", "sin reporte", "none", "nan", "vacio"]:
-        return False
-    return True
-
-# 4. NUEVO CÁLCULO DE COLORES POR DÍAS
-def calcular_color(valor_reporte, fecha_str):
-    if not tiene_reporte_activo(valor_reporte):
-        return "#1E90FF"
-    if pd.isna(fecha_str) or not fecha_str:
-        return "#FFD700"
-    try:
-        fecha_rep = pd.to_datetime(fecha_str)
-        hoy = datetime.now()
-        dias = (hoy - fecha_rep).days
-        if dias <= 3:
-            return "#FFD700"
-        elif dias <= 5:
-            return "#FF8C00"
-        else:
-            return "#FF0000"
-    except:
-        return "#FFD700"
-
-# --- DISEÑO DE LA BARRA LATERAL IZQUIERDA ---
-with st.sidebar:
-    st.header("🔍 Buscador de Sucursales")
-    st.markdown("Filtra ubicaciones y consulta el estatus Telmex:")
-    
-    lista_estados = sorted(df['ESTADO'].unique())
-    estado_sel = st.selectbox("1. Selecciona el Estado:", options=lista_estados, index=0)
-    
-    df_filtrado_est = df[df['ESTADO'] == estado_sel]
-    lista_sucursales = sorted(df_filtrado_est['SUCURSAL'].unique())
-    
-    suc_sel = st.selectbox("2. Selecciona la Sucursal:", options=lista_sucursales, index=0)
-    st.markdown("---")
-    
-    subset = df_filtrado_est[df_filtrado_est['SUCURSAL'] == suc_sel]
-    
-    if not subset.empty:
-        fila = subset.iloc[0]
-        st.subheader(f"🏢 {fila['SUCURSAL']}")
-        st.markdown(f"**📍 Ubicación:** {fila['ESTADO']}, México")
-        st.markdown("**📞 Líneas Telmex:**")
-        for t in str(fila['TEL']).split(" / "):
-            st.markdown(f"• {t}")
-        st.markdown("---")
-        
-        rep_no = fila['No. REPORTE']
-        fecha_rep = fila['FECHA DE REPORTE']
-        
-        if not tiene_reporte_activo(rep_no):

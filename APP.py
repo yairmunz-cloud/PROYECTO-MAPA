@@ -4,6 +4,7 @@ from datetime import datetime
 
 # 1. CONFIGURACIÓN DE PÁGINA ANCHA Y ESTILOS COMPACTOS (Glassmorphism)
 st.set_page_config(page_title="Tablero BDSUCRSALES", layout="wide")
+st.title("🏢 Consulta de Sucursales y Líneas Telefónicas"
 
 st.markdown("""
 <style>

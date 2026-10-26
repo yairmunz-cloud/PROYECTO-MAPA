@@ -28,8 +28,8 @@ st.markdown("""
     
     /* Semáforos de alertas compactos */
     .badge-normal { padding: 6px; background: rgba(46,204,113,0.12); border-left: 4px solid #2ecc71; border-radius: 4px; color: #27ae60; font-size: 0.85rem; font-weight: bold; }
-    .badge-yellow { padding: 6px; background: rgba(241,196,15,0.12); border-left: 4px solid #f1c40f; border-radius: 4px; color: #b7950b; font-size: 0.85rem; font-weight: bold; }
-    .badge-orange { padding: 6px; background: rgba(230,126,34,0.12); border-left: 5px solid #e67e22; border-radius: 4px; color: #d35400; font-weight: bold; }
+    .badge-yellow { padding: 6px; background: rgba(241,196,15,0.12); border-left: 5px solid #f1c40f; border-radius: 4px; color: #b7950b; font-size: 0.85rem; font-weight: bold; }
+    .badge-orange { padding: 6px; background: rgba(230,126,34,0.12); border-left: 5px solid #e67e22; border-radius: 4px; color: #d35400; font-size: 0.85rem; font-weight: bold; }
     .badge-red { padding: 6px; background: rgba(231,76,60,0.12); border-left: 5px solid #e74c3c; border-radius: 4px; color: #c0392b; font-size: 0.85rem; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
@@ -38,8 +38,6 @@ st.markdown("""
 def cargar_datos_desde_sheets():
     url_maestra = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
     df_sheets = pd.read_csv(url_maestra)
-    
-    # Estandarizamos los encabezados quitando espacios y forzando mayúsculas
     df_sheets.columns = df_sheets.columns.str.strip().str.upper()
     return df_sheets
 
@@ -49,12 +47,11 @@ except Exception as e:
     st.error(f"Error crítico al conectar con Google Sheets: {e}")
     st.stop()
 
-# --- DETECTOR ESTRICTO DE COLUMNAS PARA EVITAR CRUCES ---
-col_est = 'ESTADO' if 'ESTADO' in df.columns else df.columns[0]
-col_suc = 'SUCURSAL' if 'SUCURSAL' in df.columns else df.columns[1]
-col_tel = 'LINEA TELMEX' if 'LINEA TELMEX' in df.columns else df.columns[2]
+# --- DETECTOR ESTRICTO DE COLUMNAS REALES ---
+col_est = 'ESTADO' if 'ESTADO' in df.columns else df.columns
+col_suc = 'SUCURSAL' if 'SUCURSAL' in df.columns else df.columns
+col_tel = 'LINEA TELMEX' if 'LINEA TELMEX' in df.columns else df.columns
 
-# Buscador de la columna No. REPORTE evitando confundirse con la Fecha
 col_rep = None
 for col in df.columns:
     if "NO. REPORTE" in col or "NO REPORTE" in col or col == "REPORTE":
@@ -66,7 +63,6 @@ if not col_rep:
             col_rep = col
             break
 
-# Buscador de la columna Fecha de Reporte
 col_fec = None
 for col in df.columns:
     if "FECHA" in col or "FEC" in col:
@@ -85,14 +81,33 @@ def tiene_reporte_activo(valor_reporte):
         return False
     return True
 
-# --- INICIALIZAR CANDADO DE MEMORIA PERMANENTE ---
+# --- LISTA DE ESTADOS PARA EL BUSCADOR ---
 lista_estados = sorted(df[col_est].dropna().unique())
 
-# Si es la primera vez que se abre la app, ponemos por defecto el primer estado de la lista
-if "candado_estado" not in st.session_state:
-    st.session_state["candado_estado"] = lista_estados[0]
+# Inicializar la variable de estado seleccionada en el estado de memoria interna
+if "estado_seleccionado_key" not in st.session_state:
+    st.session_state["estado_seleccionado_key"] = lista_estados[0] if lista_estados else ""
 
-# --- FILA SUPERIOR: MURO DE ALERTAS RÁPIDAS (BOTONES) ---
+# --- FILA 1: FILTRO POR ESTADO (AHORA ARRIBA) ---
+try:
+    default_index = lista_estados.index(st.session_state["estado_seleccionado_key"])
+except ValueError:
+    default_index = 0
+    
+col_buscador, _ = st.columns([1, 2]) # Hace el buscador visualmente pequeño (ocupa 1/3 del ancho)
+with col_buscador:
+    estado_actual = st.selectbox(
+        "🔍 Filtrar por Estado:",
+        options=lista_estados,
+        index=default_index,
+        key="selector_estado_maestro"
+    )
+    # Guardamos los cambios manuales en el candado de memoria
+    st.session_state["estado_seleccionado_key"] = estado_actual
+
+st.markdown("---")
+
+# --- FILA 2: MURO DE ALERTAS RÁPIDAS (AHORA ABAJO DEL FILTRO) ---
 st.markdown("### ⚠️ Sucursales con Reporte Activo (Clic para acceso rápido)")
 
 df_con_reporte = df[df[col_rep].apply(tiene_reporte_activo)]
@@ -102,40 +117,22 @@ if not df_con_reporte.empty:
     for i, (_, fila_rep) in enumerate(df_con_reporte.iterrows()):
         col_idx = i % 7
         with columnas_botones[col_idx]:
-            # Guardamos de forma limpia los valores en variables
             boton_sucursal = str(fila_rep[col_suc])
             boton_estado = str(fila_rep[col_est])
             
+            # Al hacer clic, forzamos directamente la actualización y reiniciamos
             if st.button(f"🚨 {boton_sucursal}", key=f"btn_{boton_sucursal}_{i}", use_container_width=True):
-                # AL DAR CLIC: Forzamos al candado de memoria a tomar el estado de esta sucursal
-                st.session_state["candado_estado"] = boton_estado
+                st.session_state["estado_seleccionado_key"] = boton_estado
                 st.rerun()
 else:
     st.success("🟢 No se registran reportes activos en ninguna sucursal de la República Mexicana.")
 
 st.markdown("---")
 
-# --- FILA MEDIA: BUSCADOR COMPACTO MODIFICADO ---
-try:
-    default_index = lista_estados.index(st.session_state["candado_estado"])
-except ValueError:
-    default_index = 0
-    
-col_buscador, _ = st.columns([1, 2]) # Hace el buscador visualmente más pequeño en la pantalla
-with col_buscador:
-    # El selector lee y escribe directamente sobre el candado de memoria permanente
-    estado_actual = st.selectbox(
-        "🔍 Filtrar por Estado:",
-        options=lista_estados,
-        index=default_index,
-        key="selector_estado_maestro"
-    )
-    st.session_state["candado_estado"] = estado_actual
+# --- FILA 3: CUADRÍCULA DE SUCURSALES (3 COLUMNAS MÁXIMO) ---
+df_resultado = df[df[col_est] == st.session_state["estado_seleccionado_key"]]
 
-# --- FILA INFERIOR: CUADRÍCULA DE SUCURSALES (3 COLUMNAS MÁXIMO) ---
-df_resultado = df[df[col_est] == st.session_state["candado_estado"]]
-
-st.markdown(f"#### 📍 Monitoreo: {st.session_state['candado_estado']} ({len(df_resultado)} Sucursales)")
+st.markdown(f"#### 📍 Monitoreo: {st.session_state['estado_seleccionado_key']} ({len(df_resultado)} Sucursales)")
 
 columnas_grilla = st.columns(3)
 
@@ -156,7 +153,7 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
                 if t.strip():
                     st.markdown(f'<div class="tel-item">• {t.strip()}</div>', unsafe_allow_html=True)
         
-        # 2. Despliegue de Estatus de Incidencias y Semáforos
+        # 2. Despliegue de Estatus de Incidencias e Información del Reporte
         rep_raw = str(fila[col_rep]).strip()
         
         if not tiene_reporte_activo(rep_raw):
@@ -175,16 +172,15 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
                     else:
                         dias_atraso = (datetime.now() - fecha_dt).days
                         
-                        # Clasificación de alertas compactas por rangos de días en la tarjeta
+                        # Clasificación de alertas compactas mostrando correctamente el número del reporte activo
                         if dias_atraso <= 3:
-                            st.markdown(f'<div class="badge-yellow">🟡 Alerta Inicial ({dias_atraso} días)<br>No. Reporte: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="badge-yellow">🟡 Alerta Inicial ({dias_atraso} días)<br>No. Reporte: {rep_actual}<br>Fecha: {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
                         elif dias_atraso <= 5:
-                            st.markdown(f'<div class="badge-orange">🟠 Alerta Intermedia ({dias_atraso} días)<br>No. Reporte: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="badge-orange">🟠 Alerta Intermedia ({dias_atraso} días)<br>No. Reporte: {rep_actual}<br>Fecha: {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
                         else:
-                            st.markdown(f'<div class="badge-red">🔴 Alerta Crítica ({dias_atraso} días)<br>No. Reporte: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="badge-red">🔴 Alerta Crítica ({dias_atraso} días)<br>No. Reporte: {rep_actual}<br>Fecha: {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
                 except:
                     st.markdown(f'<div class="badge-yellow">🟡 Reporte: {rep_actual}<br>Error al calcular fecha</div>', unsafe_allow_html=True)
                     
         st.markdown('</div>', unsafe_allow_html=True)
-
 

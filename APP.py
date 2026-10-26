@@ -43,7 +43,7 @@ st.markdown("""
     }
     
     .suc-title { font-size: 1.0rem !important; font-weight: bold; color: #1e293b; }
-    .tel-container { margin-top: 6px; display: block !important; min-height: 20px; }
+    .tel-container { margin-top: 6px; display: block !important; }
     .tel-item { font-size: 0.85rem !important; margin: 3px 0 !important; color: #334155; line-height: 1.2 !important; font-weight: 500; }
     
     /* Semáforos de alertas ultra-pequeños adaptados para modo horizontal */
@@ -75,9 +75,9 @@ except Exception as e:
     st.stop()
 
 # --- RECONOCEDOR DE COLUMNAS MEJORADO Y SEGURO ---
-col_est = next((c for c in df.columns if 'ESTADO' in c or 'EDO' in c), df.columns[0])
-col_suc = next((c for c in df.columns if 'SUCURSAL' in c or 'SUC' in c or 'SITIO' in c), df.columns[0])
-col_tel = next((c for c in df.columns if 'TELMEX' in c or 'TEL' in c or 'LINEA' in c), df.columns[0])
+col_est = next((c for c in df.columns if 'ESTADO' in c or 'EDO' in c), df.columns)
+col_suc = next((c for c in df.columns if 'SUCURSAL' in c or 'SUC' in c or 'SITIO' in c), df.columns)
+col_tel = next((c for c in df.columns if 'TELMEX' in c or 'TEL' in c or 'LINEA' in c), df.columns)
 
 col_rep = None
 for col in df.columns:
@@ -114,7 +114,7 @@ lista_estados = sorted(df[col_est].dropna().unique())
 
 # --- VARIABLES DE CONTROL EN SESSION STATE ---
 if "selector_estado_maestro" not in st.session_state:
-    st.session_state["selector_estado_maestro"] = lista_estados[0] if lista_estados else ""
+    st.session_state["selector_estado_maestro"] = lista_estados if lista_estados else ""
 
 if "sucursal_filtrada" not in st.session_state:
     st.session_state["sucursal_filtrada"] = None
@@ -130,7 +130,7 @@ def limpiar_filtro_sucursal_callback():
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
 
-col_buscador, col_espacio_libre = st.columns([1, 2])
+col_buscador, col_espacio_libre = st.columns()
 with col_buscador:
     idx_actual = 0
     if st.session_state["selector_estado_maestro"] in lista_estados:
@@ -172,10 +172,8 @@ else:
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # --- FILA 3: CUADRÍCULA DE TARJETAS ---
-# Filtrado por el estado actual
 df_resultado = df[df[col_est] == st.session_state["selector_estado_maestro"]]
 
-# Si viene de un botón de acceso rápido, filtramos por coincidencia exacta de texto limpio
 if st.session_state["sucursal_filtrada"] is not None:
     df_resultado = df_resultado[df_resultado[col_suc] == st.session_state["sucursal_filtrada"]]
     texto_monitoreo = f"#### 📍 Monitoreo Exclusivo Alerta: {st.session_state['sucursal_filtrada']} ({st.session_state['selector_estado_maestro']})"
@@ -217,14 +215,13 @@ if not df_resultado.empty:
             else:
                 badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
 
-            # Renderizado HTML Explícito de la tarjeta
-            st.markdown(f"""
-            <div class="glass-card">
-                <div class="card-header">
-                    <span class="suc-title">🏢 {fila[col_suc]}</span>
-                    {badge_html}
-                </div>
-                <div class="tel-container">
-            """, unsafe_allow_html=True)
-            
+            # --- CORRECCIÓN: CONSTRUCCIÓN DE LA LISTA DE TELÉFONOS EN UNA SOLA CADENA HTML ---
+            telefonos_html = ""
+            tel_raw = str(fila[col_tel]).strip()
+            if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
+                telefonos_html = '<div class="tel-item"><i>Sin líneas registradas</i></div>'
+            else:
+                # Separar por salto de línea o diagonal según venga del origen de datos
+                lista_tels = tel_raw.replace("\r", "").replace(" / ", "\n").split("\n")
+
 

@@ -7,10 +7,10 @@ from datetime import datetime
 # Configuración inicial del Tablero de Control Ejecutivo con diseño ancho
 st.set_page_config(page_title="Monitoreo de Sucursales", layout="wide")
 
-# --- ESTILOS CSS AVANZADOS: GLASSMORPHISM Y ANIMACIONES ---
+# --- ESTILOS CSS AVANZADOS: GLASSMORPHISM Y TARJETAS ---
 st.markdown("""
 <style>
-    /* Efecto Cristal Traslúcido con Blur (Glassmorphism) */
+    /* Efecto Cristal Traslúcido con Blur (Glassmorphism) para el contenedor principal */
     .glass-panel {
         background: rgba(255, 255, 255, 0.85) !important;
         backdrop-filter: blur(12px);
@@ -21,6 +21,16 @@ st.markdown("""
         box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
         margin-top: 20px;
         margin-bottom: 20px;
+    }
+    
+    /* Diseño de tarjetas individuales por sucursal */
+    .sucursal-card {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
     }
     
     /* Animación de entrada suave (Fade In) */
@@ -34,14 +44,14 @@ st.markdown("""
     }
     
     /* Estilos de los bloques de alerta en el panel */
-    .st-normal { padding: 12px; background: rgba(46,204,113,0.15); border-left: 5px solid #2ecc71; border-radius: 4px; color: #27ae60; font-weight: bold; }
-    .st-yellow { padding: 12px; background: rgba(241,196,15,0.15); border-left: 5px solid #f1c40f; border-radius: 4px; color: #b7950b; font-weight: bold; }
-    .st-orange { padding: 12px; background: rgba(230,126,34,0.15); border-left: 5px solid #e67e22; border-radius: 4px; color: #d35400; font-weight: bold; }
-    .st-red { padding: 12px; background: rgba(231,76,60,0.15); border-left: 5px solid #e74c3c; border-radius: 4px; color: #c0392b; font-weight: bold; }
+    .st-normal { padding: 12px; background: rgba(46,204,113,0.12); border-left: 5px solid #2ecc71; border-radius: 4px; color: #27ae60; font-weight: bold; margin-top: 10px; }
+    .st-yellow { padding: 12px; background: rgba(241,196,15,0.12); border-left: 5px solid #f1c40f; border-radius: 4px; color: #b7950b; font-weight: bold; margin-top: 10px; }
+    .st-orange { padding: 12px; background: rgba(230,126,34,0.12); border-left: 5px solid #e67e22; border-radius: 4px; color: #d35400; font-weight: bold; margin-top: 10px; }
+    .st-red { padding: 12px; background: rgba(231,76,60,0.12); border-left: 5px solid #e74c3c; border-radius: 4px; color: #c0392b; font-weight: bold; margin-top: 10px; }
 </style>
 """, unsafe_allow_html=True)
 
-# 1. BASE DE DATOS ESTRUCTURADA DE MANERA SEGURA (CERO RIESGOS DE COMPILACIÓN)
+# 1. BASE DE DATOS ESTRUCTURADA DE MANERA SEGURA
 @st.cache_data
 def obtener_datos_sucursales():
     estados = [
@@ -100,10 +110,12 @@ def obtener_datos_sucursales():
     df_result["No. REPORTE"] = "0"
     df_result["FECHA DE REPORTE"] = ""
     
-    # Casos de prueba simulados
-    df_result.loc[df_result["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]
+    # Casos de prueba simulados asignados
+    df_result.loc[df_result["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-9901", "2026-10-24"]
     df_result.loc[df_result["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]
-    df_result.loc[df_result["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-14"]
+    df_result.loc[df_result["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]
+    df_result.loc[df_result["SUCURSAL"] == "MEXICALI", ["No. REPORTE", "FECHA DE REPORTE"]] = ["0", ""]
+    df_result.loc[df_result["SUCURSAL"] == "SALTILLO", ["No. REPORTE", "FECHA DE REPORTE"]] = ["sin reporte", ""]
     return df_result
 
 df = obtener_datos_sucursales()
@@ -127,15 +139,15 @@ def calcular_color(valor_reporte, fecha_str):
         fecha_rep = pd.to_datetime(fecha_str)
         dias = (datetime.now() - fecha_rep).days
         if dias <= 3:
-            return "#FFD700"
+            return "#FFD700"  # Amarillo
         elif dias <= 5:
-            return "#FF8C00"
+            return "#FF8C00"  # Naranja
         else:
-            return "#FF0000"
+            return "#FF0000"  # Rojo
     except:
         return "#FFD700"
 
-# --- FILA 1: MAPA INTERACTIVO COMPLETO (OCUPA TODO EL ANCHO DE LA PÁGINA) ---
+# --- FILA 1: MAPA INTERACTIVO COMPLETO (PANTALLA ANCHA) ---
 limites_mexico = [[14.0, -118.0], [33.0, -86.0]]
 m = folium.Map(
     location=[23.6345, -102.5528], 
@@ -153,23 +165,3 @@ for idx, fila_mapa in df.iterrows():
     fec = fila_mapa['FECHA DE REPORTE']
     
     color = calcular_color(rep, fec)
-    popup_html = f"<b>{fila_mapa['SUCURSAL']}</b><br>{fila_mapa['ESTADO']}"
-    if tiene_reporte_activo(rep):
-        popup_html += f"<br><span style='color:darkorange;'>Reporte: {rep}</span>"
-        
-    folium.CircleMarker(
-        location=[lat, lon],
-        radius=7,
-        popup=folium.Popup(popup_html, max_width=200),
-        color=color,
-        fill=True,
-        fill_color=color,
-        fill_opacity=0.7
-    ).add_to(m)
-
-# Desplegar el mapa de Folium de manera directa a pantalla completa
-st_folium(m, width=1400, height=550)
-
-st.markdown("---")
-
-# --- FILA 2: PANEL DE CONTROL TRASLÚCIDO EN LA PARTE INFERIOR ---

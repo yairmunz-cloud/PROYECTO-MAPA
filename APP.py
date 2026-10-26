@@ -164,7 +164,7 @@ def limpiar_filtro_sucursal_callback():
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
 
-col_buscador, col_espacio_libre = st.columns()
+col_buscador, col_espacio_libre = st.columns([1, 2])
 with col_buscador:
     idx_actual = 0
     if st.session_state["selector_estado_maestro"] in lista_estados:
@@ -229,25 +229,24 @@ if not df_resultado.empty:
                 if not tiene_reporte_activo(rep_raw):
                     badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
                 else:
-                    # Usamos la nueva función helper segura para limpiar el ID del reporte
                     rep_actual = limpiar_reporte_id(rep_raw)
                     fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
                     
                     if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
                         badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Fecha pend.</span>'
                     else:
-                        try:
-                            fecha_dt = pd.to_datetime(fecha_raw, errors='coerce', dayfirst=True)
-                            if pd.isna(fecha_dt):
-                                badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Formato inválido</span>'
+                        # Solución limpia sin bloques try-except anidados peligrosos
+                        fecha_dt = pd.to_datetime(fecha_raw, errors='coerce', dayfirst=True)
+                        if pd.isna(fecha_dt):
+                            badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Formato inválido</span>'
+                        else:
+                            dias_atraso = (datetime.now() - fecha_dt).days
+                            if dias_atraso <= 3:
+                                badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | {dias_atraso} días</span>'
+                            elif dias_atraso <= 7:
+                                badge_html = f'<span class="badge-inline badge-orange">🟠 Rep: {rep_actual} | {dias_atraso} días</span>'
                             else:
-                                dias_atraso = (datetime.now() - fecha_dt).days
-                                
-                                if dias_atraso <= 3:
-                                    badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | {dias_atraso} días</span>'
-                                elif dias_atraso <= 7:
-                                    badge_html = f'<span class="badge-inline badge-orange">🟠 Rep: {rep_actual} | {dias_atraso} días</span>'
-                                else:
-                                    badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
-                        except Exception:
+                                badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
+            else:
+                badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
 

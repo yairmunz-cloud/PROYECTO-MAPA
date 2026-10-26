@@ -41,7 +41,7 @@ st.markdown("""
         padding-bottom: 4px;
     }
     
-    .suc-title { font-size: 0.95rem !important; font-weight: bold; color: #1e293b; white-space: nowrap; }
+    .suc-title { font-size: 0.95rem !important; font-weight: bold; color: #1e293b; }
     .tel-container { margin-top: 4px; }
     .tel-item { font-size: 0.8rem !important; margin: 1px 0 !important; color: #475569; line-height: 1.1 !important; }
     
@@ -132,7 +132,7 @@ def tiene_reporte_activo(valor_reporte):
     if pd.isna(valor_reporte):
         return False
     val = str(valor_reporte).strip().lower()
-    if val in ["", "0", "sin reporte", "none", "nan", "vacio"]:
+    if val in ["", "0", "0.0", "sin reporte", "none", "nan", "vacio"]:
         return False
     return True
 
@@ -141,7 +141,7 @@ lista_estados = sorted(df[col_est].dropna().unique())
 
 # --- VARIABLES DE CONTROL EN SESSION STATE ---
 if "selector_estado_maestro" not in st.session_state:
-    st.session_state["selector_estado_maestro"] = lista_estados if lista_estados else ""
+    st.session_state["selector_estado_maestro"] = lista_estados[0] if lista_estados else ""
 
 if "sucursal_filtrada" not in st.session_state:
     st.session_state["sucursal_filtrada"] = None
@@ -183,8 +183,8 @@ if not df_con_reporte.empty:
     for i, (_, fila_rep) in enumerate(df_con_reporte.iterrows()):
         col_idx = i % 8
         with columnas_botones[col_idx]:
-            btn_suc = str(fila_rep[col_suc])
-            btn_est = str(fila_rep[col_est])
+            btn_suc = str(fila_rep[col_suc]).strip()
+            btn_est = str(fila_rep[col_est]).strip()
             
             st.button(
                 f"🚨 {btn_suc}", 
@@ -198,55 +198,50 @@ else:
 
 st.markdown("<hr>", unsafe_allow_html=True)
 
-# --- FILA 3: CUADRÍCULA DE TARJETAS EN 3 COLUMNAS MÁXIMO ---
+# --- FILA 3: CUADRÍCULA DE TARJETAS ---
+# Filtrar por el estado activo en la memoria
 df_resultado = df[df[col_est] == st.session_state["selector_estado_maestro"]]
 
+# Si se presionó un botón de alerta rápida, cerramos la vista sobre esa sucursal en específico
 if st.session_state["sucursal_filtrada"] is not None:
     df_resultado = df_resultado[df_resultado[col_suc] == st.session_state["sucursal_filtrada"]]
     texto_monitoreo = f"#### 📍 Monitoreo Exclusivo Alerta: {st.session_state['sucursal_filtrada']} ({st.session_state['selector_estado_maestro']})"
-    
-    if st.button("⬅️ Mostrar todas las sucursales de este Estado", on_click=limpiar_filtro_sucursal_callback):
-        st.rerun()
 else:
     texto_monitoreo = f"#### 📍 Monitoreo: {st.session_state['selector_estado_maestro']} ({len(df_resultado)} Sucursales)"
 
 st.markdown(texto_monitoreo, unsafe_allow_html=True)
 
-columnas_grilla = st.columns(3)
-
-for idx, (_, fila) in enumerate(df_resultado.iterrows()):
-    col_destino = idx % 3
+if not df_resultado.empty:
+    columnas_grilla = st.columns(3)
     
-    with columnas_grilla[col_destino]:
-        badge_html = ""
-        if col_rep:
-            rep_raw = str(fila[col_rep]).strip()
-            if not tiene_reporte_activo(rep_raw):
-                badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
-            else:
-                # CORRECCIÓN: Estructura limpia y segura para remover el decimal .0
-                rep_actual = rep_raw.split('.')[0] if '.' in rep_raw else rep_raw
-                fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
-                
-                if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
-                    badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Fecha pend.</span>'
+    for idx, (_, fila) in enumerate(df_resultado.iterrows()):
+        col_destino = idx % 3
+        
+        with columnas_grilla[col_destino]:
+            badge_html = ""
+            if col_rep:
+                rep_raw = str(fila[col_rep]).strip()
+                if not tiene_reporte_activo(rep_raw):
+                    badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
                 else:
-                    try:
-                        fecha_dt = pd.to_datetime(fecha_raw, errors='coerce', dayfirst=True)
-                        if pd.isna(fecha_dt):
-                            badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Formato inválido</span>'
-                        else:
-                            dias_atraso = (datetime.now() - fecha_dt).days
-                            
-                            if dias_atraso <= 3:
-                                badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | {dias_atraso} días</span>'
-                            elif dias_atraso <= 7:
-                                badge_html = f'<span class="badge-inline badge-orange">🟠 Rep: {rep_actual} | {dias_atraso} días</span>'
+                    # Corrección: Limpieza segura del flotante '.0' devolviendo texto plano
+                    rep_actual = rep_raw.split('.')[0] if '.' in rep_raw else rep_raw
+                    fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
+                    
+                    if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
+                        badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Fecha pend.</span>'
+                    else:
+                        try:
+                            fecha_dt = pd.to_datetime(fecha_raw, errors='coerce', dayfirst=True)
+                            if pd.isna(fecha_dt):
+                                badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Formato inválido</span>'
                             else:
-                                badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
-                    except Exception:
-                        badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Error fecha</span>'
-        else:
-            badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
-
-
+                                dias_atraso = (datetime.now() - fecha_dt).days
+                                
+                                if dias_atraso <= 3:
+                                    badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | {dias_atraso} días</span>'
+                                elif dias_atraso <= 7:
+                                    badge_html = f'<span class="badge-inline badge-orange">🟠 Rep: {rep_actual} | {dias_atraso} días</span>'
+                                else:
+                                    badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
+                        except Exception:

@@ -96,9 +96,9 @@ if "selector_estado_maestro" not in st.session_state:
 
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 col_buscador, _ = st.columns() # Reducir ancho del input a 1/3
-st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
 with col_buscador:
     # Vinculado directamente a st.session_state["selector_estado_maestro"] para obligar el cambio
+    st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
     estado_actual = st.selectbox(
         "🔍 Filtrar por Estado:",
         options=lista_estados,

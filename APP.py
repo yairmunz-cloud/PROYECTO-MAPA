@@ -29,7 +29,7 @@ st.markdown("""
         margin-bottom: 4px;
     }
     
-    /* CORRECCIÓN: Contenedor en línea para alinear Nombre y Estatus */
+    /* Contenedor en línea para alinear Nombre y Estatus */
     .card-header {
         display: flex;
         align-items: center;
@@ -156,7 +156,9 @@ def limpiar_filtro_sucursal_callback():
 
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
-col_buscador, col_espacio_libre = st.columns()
+
+# CORRECCIÓN AQUÍ: Agregamos las proporciones numéricas explícitas dentro de st.columns
+col_buscador, col_espacio_libre = st.columns([1, 2])
 with col_buscador:
     idx_actual = 0
     if st.session_state["selector_estado_maestro"] in lista_estados:
@@ -217,14 +219,12 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
     col_destino = idx % 3
     
     with columnas_grilla[col_destino]:
-        # Evaluamos el estatus ANTES de renderizar la tarjeta para colocarlo en la cabecera
         badge_html = ""
         if col_rep:
             rep_raw = str(fila[col_rep]).strip()
             if not tiene_reporte_activo(rep_raw):
                 badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
             else:
-                # Quitar el ".0" si se parseó el reporte como flotante por error
                 rep_actual = rep_raw.split('.')[0] if '.' in rep_raw else rep_raw
                 fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
                 
@@ -246,3 +246,6 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
                                 badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
                     except Exception:
                         badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Error fecha</span>'
+        else:
+            badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
+

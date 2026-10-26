@@ -38,7 +38,7 @@ def obtener_datos_sucursales():
         {"ESTADO": "CDMX", "SUCURSAL": "CENTRO HISTORICO", "TEL": "555-521-8224"},
         {"ESTADO": "CDMX", "SUCURSAL": "CORDOBA", "TEL": "551-102-2050 / 555-080-0095"},
         {"ESTADO": "CDMX", "SUCURSAL": "LINDAVISTA", "TEL": "Sin Teléfono Registrado"},
-        {"ESTADO": "CDMX", "SUCURSAL": "LA VIGA", "TEL": "Sin Teléfono Registrado"},
+        {"ESTADO": "CDMX", "LA VIGA", "TEL": "Sin Teléfono Registrado"},
         {"ESTADO": "CDMX", "SUCURSAL": "POLANCO", "TEL": "Sin Teléfono Registrado"},
         {"ESTADO": "CDMX", "SUCURSAL": "COAPA", "TEL": "555-920-3849 / 555-920-3829 / 555-528-5487"},
         {"ESTADO": "CDMX", "SUCURSAL": "AEROPUERTO", "TEL": "Sin Teléfono Registrado"},
@@ -85,14 +85,14 @@ def obtener_datos_sucursales():
     ]
     df = pd.DataFrame(datos)
     
-    # DATOS DE PRUEBA SIMULADOS (Esto cambiará cuando vincules tu Google Sheets real)
+    # DATOS DE PRUEBA SIMULADOS
     df["No. REPORTE"] = None
     df["FECHA DE REPORTE"] = None
     
     # Casos simulados:
-    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-9901", "2026-10-24"] # 2 días (Amarillo)
-    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-4402", "2026-10-20"]        # 6 días (Naranja)
-    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-1105", "2026-10-06"]     # 20 días (Rojo Crítico)
+    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-9901", "2026-10-24"] 
+    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-4402", "2026-10-20"]        
+    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-1105", "2026-10-06"]     
     
     return df
 
@@ -161,8 +161,14 @@ st.markdown("---")
 # --- SECCIÓN DEL BUSCADOR DESPLEGABLE ---
 st.subheader("🔍 Buscador de Sucursales")
 
-# Creamos las opciones del desplegable uniendo Sucursal + Estado para que no haya confusiones
-fila_seleccionada = df[df['OPCION_BUSQUEDA'] == sucursal_seleccionada].iloc
-fila_seleccionada = df[df['OPCION_BUSQUEDA'] == sucursal_seleccionada].iloc[0]
+# Creamos las opciones del desplegable uniendo Sucursal + Estado
+df['OPCION_BUSQUEDA'] = df['SUCURSAL'] + " (" + df['ESTADO'] + ")"
+opciones = sorted(df['OPCION_BUSQUEDA'].unique())
 
 sucursal_seleccionada = st.selectbox(
+    "Selecciona una sucursal para consultar sus líneas y reportes activos:",
+    options=opciones,
+    index=0
+)
+
+# Filtrar los datos de la sucursal elegida empleando .iloc[0] corregido

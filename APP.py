@@ -5,17 +5,17 @@ from streamlit_folium import st_folium
 from datetime import datetime
 from geopy.geocoders import Nominatim
 
-# Configuración de pantalla completa para el Dashboard corporativo
+# Configuración inicial del Tablero de Control Ejecutivo
 st.set_page_config(page_title="Monitoreo de Sucursales", layout="wide")
 
 # --- ESTILOS CSS AVANZADOS: GLASSMORPHISM Y ANIMACIONES ---
-# Este bloque inyecta el diseño traslúcido, el efecto Blur de fondo y la animación de transición
 st.markdown("""
 <style>
-    /* Estilo del contenedor del Panel de Control (Efecto Cristal Traslúcido con Blur) */
+    /* Efecto Cristal Traslúcido con Blur (Glassmorphism) */
     .glass-panel {
-        background: rgba(255, 255, 255, 0.65) !important;
-        backdrop-filter: blur(12px) -webkit-backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.75) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border-radius: 16px;
         padding: 24px;
         border: 1px solid rgba(255, 255, 255, 0.4);
@@ -23,43 +23,25 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
-    /* Animación de desvanecimiento y despliegue suave para los detalles */
+    /* Animación de entrada suave (Fade In) */
     .animated-fade-in {
-        animation: fadeInAction 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: fadeInAction 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
     @keyframes fadeInAction {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     
-    /* Estilización de tarjetas internas de estatus */
-    .status-box-normal {
-        padding: 12px; background-color: rgba(46, 204, 113, 0.15); 
-        border-left: 5px solid #2ecc71; border-radius: 4px; color: #27ae60; font-weight: bold;
-    }
-    .status-box-yellow {
-        padding: 12px; background-color: rgba(241, 196, 15, 0.15); 
-        border-left: 5px solid #f1c40f; border-radius: 4px; color: #d4ac0d; font-weight: bold;
-    }
-    .status-box-orange {
-        padding: 12px; background-color: rgba(230, 126, 34, 0.15); 
-        border-left: 5px solid #e67e22; border-radius: 4px; color: #d35400; font-weight: bold;
-    }
-    .status-box-red {
-        padding: 12px; background-color: rgba(231, 76, 60, 0.15); 
-        border-left: 5px solid #e74c3c; border-radius: 4px; color: #c0392b; font-weight: bold;
-    }
+    /* Estilos de los bloques de alerta en el panel */
+    .st-normal { padding: 12px; background: rgba(46,204,113,0.15); border-left: 5px solid #2ecc71; border-radius: 4px; color: #27ae60; font-weight: bold; }
+    .st-yellow { padding: 12px; background: rgba(241,196,15,0.15); border-left: 5px solid #f1c40f; border-radius: 4px; color: #b7950b; font-weight: bold; }
+    .st-orange { padding: 12px; background: rgba(230,126,34,0.15); border-left: 5px solid #e67e22; border-radius: 4px; color: #d35400; font-weight: bold; }
+    .st-red { padding: 12px; background: rgba(231,76,60,0.15); border-left: 5px solid #e74c3c; border-radius: 4px; color: #c0392b; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
-# 1. BASE DE DATOS MAESTRA DE SUCURSALES
+# 1. BASE DE DATOS MAESTRA DE SUCURSALES (CON ESTADOS RELLENADOS)
 @st.cache_data
 def obtener_datos_sucursales():
     datos = [
@@ -132,26 +114,38 @@ def obtener_datos_sucursales():
         {"ESTADO": "ZACATECAS", "SUCURSAL": "ZACATECAS", "TEL": "492-925-3987 / 492-922-1236"}
     ]
     df = pd.DataFrame(datos)
-    
     df["No. REPORTE"] = None
     df["FECHA DE REPORTE"] = None
-    
-    # Casos simulados de prueba:
-    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]       # Amarillo (2 días)
-    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]       # Naranja (4 días)
-    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]    # Rojo (11 días)
+    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]
+    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]
+    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]
     df.loc[df["SUCURSAL"] == "MEXICALI", ["No. REPORTE", "FECHA DE REPORTE"]] = ["0", None]
     df.loc[df["SUCURSAL"] == "SALTILLO", ["No. REPORTE", "FECHA DE REPORTE"]] = ["sin reporte", None]
-    
     return df
 
 df = obtener_datos_sucursales()
 
-# 2. CACHÉ DE COORDENADAS PARA EVITAR TIEMPOS DE ESPERA
+# 2. CACHÉ DE COORDENADAS COMPLETAMENTE EN LÍNEA (CERO RIESGOS DE INDENTACIÓN)
 @st.cache_data
 def buscar_coordenadas(sucursal, estado):
-    geolocator = Nominatim(user_agent="mexico_final_monitor_v7")
+    geolocator = Nominatim(user_agent="mexico_final_monitor_v9")
     try:
         direccion = f"{sucursal}, {estado}, Mexico"
         location = geolocator.geocode(direccion, timeout=10)
         if location:
+            return location.latitude, location.longitude
+    except:
+        pass
+    return None, None
+
+# 3. VERIFICADOR LÓGICO DE REPORTES ACTIVOS
+def tiene_reporte_activo(valor_reporte):
+    if pd.isna(valor_reporte):
+        return False
+    val = str(valor_reporte).strip().lower()
+    if val in ["", "0", "sin reporte", "none", "nan", "vacio"]:
+        return False
+    return True
+
+# 4. CÁLCULO DE COLORES POR RANGOS ESTRICTOS
+def calcular_color(valor_reporte, fecha_str):

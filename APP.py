@@ -4,9 +4,8 @@ import folium
 from streamlit_folium import st_folium
 from datetime import datetime
 from geopy.geocoders import Nominatim
-from geopy.extra.rate_limiter import RateLimiter
 
-# Configuración de pantalla ultra-ancha para diseño de tablero de control
+# Configuración de pantalla para diseño de tablero ejecutivo
 st.set_page_config(page_title="Monitoreo de Sucursales", layout="wide")
 
 # 1. BASE DE DATOS MAESTRA DE SUCURSALES (CON ESTADOS RELLENADOS)
@@ -87,10 +86,12 @@ def obtener_datos_sucursales():
     df["No. REPORTE"] = None
     df["FECHA DE REPORTE"] = None
     
-    # Casos simulados:
-    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-9901", "2026-10-24"] 
-    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-4402", "2026-10-20"]        
-    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-1105", "2026-10-06"]     
+    # Casos simulados de prueba para validar los rangos:
+    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]       # Amarillo (2 días)
+    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]       # Naranja (4 días)
+    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]    # Rojo (11 días)
+    df.loc[df["SUCURSAL"] == "MEXICALI", ["No. REPORTE", "FECHA DE REPORTE"]] = ["0", None]                    # Sin reporte
+    df.loc[df["SUCURSAL"] == "SALTILLO", ["No. REPORTE", "FECHA DE REPORTE"]] = ["sin reporte", None]          # Sin reporte
     
     return df
 
@@ -109,28 +110,46 @@ def buscar_coordenadas(sucursal, estado):
         pass
     return None, None
 
-# 3. CÁLCULO DE DEGRADADO DE COLOR
-def calcular_color(fecha_str):
-    if pd.isna(fecha_str) or not fecha_str:
+# 3. COMPROBADOR LOGICO DE REPORTES ACTIVOS
+def tiene_reporte_activo(valor_reporte):
+    if pd.isna(valor_reporte):
+        return False
+    val = str(valor_reporte).strip().lower()
+    # Si la celda está vacía, es 0, o dice 'sin reporte', se asume que NO hay reporte
+    if val in ["", "0", "sin reporte", "none", "nan", "vacio"]:
+        return False
+    return True
+
+# 4. NUEVO CÁLCULO DE COLORES POR DÍAS (AMARILLO, NARANJA, ROJO)
+def calcular_color(valor_reporte, fecha_str):
+    if not tiene_reporte_activo(valor_reporte):
         return "#1E90FF"  # Azul (Operación Normal)
+        
+    if pd.isna(fecha_str) or not fecha_str:
+        return "#FFD700"  # Amarillo por defecto si hay reporte pero no fecha
+        
     try:
         fecha_rep = pd.to_datetime(fecha_str)
         hoy = datetime.now()
         dias = (hoy - fecha_rep).days
-        if dias <= 3:
-            return "#FFD700"  # Amarillo limpio
-        factor = min((dias - 3) / 12, 1.0)
-        g = int(215 * (1 - factor))
-        return f"#ff{g:02x}00"
+        
+        if dias >= 1 and dias <= 3:
+            return "#FFD700"  # Amarillo estricto (1-3 días)
+        elif dias > 3 and dias <= 5:
+            return "#FF8C00"  # Naranja estricto (3-5 días)
+        elif dias >= 6:
+            return "#FF0000"  # Rojo estricto (6 días o más)
+        else:
+            return "#FFD700"  # Amarillo de respaldo para el día 0
     except:
         return "#FFD700"
 
-# --- DISEÑO DE LA BARRA LATERAL IZQUIERDA (CONTROLES A UN LADO DEL MAPA) ---
+# --- DISEÑO DE LA BARRA LATERAL IZQUIERDA ---
 with st.sidebar:
     st.header("🔍 Buscador de Sucursales")
-    st.markdown("Selecciona la ubicación geográfica para ver detalles inmediatos sin desplazarte hacia abajo.")
+    st.markdown("Selecciona la ubicación geográfica para ver detalles inmediatos en este panel.")
     
-    # Menú 1: Selección de Estado
+    # Desplegable 1: Estados
     lista_estados = sorted(df['ESTADO'].unique())
     estado_seleccionado = st.selectbox(
         "1. Selecciona el Estado:",
@@ -138,28 +157,3 @@ with st.sidebar:
         index=0
     )
     
-    # Filtrar sucursales que pertenecen únicamente al estado elegido
-    df_filtrado_estado = df[df['ESTADO'] == estado_seleccionado]
-    lista_sucursales = sorted(df_filtrado_estado['SUCURSAL'].unique())
-    
-    # Menú 2: Selección de Sucursal dinámico
-    sucursal_seleccionada = st.selectbox(
-        "2. Selecciona la Sucursal:",
-        options=lista_sucursales,
-        index=0
-    )
-    
-    st.markdown("---")
-    
-    # TARJETA DE INFORMACIÓN INTEGRADA DIRECTAMENTE EN EL PANEL LATERAL
-    datos_filtrados = df_filtrado_estado[df_filtrado_estado['SUCURSAL'] == sucursal_seleccionada].to_dict(orient='records')
-    
-    if datos_filtrados:
-        fila = datos_filtrados[0]
-        
-        st.subheader(f"🏢 {fila['SUCURSAL']}")
-        st.markdown(f"**📍 Ubicación:** {fila['ESTADO']}, México")
-        
-        # Mostrar Líneas Telefónicas
-        st.markdown("**📞 Líneas Telmex:**")
-        for telefono in fila['TEL'].split(" / "):

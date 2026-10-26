@@ -29,17 +29,17 @@ st.markdown("""
     /* Semáforos de alertas compactos */
     .badge-normal { padding: 6px; background: rgba(46,204,113,0.12); border-left: 4px solid #2ecc71; border-radius: 4px; color: #27ae60; font-size: 0.85rem; font-weight: bold; }
     .badge-yellow { padding: 6px; background: rgba(241,196,15,0.12); border-left: 4px solid #f1c40f; border-radius: 4px; color: #b7950b; font-size: 0.85rem; font-weight: bold; }
-    .badge-orange { padding: 6px; background: rgba(230,126,34,0.12); border-left: 5px solid #e67e22; border-radius: 4px; color: #d35400; font-size: 0.85rem; font-weight: bold; }
+    .badge-orange { padding: 6px; background: rgba(230,126,34,0.12); border-left: 5px solid #e67e22; border-radius: 4px; color: #d35400; font-weight: bold; }
     .badge-red { padding: 6px; background: rgba(231,76,60,0.12); border-left: 5px solid #e74c3c; border-radius: 4px; color: #c0392b; font-size: 0.85rem; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
 # 2. FUNCIÓN CONECTADA EN VIVO A GOOGLE SHEETS
 def cargar_datos_desde_sheets():
-    url_maestra = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
+    url_maestra = "https://google.com"
     df_sheets = pd.read_csv(url_maestra)
     
-    # Limpiamos espacios y estandarizamos temporalmente los encabezados a MAYÚSCULAS
+    # Estandarizamos los encabezados quitando espacios y forzando mayúsculas
     df_sheets.columns = df_sheets.columns.str.strip().str.upper()
     return df_sheets
 
@@ -49,37 +49,34 @@ except Exception as e:
     st.error(f"Error crítico al conectar con Google Sheets: {e}")
     st.stop()
 
-# --- BLINDAJE AVANZADO: IDENTIFICADOR AUTOMÁTICO DE COLUMNAS FLEXIBLE ---
-# Buscamos las columnas reales del Excel basándonos en aproximación de palabras clave
-col_est = None
-col_suc = None
-col_tel = None
+# --- DETECTOR ESTRICTO DE COLUMNAS PARA EVITAR CRUCES ---
+col_est = 'ESTADO' if 'ESTADO' in df.columns else df.columns[0]
+col_suc = 'SUCURSAL' if 'SUCURSAL' in df.columns else df.columns[1]
+col_tel = 'LINEA TELMEX' if 'LINEA TELMEX' in df.columns else df.columns[2]
+
+# Buscador de la columna No. REPORTE evitando confundirse con la Fecha
 col_rep = None
-col_fec = None
-
 for col in df.columns:
-    if "ESTADO" in col or "EST" in col:
-        col_est = col
-    elif "SUCURSAL" in col or "SUC" in col:
-        col_suc = col
-    elif "TEL" in col or "LINEA" in col or "TELMEX" in col:
-        col_tel = col
-    elif "REP" in col or "INCIDENCIA" in col:
+    if "NO. REPORTE" in col or "NO REPORTE" in col or col == "REPORTE":
         col_rep = col
-    elif "FECHA" in col or "FEC" in col:
+        break
+if not col_rep:
+    for col in df.columns:
+        if "REP" in col and "FEC" not in col:
+            col_rep = col
+            break
+
+# Buscador de la columna Fecha de Reporte
+col_fec = None
+for col in df.columns:
+    if "FECHA" in col or "FEC" in col:
         col_fec = col
+        break
 
-# Si el identificador automático no encontró alguna columna, asignamos la primera disponible por seguridad
-if not col_est: col_est = df.columns[0]
-if not col_suc: col_suc = df.columns[1] if len(df.columns) > 1 else df.columns[0]
-if not col_tel: col_tel = df.columns[2] if len(df.columns) > 2 else df.columns[0]
-if not col_rep: col_rep = df.columns[3] if len(df.columns) > 3 else df.columns[0]
-if not col_fec: col_fec = df.columns[4] if len(df.columns) > 4 else df.columns[0]
-
-# Rellenar los estados hacia abajo automáticamente (Corrige celdas combinadas vacías)
+# Rellenar estados por celdas combinadas vacías
 df[col_est] = df[col_est].ffill()
 
-# Helper para validar si una sucursal tiene un reporte activo
+# Helper lógico de reportes activos
 def tiene_reporte_activo(valor_reporte):
     if pd.isna(valor_reporte):
         return False
@@ -88,15 +85,16 @@ def tiene_reporte_activo(valor_reporte):
         return False
     return True
 
-# --- LÓGICA DE CONTROL DE ESTADOS DE SELECCIÓN ---
-if "estado_seleccionado" not in st.session_state:
-    lista_inicial = sorted(df[col_est].dropna().unique())
-    st.session_state.estado_seleccionado = lista_inicial[0] if lista_inicial else ""
+# --- INICIALIZAR CANDADO DE MEMORIA PERMANENTE ---
+lista_estados = sorted(df[col_est].dropna().unique())
 
-# --- FILA SUPERIOR: MURO DE ALERTAS RÁPIDAS ---
+# Si es la primera vez que se abre la app, ponemos por defecto el primer estado de la lista
+if "candado_estado" not in st.session_state:
+    st.session_state["candado_estado"] = lista_estados[0]
+
+# --- FILA SUPERIOR: MURO DE ALERTAS RÁPIDAS (BOTONES) ---
 st.markdown("### ⚠️ Sucursales con Reporte Activo (Clic para acceso rápido)")
 
-# Escaneamos la columna identificada de reportes
 df_con_reporte = df[df[col_rep].apply(tiene_reporte_activo)]
 
 if not df_con_reporte.empty:
@@ -104,36 +102,40 @@ if not df_con_reporte.empty:
     for i, (_, fila_rep) in enumerate(df_con_reporte.iterrows()):
         col_idx = i % 7
         with columnas_botones[col_idx]:
-            if st.button(f"🚨 {fila_rep[col_suc]}", key=f"btn_{fila_rep[col_suc]}", use_container_width=True):
-                st.session_state.estado_seleccionado = fila_rep[col_est]
+            # Guardamos de forma limpia los valores en variables
+            boton_sucursal = str(fila_rep[col_suc])
+            boton_estado = str(fila_rep[col_est])
+            
+            if st.button(f"🚨 {boton_sucursal}", key=f"btn_{boton_sucursal}_{i}", use_container_width=True):
+                # AL DAR CLIC: Forzamos al candado de memoria a tomar el estado de esta sucursal
+                st.session_state["candado_estado"] = boton_estado
                 st.rerun()
 else:
     st.success("🟢 No se registran reportes activos en ninguna sucursal de la República Mexicana.")
 
 st.markdown("---")
 
-# --- FILA MEDIA: BUSCADOR COMPACTO ---
-lista_estados = sorted(df[col_est].dropna().unique())
-
+# --- FILA MEDIA: BUSCADOR COMPACTO MODIFICADO ---
 try:
-    default_index = lista_estados.index(st.session_state.estado_seleccionado)
+    default_index = lista_estados.index(st.session_state["candado_estado"])
 except ValueError:
     default_index = 0
     
-col_buscador, _ = st.columns([1, 2]) # Hace el buscador más pequeño usando proporciones de espacio
+col_buscador, _ = st.columns([1, 2]) # Hace el buscador visualmente más pequeño en la pantalla
 with col_buscador:
+    # El selector lee y escribe directamente sobre el candado de memoria permanente
     estado_actual = st.selectbox(
         "🔍 Filtrar por Estado:",
         options=lista_estados,
         index=default_index,
         key="selector_estado_maestro"
     )
-    st.session_state.estado_seleccionado = estado_actual
+    st.session_state["candado_estado"] = estado_actual
 
-# --- FILA INFERIOR: CUADRÍCULA DE SUCURSALES (3 COLUMNAS) ---
-df_resultado = df[df[col_est] == st.session_state.estado_seleccionado]
+# --- FILA INFERIOR: CUADRÍCULA DE SUCURSALES (3 COLUMNAS MÁXIMO) ---
+df_resultado = df[df[col_est] == st.session_state["candado_estado"]]
 
-st.markdown(f"#### 📍 Monitoreo: {st.session_state.estado_seleccionado} ({len(df_resultado)} Sucursales)")
+st.markdown(f"#### 📍 Monitoreo: {st.session_state['candado_estado']} ({len(df_resultado)} Sucursales)")
 
 columnas_grilla = st.columns(3)
 
@@ -144,25 +146,24 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown(f'<div class="suc-title">🏢 {fila[col_suc]}</div>', unsafe_allow_html=True)
         
-        # Procesar números telefónicos de la columna identificada
+        # 1. Despliegue de Líneas Telefónicas
         tel_raw = str(fila[col_tel]).strip()
         if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
             st.markdown('<div class="tel-item"><i>Sin líneas asignadas</i></div>', unsafe_allow_html=True)
         else:
-            # Separación segura por renglones si vienen juntos o con diagonales
             lista_tels = tel_raw.replace("\r", "").replace(" / ", "\n").split("\n")
             for t in lista_tels:
                 if t.strip():
                     st.markdown(f'<div class="tel-item">• {t.strip()}</div>', unsafe_allow_html=True)
         
-        # Procesar estatus del reporte de la columna identificada
-        rep_raw = str(fila[col_rep]).strip().lower()
+        # 2. Despliegue de Estatus de Incidencias y Semáforos
+        rep_raw = str(fila[col_rep]).strip()
         
         if not tiene_reporte_activo(rep_raw):
             st.markdown('<div class="badge-normal">🟢 Operando Normal (Sin Incidencias)</div>', unsafe_allow_html=True)
         else:
             rep_actual = str(fila[col_rep]).strip()
-            fecha_raw = str(fila[col_fec]).strip() if col_fec in df.columns else ""
+            fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
             
             if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
                 st.markdown(f'<div class="badge-yellow">🟡 Reporte: {rep_actual}<br>Levantamiento pendiente</div>', unsafe_allow_html=True)
@@ -173,12 +174,14 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
                         st.markdown(f'<div class="badge-yellow">🟡 Reporte: {rep_actual}<br>Fecha con formato incorrecto</div>', unsafe_allow_html=True)
                     else:
                         dias_atraso = (datetime.now() - fecha_dt).days
+                        
+                        # Clasificación de alertas compactas por rangos de días en la tarjeta
                         if dias_atraso <= 3:
-                            st.markdown(f'<div class="badge-yellow">🟡 Alerta Inicial ({dias_atraso} días)<br>Rep: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="badge-yellow">🟡 Alerta Inicial ({dias_atraso} días)<br>No. Reporte: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
                         elif dias_atraso <= 5:
-                            st.markdown(f'<div class="badge-orange">🟠 Alerta Intermedia ({dias_atraso} días)<br>Rep: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="badge-orange">🟠 Alerta Intermedia ({dias_atraso} días)<br>No. Reporte: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
                         else:
-                            st.markdown(f'<div class="badge-red">🔴 Alerta Crítica ({dias_atraso} días)<br>Rep: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="badge-red">🔴 Alerta Crítica ({dias_atraso} días)<br>No. Reporte: {rep_actual} | {fecha_dt.strftime("%Y-%m-%d")}</div>', unsafe_allow_html=True)
                 except:
                     st.markdown(f'<div class="badge-yellow">🟡 Reporte: {rep_actual}<br>Error al calcular fecha</div>', unsafe_allow_html=True)
                     

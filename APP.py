@@ -42,7 +42,7 @@ st.markdown("""
 
 # 2. FUNCIÓN CONECTADA EN VIVO A GOOGLE SHEETS
 def cargar_datos_desde_sheets():
-    url_maestra = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
+    url_maestra = "https://google.com"
     df_sheets = pd.read_csv(url_maestra)
     df_sheets.columns = df_sheets.columns.str.strip().str.upper()
     return df_sheets
@@ -90,15 +90,14 @@ def tiene_reporte_activo(valor_reporte):
 # --- LISTA GLOBAL DE ESTADOS ---
 lista_estados = sorted(df[col_est].dropna().unique())
 
-# SOLUCIÓN DE NAVEGACIÓN: Inicializamos la clave del selectbox con el primer estado si no existe
+# Inicializamos la clave del selectbox con el primer estado si no existe en memoria
 if "selector_estado_maestro" not in st.session_state:
     st.session_state["selector_estado_maestro"] = lista_estados if lista_estados else ""
 
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
-col_buscador, _ = st.columns() # Reducir ancho del input a 1/3
+# CORRECCIÓN EN ESTA LÍNEA: Se añade la proporción estricta [1, 2] para evitar el error de desempaquetado
+col_buscador, col_espacio_libre = st.columns([1, 2])
 with col_buscador:
-    # Vinculado directamente a st.session_state["selector_estado_maestro"] para obligar el cambio
-    st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
     estado_actual = st.selectbox(
         "🔍 Filtrar por Estado:",
         options=lista_estados,
@@ -121,7 +120,7 @@ if not df_con_reporte.empty:
             btn_suc = str(fila_rep[col_suc])
             btn_est = str(fila_rep[col_est])
             
-            # SOLUCIÓN AL CLIC: El botón altera directamente la clave asignada al selectbox y recarga
+            # El botón altera directamente la clave asignada al selectbox y recarga de inmediato
             if st.button(f"🚨 {btn_suc}", key=f"btn_{btn_suc}_{i}", use_container_width=True):
                 st.session_state["selector_estado_maestro"] = btn_est
                 st.rerun()
@@ -173,7 +172,7 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
                     else:
                         dias_atraso = (datetime.now() - fecha_dt).days
                         
-                        # Alertas compactas mostrando de forma exitosa el Número del Reporte
+                        # Alertas compactas mostrando el Número del Reporte
                         if dias_atraso <= 3:
                             st.markdown(f'<div class="badge-yellow">🟡 Rango 1-3 ({dias_atraso}d) - Rep: {rep_actual} ({fecha_dt.strftime("%m-%d")})</div>', unsafe_allow_html=True)
                         elif dias_atraso <= 5:
@@ -184,4 +183,3 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
                     st.markdown(f'<div class="badge-yellow">🟡 Rep: {rep_actual} | Error matemático fecha</div>', unsafe_allow_html=True)
                     
         st.markdown('</div>', unsafe_allow_html=True)
-

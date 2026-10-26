@@ -43,7 +43,6 @@ st.markdown("""
 # 1. BASE DE DATOS ESTRUCTURADA DE MANERA SEGURA (CERO RIESGOS DE COMPILACIÓN)
 @st.cache_data
 def obtener_datos_sucursales():
-    # Estructura plana paralela inmune a corchetes mal cerrados
     estados = [
         "AGUASCALIENTES", "BAJA CALIFORNIA NORTE", "BAJA CALIFORNIA NORTE", "BAJA CALIFORNIA SUR", "BAJA CALIFORNIA SUR",
         "CAMPECHE", "COAHUILA", "COAHUILA", "COLIMA", "CHIAPAS", "CHIHUAHUA", "CHIHUAHUA", "CHIHUAHUA", "CHIHUAHUA",
@@ -93,19 +92,20 @@ def obtener_datos_sucursales():
         -110.9381, -92.9475, -97.5027, -98.2883, -97.8659, -98.2375, -94.4532, -96.1342, -96.9102, -89.5926, -102.5832
     ]
     
-    df = pd.DataFrame({
+    df_result = pd.DataFrame({
         "ESTADO": estados, "SUCURSAL": sucursales, "TEL": telefonos, "LAT": lats, "LON": lons
     })
     
-    # Columnas de Reportes
-    df["No. REPORTE"] = "0"
-    df["FECHA DE REPORTE"] = ""
+    df_result["No. REPORTE"] = "0"
+    df_result["FECHA DE REPORTE"] = ""
     
-    # Casos simulados iniciales
-    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]
-    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]
-    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-14"]
-    return df
+    # Casos de prueba simulados
+    df_result.loc[df_result["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]
+    df_result.loc[df_result["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]
+    df_result.loc[df_result["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-14"]
+    df_result.loc[df_result["SUCURSAL"] == "MEXICALI", ["No. REPORTE", "FECHA DE REPORTE"]] = ["0", ""]
+    df_result.loc[df_result["SUCURSAL"] == "SALTILLO", ["No. REPORTE", "FECHA DE REPORTE"]] = ["sin reporte", ""]
+    return df_result
 
 df = obtener_datos_sucursales()
 
@@ -121,23 +121,23 @@ def tiene_reporte_activo(valor_reporte):
 # 3. CÁLCULO DE COLORES POR RANGOS ESTRICTOS
 def calcular_color(valor_reporte, fecha_str):
     if not tiene_reporte_activo(valor_reporte):
-        return "#1E90FF"  # Azul Normal
-    if pd.isna(fecha_str) or not fecha_str:
-        return "#FFD700"  # Amarillo por defecto
+        return "#1E90FF"  # Azul
+    if pd.isna(fecha_str) or not fecha_str or str(fecha_str).strip() == "":
+        return "#FFD700"
     try:
         fecha_rep = pd.to_datetime(fecha_str)
         dias = (datetime.now() - fecha_rep).days
         if dias <= 3:
-            return "#FFD700"  # Amarillo (1-3 días)
+            return "#FFD700"  # Amarillo
         elif dias <= 5:
-            return "#FF8C00"  # Naranja (3-5 días)
+            return "#FF8C00"  # Naranja
         else:
-            return "#FF0000"  # Rojo (6+ días)
+            return "#FF0000"  # Rojo
     except:
         return "#FFD700"
 
 # --- DISTRIBUCIÓN DE PANTALLA EN PARALELO (COLUMNAS) ---
-col_panel, col_mapa = st.columns([1, 2])  # 1/3 panel de control, 2/3 mapa completo
+col_panel, col_mapa = st.columns([1, 2])  # Proporción: 1/3 panel izquierdo, 2/3 mapa derecho
 
 with col_panel:
     st.markdown('<div class="glass-panel">', unsafe_allow_html=True)
@@ -155,10 +155,5 @@ with col_panel:
     subset = df_filtrado_est[df_filtrado_est['SUCURSAL'] == suc_sel]
     
     if not subset.empty:
-        # Extracción indexada 100% libre de errores de array u operaciones anidadas
-        suc_nombre = subset['SUCURSAL'].values[0]
-        est_nombre = subset['ESTADO'].values[0]
-        tel_string = subset['TEL'].values[0]
-        rep_no = subset['No. REPORTE'].values[0]
-        fecha_rep = subset['FECHA DE REPORTE'].values[0]
-        
+        # CORRECCIÓN DE EXTRACCIÓN CON .iloc[0]: Convierte las celdas en textos individuales nativos
+        suc_nombre = str(subset['SUCURSAL'].iloc[0])

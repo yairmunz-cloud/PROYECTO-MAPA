@@ -19,14 +19,15 @@ st.markdown("""
     
     /* Tarjetas compactas Glassmorphism optimizadas para una sola hoja */
     .glass-card {
-        background: rgba(255, 255, 255, 0.85) !important;
+        background: rgba(255, 255, 255, 0.95) !important;
         backdrop-filter: blur(6px);
         border-radius: 8px;
-        padding: 10px;
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-        margin-top: 4px;
-        margin-bottom: 4px;
+        padding: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        margin-top: 6px;
+        margin-bottom: 6px;
+        display: block !important;
     }
     
     /* Contenedor en línea para alinear Nombre y Estatus */
@@ -37,26 +38,26 @@ st.markdown("""
         flex-wrap: wrap;
         gap: 8px;
         margin-bottom: 6px;
-        border-bottom: 1px solid rgba(0,0,0,0.04);
-        padding-bottom: 4px;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        padding-bottom: 6px;
     }
     
-    .suc-title { font-size: 0.95rem !important; font-weight: bold; color: #1e293b; }
-    .tel-container { margin-top: 4px; }
-    .tel-item { font-size: 0.8rem !important; margin: 1px 0 !important; color: #475569; line-height: 1.1 !important; }
+    .suc-title { font-size: 1.0rem !important; font-weight: bold; color: #1e293b; }
+    .tel-container { margin-top: 6px; display: block !important; min-height: 20px; }
+    .tel-item { font-size: 0.85rem !important; margin: 3px 0 !important; color: #334155; line-height: 1.2 !important; font-weight: 500; }
     
     /* Semáforos de alertas ultra-pequeños adaptados para modo horizontal */
     .badge-inline {
-        padding: 2px 6px;
+        padding: 3px 8px;
         border-radius: 4px;
         font-size: 0.75rem;
         font-weight: bold;
         display: inline-block;
     }
-    .badge-normal { background: rgba(46,204,113,0.12); border: 1px solid #2ecc71; color: #27ae60; }
-    .badge-yellow { background: rgba(241,196,15,0.12); border: 1px solid #f1c40f; color: #b7950b; }
-    .badge-orange { background: rgba(230,126,34,0.12); border: 1px solid #e67e22; color: #d35400; }
-    .badge-red { background: rgba(231,76,60,0.12); border: 1px solid #e74c3c; color: #c0392b; }
+    .badge-normal { background: rgba(46,204,113,0.15); border: 1px solid #2ecc71; color: #1e7e34; }
+    .badge-yellow { background: rgba(241,196,15,0.15); border: 1px solid #f1c40f; color: #9a7d0a; }
+    .badge-orange { background: rgba(230,126,34,0.15); border: 1px solid #e67e22; color: #b75306; }
+    .badge-red { background: rgba(231,76,60,0.15); border: 1px solid #e74c3c; color: #a93226; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -74,38 +75,9 @@ except Exception as e:
     st.stop()
 
 # --- RECONOCEDOR DE COLUMNAS MEJORADO Y SEGURO ---
-col_est = None
-if 'ESTADO' in df.columns:
-    col_est = 'ESTADO'
-else:
-    for col in df.columns:
-        if 'EST' in col or 'EDO' in col:
-            col_est = col
-            break
-if not col_est:
-    col_est = df.columns
-
-col_suc = None
-if 'SUCURSAL' in df.columns:
-    col_suc = 'SUCURSAL'
-else:
-    for col in df.columns:
-        if 'SUC' in col or 'SITIO' in col or 'LUGAR' in col:
-            col_suc = col
-            break
-if not col_suc:
-    col_suc = df.columns if len(df.columns) > 1 else df.columns
-
-col_tel = None
-if 'LINEA TELMEX' in df.columns:
-    col_tel = 'LINEA TELMEX'
-else:
-    for col in df.columns:
-        if 'TEL' in col or 'LINEA' in col or 'NUMERO' in col:
-            col_tel = col
-            break
-if not col_tel:
-    col_tel = df.columns if len(df.columns) > 2 else df.columns
+col_est = next((c for c in df.columns if 'ESTADO' in c or 'EDO' in c), df.columns[0])
+col_suc = next((c for c in df.columns if 'SUCURSAL' in c or 'SUC' in c or 'SITIO' in c), df.columns[0])
+col_tel = next((c for c in df.columns if 'TELMEX' in c or 'TEL' in c or 'LINEA' in c), df.columns[0])
 
 col_rep = None
 for col in df.columns:
@@ -113,19 +85,13 @@ for col in df.columns:
         col_rep = col
         break
 if not col_rep:
-    for col in df.columns:
-        if "REP" in col and "FEC" not in col:
-            col_rep = col
-            break
+    col_rep = next((c for c in df.columns if "REP" in c and "FEC" not in c), None)
 
-col_fec = None
-for col in df.columns:
-    if "FECHA" in col or "FEC" in col:
-        col_fec = col
-        break
+col_fec = next((c for c in df.columns if "FECHA" in c or "FEC" in c), None)
 
-# Rellenar estados combinados vacíos
-df[col_est] = df[col_est].ffill()
+# Limpieza absoluta de textos en las columnas clave para evitar fallas de comparación
+df[col_est] = df[col_est].ffill().astype(str).str.strip()
+df[col_suc] = df[col_suc].astype(str).str.strip()
 
 # Helper lógico de reportes activos
 def tiene_reporte_activo(valor_reporte):
@@ -136,7 +102,7 @@ def tiene_reporte_activo(valor_reporte):
         return False
     return True
 
-# Helper para limpiar los decimales .0 de los IDs de reporte de forma segura como texto plano
+# Helper para limpiar los decimales .0 de los IDs de reporte
 def limpiar_reporte_id(valor_reporte):
     texto = str(valor_reporte).strip()
     if texto.endswith('.0'):
@@ -148,15 +114,15 @@ lista_estados = sorted(df[col_est].dropna().unique())
 
 # --- VARIABLES DE CONTROL EN SESSION STATE ---
 if "selector_estado_maestro" not in st.session_state:
-    st.session_state["selector_estado_maestro"] = lista_estados if lista_estados else ""
+    st.session_state["selector_estado_maestro"] = lista_estados[0] if lista_estados else ""
 
 if "sucursal_filtrada" not in st.session_state:
     st.session_state["sucursal_filtrada"] = None
 
 # --- FUNCIONES CALLBACK DE NAVEGACIÓN ---
 def cambiar_estado_callback(nuevo_estado, nueva_sucursal):
-    st.session_state["selector_estado_maestro"] = nuevo_estado
-    st.session_state["sucursal_filtrada"] = nueva_sucursal
+    st.session_state["selector_estado_maestro"] = nuevo_estado.strip()
+    st.session_state["sucursal_filtrada"] = nueva_sucursal.strip()
 
 def limpiar_filtro_sucursal_callback():
     st.session_state["sucursal_filtrada"] = None
@@ -206,8 +172,10 @@ else:
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # --- FILA 3: CUADRÍCULA DE TARJETAS ---
+# Filtrado por el estado actual
 df_resultado = df[df[col_est] == st.session_state["selector_estado_maestro"]]
 
+# Si viene de un botón de acceso rápido, filtramos por coincidencia exacta de texto limpio
 if st.session_state["sucursal_filtrada"] is not None:
     df_resultado = df_resultado[df_resultado[col_suc] == st.session_state["sucursal_filtrada"]]
     texto_monitoreo = f"#### 📍 Monitoreo Exclusivo Alerta: {st.session_state['sucursal_filtrada']} ({st.session_state['selector_estado_maestro']})"
@@ -235,7 +203,6 @@ if not df_resultado.empty:
                     if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
                         badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Fecha pend.</span>'
                     else:
-                        # Solución limpia sin bloques try-except anidados peligrosos
                         fecha_dt = pd.to_datetime(fecha_raw, errors='coerce', dayfirst=True)
                         if pd.isna(fecha_dt):
                             badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Formato inválido</span>'
@@ -249,4 +216,15 @@ if not df_resultado.empty:
                                 badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
             else:
                 badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
+
+            # Renderizado HTML Explícito de la tarjeta
+            st.markdown(f"""
+            <div class="glass-card">
+                <div class="card-header">
+                    <span class="suc-title">🏢 {fila[col_suc]}</span>
+                    {badge_html}
+                </div>
+                <div class="tel-container">
+            """, unsafe_allow_html=True)
+            
 

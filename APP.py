@@ -143,7 +143,7 @@ def calcular_color(valor_reporte, fecha_str):
 
 # --- DISEÑO DE LA BARRA LATERAL IZQUIERDA ---
 with st.sidebar:
-    st.header("🔍 Buscador de Sucursales")
+    st.header("🔍 Selecciona un Estado")
     st.markdown("Filtra por ubicación para desplegar los teléfonos y estatus al instante.")
     
     # Desplegable 1: Estados

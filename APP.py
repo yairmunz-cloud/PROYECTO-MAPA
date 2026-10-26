@@ -19,6 +19,7 @@ st.markdown("""
         padding: 24px;
         border: 1px solid rgba(255, 255, 255, 0.4);
         box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+        margin-top: 20px;
         margin-bottom: 20px;
     }
     
@@ -73,7 +74,7 @@ def obtener_datos_sucursales():
         "Sin Teléfono Registrado", "722-223-4999 / 722-212-4520", "555-572-1252 / 555-572-1293", "443-324-6829 / 443-315-9160", "777-314-1524 / 777-314-1275", "311-129-4378 / 311-129-3458", "818-340-2780", "826-268-6768", "Sin Teléfono Registrado",
         "951-132-5693 / 951-132-6879", "222-240-0611 / 222-240-0775", "442-220-7777 / 442-226-3173", "998-883-9243 / 998-883-9519", "984-879-4340 / 984-879-3885", "444-812-0187 / 444-833-3993",
         "667-714-8714 / 667-761-2460", "669-118-4250 / 669-118-4257", "Sin Teléfono Registrado", "644-414-8984 / 664-414-8638", "662-217-1136 / 662-213-4943", "631-314-8491 / 631-314-9886", "993-316-5612 / 993-316-5595", "868-149-1299 / 868-812-1676", "899-925-5141 / 899-925-5140", "833-224-7515 / 833-224-7517",
-        "246-466-3206 / 246-466-0539", "921-217-7656 / 921-217-7723", "229-931-7320 / 229-931-6748", "228-141-6166", "999-923-4017 / 999-923-3885", "492-925-3987 / 492-922-1236"
+        "246-466-3206 / 246-466-0539", "921-217-7656 / 921-217-7723", "229-931-7320 / 229-931-6748", "228-141-6166", "999-923-4017 / 999-923-3885", "492-925-3987 / 492-924-4202 / 492-922-1236"
     ]
     
     lats = [
@@ -103,8 +104,6 @@ def obtener_datos_sucursales():
     df_result.loc[df_result["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]
     df_result.loc[df_result["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]
     df_result.loc[df_result["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-14"]
-    df_result.loc[df_result["SUCURSAL"] == "MEXICALI", ["No. REPORTE", "FECHA DE REPORTE"]] = ["0", ""]
-    df_result.loc[df_result["SUCURSAL"] == "SALTILLO", ["No. REPORTE", "FECHA DE REPORTE"]] = ["sin reporte", ""]
     return df_result
 
 df = obtener_datos_sucursales()
@@ -128,32 +127,49 @@ def calcular_color(valor_reporte, fecha_str):
         fecha_rep = pd.to_datetime(fecha_str)
         dias = (datetime.now() - fecha_rep).days
         if dias <= 3:
-            return "#FFD700"  # Amarillo
+            return "#FFD700"
         elif dias <= 5:
-            return "#FF8C00"  # Naranja
+            return "#FF8C00"
         else:
-            return "#FF0000"  # Rojo
+            return "#FF0000"
     except:
         return "#FFD700"
 
-# --- DISTRIBUCIÓN DE PANTALLA EN PARALELO (COLUMNAS) ---
-col_panel, col_mapa = st.columns([1, 2])  # Proporción: 1/3 panel izquierdo, 2/3 mapa derecho
+# --- FILA 1: MAPA INTERACTIVO COMPLETO (OCUPA TODO EL ANCHO DE LA PÁGINA) ---
+limites_mexico = [[14.0, -118.0], [33.0, -86.0]]
+m = folium.Map(
+    location=[23.6345, -102.5528], 
+    zoom_start=5,
+    min_zoom=5,
+    max_bounds=True,
+    bounds_viscosity=1.0,
+    max_bounds_list=limites_mexico
+)
 
-with col_panel:
-    st.markdown('<div class="glass-panel">', unsafe_allow_html=True)
-    st.subheader("🔍 Filtro de Sucursales")
+for idx, fila_mapa in df.iterrows():
+    lat = fila_mapa['LAT']
+    lon = fila_mapa['LON']
+    rep = fila_mapa['No. REPORTE']
+    fec = fila_mapa['FECHA DE REPORTE']
     
-    lista_estados = sorted(df['ESTADO'].unique())
-    estado_sel = st.selectbox("1. Selecciona el Estado:", options=lista_estados, index=0)
-    
-    df_filtrado_est = df[df['ESTADO'] == estado_sel]
-    lista_sucursales = sorted(df_filtrado_est['SUCURSAL'].unique())
-    
-    suc_sel = st.selectbox("2. Selecciona la Sucursal:", options=lista_sucursales, index=0)
-    st.markdown("---")
-    
-    subset = df_filtrado_est[df_filtrado_est['SUCURSAL'] == suc_sel]
-    
-    if not subset.empty:
-        # CORRECCIÓN DE EXTRACCIÓN CON .iloc[0]: Convierte las celdas en textos individuales nativos
-        suc_nombre = str(subset['SUCURSAL'].iloc[0])
+    color = calcular_color(rep, fec)
+    popup_html = f"<b>{fila_mapa['SUCURSAL']}</b><br>{fila_mapa['ESTADO']}"
+    if tiene_reporte_activo(rep):
+        popup_html += f"<br><span style='color:darkorange;'>Reporte: {rep}</span>"
+        
+    folium.CircleMarker(
+        location=[lat, lon],
+        radius=7,
+        popup=folium.Popup(popup_html, max_width=200),
+        color=color,
+        fill=True,
+        fill_color=color,
+        fill_opacity=0.7
+    ).add_to(m)
+
+# Desplegar el mapa de Folium de manera directa a pantalla completa
+st_folium(m, width=1400, height=550)
+
+st.markdown("---")
+
+# --- FILA 2: PANEL DE CONTROL TRASLÚCIDO EN LA PARTE INFERIOR ---

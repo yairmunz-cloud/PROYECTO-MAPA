@@ -10,7 +10,7 @@ st.markdown("Los datos se leen directamente en tiempo real desde el archivo **BD
 @st.cache_data(ttl=600)  # El mapa se refresca solo cada 10 minutos si haces cambios en el Excel
 def cargar_datos_desde_sheets():
     # PEGA AQUÍ TU LINK LARGO DE GOOGLE SHEETS QUE TERMINA EN output=csv
-    url_maestra = https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv
+    "url_maestra = https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
     
     # Lectura automática de la nube
     df_sheets = pd.read_csv(url_maestra)

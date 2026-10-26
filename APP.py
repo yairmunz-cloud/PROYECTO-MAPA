@@ -29,14 +29,34 @@ st.markdown("""
         margin-bottom: 4px;
     }
     
-    .suc-title { font-size: 0.95rem !important; font-weight: bold; margin-bottom: 2px; color: #1e293b; }
+    /* Contenedor en línea para alinear Nombre y Estatus */
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 6px;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+        padding-bottom: 4px;
+    }
+    
+    .suc-title { font-size: 0.95rem !important; font-weight: bold; color: #1e293b; white-space: nowrap; }
+    .tel-container { margin-top: 4px; }
     .tel-item { font-size: 0.8rem !important; margin: 1px 0 !important; color: #475569; line-height: 1.1 !important; }
     
-    /* Semáforos de alertas ultra-pequeños */
-    .badge-normal { padding: 4px 6px; background: rgba(46,204,113,0.12); border-left: 3px solid #2ecc71; border-radius: 3px; color: #27ae60; font-size: 0.75rem; font-weight: bold; margin-top: 4px; }
-    .badge-yellow { padding: 4px 6px; background: rgba(241,196,15,0.12); border-left: 3px solid #f1c40f; border-radius: 3px; color: #b7950b; font-size: 0.75rem; font-weight: bold; margin-top: 4px; }
-    .badge-orange { padding: 4px 6px; background: rgba(230,126,34,0.12); border-left: 3px solid #e67e22; border-radius: 3px; color: #d35400; font-size: 0.75rem; font-weight: bold; margin-top: 4px; }
-    .badge-red { padding: 4px 6px; background: rgba(231,76,60,0.12); border-left: 3px solid #e74c3c; border-radius: 3px; color: #c0392b; font-size: 0.75rem; font-weight: bold; margin-top: 4px; }
+    /* Semáforos de alertas ultra-pequeños adaptados para modo horizontal */
+    .badge-inline {
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        display: inline-block;
+    }
+    .badge-normal { background: rgba(46,204,113,0.12); border: 1px solid #2ecc71; color: #27ae60; }
+    .badge-yellow { background: rgba(241,196,15,0.12); border: 1px solid #f1c40f; color: #b7950b; }
+    .badge-orange { background: rgba(230,126,34,0.12); border: 1px solid #e67e22; color: #d35400; }
+    .badge-red { background: rgba(231,76,60,0.12); border: 1px solid #e74c3c; color: #c0392b; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -54,7 +74,6 @@ except Exception as e:
     st.stop()
 
 # --- RECONOCEDOR DE COLUMNAS MEJORADO Y SEGURO ---
-# Búsqueda segura para ESTADO
 col_est = None
 if 'ESTADO' in df.columns:
     col_est = 'ESTADO'
@@ -64,9 +83,8 @@ else:
             col_est = col
             break
 if not col_est:
-    col_est = df.columns[0]  # Por defecto toma la primera columna
+    col_est = df.columns[0]
 
-# Búsqueda segura para SUCURSAL
 col_suc = None
 if 'SUCURSAL' in df.columns:
     col_suc = 'SUCURSAL'
@@ -78,7 +96,6 @@ else:
 if not col_suc:
     col_suc = df.columns[1] if len(df.columns) > 1 else df.columns[0]
 
-# Búsqueda segura para LÍNEAS TELEFÓNICAS
 col_tel = None
 if 'LINEA TELMEX' in df.columns:
     col_tel = 'LINEA TELMEX'
@@ -90,7 +107,6 @@ else:
 if not col_tel:
     col_tel = df.columns[2] if len(df.columns) > 2 else df.columns[0]
 
-# Búsqueda segura para REPORTE
 col_rep = None
 for col in df.columns:
     if "NO. REPORTE" in col or "NO REPORTE" in col or col == "REPORTE":
@@ -102,7 +118,6 @@ if not col_rep:
             col_rep = col
             break
 
-# Búsqueda segura para FECHA
 col_fec = None
 for col in df.columns:
     if "FECHA" in col or "FEC" in col:
@@ -141,7 +156,8 @@ def limpiar_filtro_sucursal_callback():
 
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
-col_buscador, col_espacio_libre = st.columns()
+
+col_buscador, col_espacio_libre = st.columns([1, 2])
 with col_buscador:
     idx_actual = 0
     if st.session_state["selector_estado_maestro"] in lista_estados:
@@ -202,37 +218,35 @@ for idx, (_, fila) in enumerate(df_resultado.iterrows()):
     col_destino = idx % 3
     
     with columnas_grilla[col_destino]:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown(f'<div class="suc-title">🏢 {fila[col_suc]}</div>', unsafe_allow_html=True)
-        
-        # Despliegue de Teléfonos
-        tel_raw = str(fila[col_tel]).strip()
-        if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
-            st.markdown('<div class="tel-item"><i>Sin líneas registradas</i></div>', unsafe_allow_html=True)
-        else:
-            lista_tels = tel_raw.replace("\r", "").replace(" / ", "\n").split("\n")
-            for t in lista_tels:
-                if t.strip():
-                    st.markdown(f'<div class="tel-item">• {t.strip()}</div>', unsafe_allow_html=True)
-        
-        # Despliegue de Alertas y su Número de Reporte correspondiente
+        badge_html = ""
         if col_rep:
             rep_raw = str(fila[col_rep]).strip()
-            
             if not tiene_reporte_activo(rep_raw):
-                st.markdown('<div class="badge-normal">🟢 Operando Normal (Sin Incidencias)</div>', unsafe_allow_html=True)
+                badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
             else:
-                rep_actual = str(fila[col_rep]).strip()
+                # CORRECCIÓN: Estructura limpia y segura para remover el decimal .0
+                rep_actual = rep_raw.split('.')[0] if '.' in rep_raw else rep_raw
                 fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
                 
                 if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
-                    st.markdown(f'<div class="badge-yellow">🟡 Rep: {rep_actual} | Fecha pendiente</div>', unsafe_allow_html=True)
+                    badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Fecha pend.</span>'
                 else:
                     try:
                         fecha_dt = pd.to_datetime(fecha_raw, errors='coerce', dayfirst=True)
                         if pd.isna(fecha_dt):
-                            st.markdown(f'<div class="badge-yellow">🟡 Rep: {rep_actual} | Formato de fecha inválido</div>', unsafe_allow_html=True)
+                            badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Formato inválido</span>'
                         else:
                             dias_atraso = (datetime.now() - fecha_dt).days
                             
+                            if dias_atraso <= 3:
+                                badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | {dias_atraso} días</span>'
+                            elif dias_atraso <= 7:
+                                badge_html = f'<span class="badge-inline badge-orange">🟠 Rep: {rep_actual} | {dias_atraso} días</span>'
+                            else:
+                                badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
+                    except Exception:
+                        badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Error fecha</span>'
+        else:
+            badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
+
 

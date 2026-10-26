@@ -83,7 +83,7 @@ else:
             col_est = col
             break
 if not col_est:
-    col_est = df.columns[0]
+    col_est = df.columns
 
 col_suc = None
 if 'SUCURSAL' in df.columns:
@@ -94,7 +94,7 @@ else:
             col_suc = col
             break
 if not col_suc:
-    col_suc = df.columns[1] if len(df.columns) > 1 else df.columns[0]
+    col_suc = df.columns if len(df.columns) > 1 else df.columns
 
 col_tel = None
 if 'LINEA TELMEX' in df.columns:
@@ -105,7 +105,7 @@ else:
             col_tel = col
             break
 if not col_tel:
-    col_tel = df.columns[2] if len(df.columns) > 2 else df.columns[0]
+    col_tel = df.columns if len(df.columns) > 2 else df.columns
 
 col_rep = None
 for col in df.columns:
@@ -141,7 +141,7 @@ lista_estados = sorted(df[col_est].dropna().unique())
 
 # --- VARIABLES DE CONTROL EN SESSION STATE ---
 if "selector_estado_maestro" not in st.session_state:
-    st.session_state["selector_estado_maestro"] = lista_estados[0] if lista_estados else ""
+    st.session_state["selector_estado_maestro"] = lista_estados if lista_estados else ""
 
 if "sucursal_filtrada" not in st.session_state:
     st.session_state["sucursal_filtrada"] = None
@@ -199,10 +199,8 @@ else:
 st.markdown("<hr>", unsafe_allow_html=True)
 
 # --- FILA 3: CUADRÍCULA DE TARJETAS ---
-# Filtrar por el estado activo en la memoria
 df_resultado = df[df[col_est] == st.session_state["selector_estado_maestro"]]
 
-# Si se presionó un botón de alerta rápida, cerramos la vista sobre esa sucursal en específico
 if st.session_state["sucursal_filtrada"] is not None:
     df_resultado = df_resultado[df_resultado[col_suc] == st.session_state["sucursal_filtrada"]]
     texto_monitoreo = f"#### 📍 Monitoreo Exclusivo Alerta: {st.session_state['sucursal_filtrada']} ({st.session_state['selector_estado_maestro']})"
@@ -224,7 +222,7 @@ if not df_resultado.empty:
                 if not tiene_reporte_activo(rep_raw):
                     badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
                 else:
-                    # Corrección: Limpieza segura del flotante '.0' devolviendo texto plano
+                    # CORRECCIÓN: Se extrae el primer elemento del split para evitar que imprima corchetes de lista
                     rep_actual = rep_raw.split('.')[0] if '.' in rep_raw else rep_raw
                     fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
                     
@@ -245,3 +243,6 @@ if not df_resultado.empty:
                                 else:
                                     badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
                         except Exception:
+                            badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Error fecha</span>'
+            else:
+

@@ -5,7 +5,7 @@ from streamlit_folium import st_folium
 from datetime import datetime
 from geopy.geocoders import Nominatim
 
-# Configuración de pantalla para diseño de tablero ejecutivo
+# Configuración de pantalla para diseño de tablero ejecutivo amplio
 st.set_page_config(page_title="Monitoreo de Sucursales", layout="wide")
 
 # 1. BASE DE DATOS MAESTRA DE SUCURSALES (CON ESTADOS RELLENADOS)
@@ -86,10 +86,10 @@ def obtener_datos_sucursales():
     df["No. REPORTE"] = None
     df["FECHA DE REPORTE"] = None
     
-    # Casos simulados de prueba para validar los rangos:
-    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]       # Amarillo (2 días)
-    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]       # Naranja (4 días)
-    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]    # Rojo (11 días)
+    # Casos simulados de prueba para validar tus nuevos rangos:
+    df.loc[df["SUCURSAL"] == "AGUASCALIENTES", ["No. REPORTE", "FECHA DE REPORTE"]] = ["1", "2026-10-24"]       # Amarillo (2 días, rango 1-3)
+    df.loc[df["SUCURSAL"] == "TIJUANA", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-102", "2026-10-22"]       # Naranja (4 días, rango 3-5)
+    df.loc[df["SUCURSAL"] == "CD. JUAREZ", ["No. REPORTE", "FECHA DE REPORTE"]] = ["REP-103", "2026-10-15"]    # Rojo (11 días, rango 6+)
     df.loc[df["SUCURSAL"] == "MEXICALI", ["No. REPORTE", "FECHA DE REPORTE"]] = ["0", None]                    # Sin reporte
     df.loc[df["SUCURSAL"] == "SALTILLO", ["No. REPORTE", "FECHA DE REPORTE"]] = ["sin reporte", None]          # Sin reporte
     
@@ -100,7 +100,7 @@ df = obtener_datos_sucursales()
 # 2. CACHÉ DE COORDENADAS PARA EVITAR TIEMPOS DE ESPERA
 @st.cache_data
 def buscar_coordenadas(sucursal, estado):
-    geolocator = Nominatim(user_agent="mexico_branch_final_version")
+    geolocator = Nominatim(user_agent="mexico_branch_final_version_v3")
     try:
         direccion = f"{sucursal}, {estado}, Mexico"
         location = geolocator.geocode(direccion, timeout=10)
@@ -110,44 +110,41 @@ def buscar_coordenadas(sucursal, estado):
         pass
     return None, None
 
-# 3. COMPROBADOR LOGICO DE REPORTES ACTIVOS
+# 3. COMPROBADOR LÓGICO DE REPORTE ACTIVO (Regra: vacio, 0 o 'sin reporte' es inactivo)
 def tiene_reporte_activo(valor_reporte):
     if pd.isna(valor_reporte):
         return False
     val = str(valor_reporte).strip().lower()
-    # Si la celda está vacía, es 0, o dice 'sin reporte', se asume que NO hay reporte
     if val in ["", "0", "sin reporte", "none", "nan", "vacio"]:
         return False
     return True
 
-# 4. NUEVO CÁLCULO DE COLORES POR DÍAS (AMARILLO, NARANJA, ROJO)
+# 4. CÁLCULO DE COLORES POR RANGOS ESTABLECIDOS
 def calcular_color(valor_reporte, fecha_str):
     if not tiene_reporte_activo(valor_reporte):
-        return "#1E90FF"  # Azul (Operación Normal)
+        return "#1E90FF"  # Azul estándar (Operación Normal)
         
     if pd.isna(fecha_str) or not fecha_str:
-        return "#FFD700"  # Amarillo por defecto si hay reporte pero no fecha
+        return "#FFD700"  # Amarillo de respaldo si falta la fecha
         
     try:
         fecha_rep = pd.to_datetime(fecha_str)
         hoy = datetime.now()
         dias = (hoy - fecha_rep).days
         
-        if dias >= 1 and dias <= 3:
-            return "#FFD700"  # Amarillo estricto (1-3 días)
-        elif dias > 3 and dias <= 5:
-            return "#FF8C00"  # Naranja estricto (3-5 días)
-        elif dias >= 6:
-            return "#FF0000"  # Rojo estricto (6 días o más)
+        if dias <= 3:
+            return "#FFD700"  # Amarillo (1 a 3 días)
+        elif dias <= 5:
+            return "#FF8C00"  # Naranja (3 a 5 días)
         else:
-            return "#FFD700"  # Amarillo de respaldo para el día 0
+            return "#FF0000"  # Rojo (6 días en adelante)
     except:
         return "#FFD700"
 
 # --- DISEÑO DE LA BARRA LATERAL IZQUIERDA ---
 with st.sidebar:
     st.header("🔍 Buscador de Sucursales")
-    st.markdown("Selecciona la ubicación geográfica para ver detalles inmediatos en este panel.")
+    st.markdown("Filtra por ubicación para desplegar los teléfonos y estatus al instante.")
     
     # Desplegable 1: Estados
     lista_estados = sorted(df['ESTADO'].unique())
@@ -157,3 +154,5 @@ with st.sidebar:
         index=0
     )
     
+    # Filtrar según el estado seleccionado
+    df_filtrado_estado = df[df['ESTADO'] == estado_seleccionado]

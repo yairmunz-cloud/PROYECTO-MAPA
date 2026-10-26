@@ -6,12 +6,10 @@ from datetime import datetime
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 
-# Configuración de pantalla limpia
+# Configuración de pantalla ultra-ancha para diseño de tablero de control
 st.set_page_config(page_title="Monitoreo de Sucursales", layout="wide")
-st.title("📍 Monitoreo de Sucursales e Incidencias")
-st.markdown("Filtra y consulta el estado de las líneas Telmex en tiempo real.")
 
-# 1. BASE DE DATOS MAESTRA DE SUCURSALES
+# 1. BASE DE DATOS MAESTRA DE SUCURSALES (CON ESTADOS RELLENADOS)
 @st.cache_data
 def obtener_datos_sucursales():
     datos = [
@@ -127,44 +125,41 @@ def calcular_color(fecha_str):
     except:
         return "#FFD700"
 
-# --- CONFIGURACIÓN DE LÍMITES GEOGRÁFICOS DE MÉXICO ---
-# Coordenadas esquinas suroeste [Lat, Lon] y noreste [Lat, Lon] para encuadrar la República Mexicana
-limites_mexico = [[14.0, -118.0], [33.0, -86.0]]
-
-m = folium.Map(
-    location=[23.6345, -102.5528], 
-    zoom_start=5,
-    min_zoom=5,                   # No permite alejarse más allá de ver a todo México
-    max_bounds=True,              # Bloquea el mapa a los límites establecidos
-    bounds_viscosity=1.0,         # Si arrastran hacia afuera, el mapa rebota con fuerza al centro
-    max_bounds_list=limites_mexico
-)
-
-for idx, fila in df.iterrows():
-    suc = fila['SUCURSAL']
-    est = fila['ESTADO']
-    rep = fila['No. REPORTE']
-    fec = fila['FECHA DE REPORTE']
+# --- DISEÑO DE LA BARRA LATERAL IZQUIERDA (CONTROLES A UN LADO DEL MAPA) ---
+with st.sidebar:
+    st.header("🔍 Buscador de Sucursales")
+    st.markdown("Selecciona la ubicación geográfica para ver detalles inmediatos sin desplazarte hacia abajo.")
     
-    lat, lon = buscar_coordenadas(suc, est)
-    if lat and lon:
-        color = calcular_color(fec)
-        popup_html = f"<b>{suc}</b><br>{est}"
-        if rep:
-            popup_html += f"<br><span style='color:red;'>Reporte: {rep}</span>"
-            
-        folium.CircleMarker(
-            location=[lat, lon],
-            radius=7,
-            popup=folium.Popup(popup_html, max_width=200),
-            color=color,
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.7
-        ).add_to(m)
-
-# Mostrar mapa en la parte superior
-st_folium(m, width="100%", height=500)
-
-st.markdown("---")
-
+    # Menú 1: Selección de Estado
+    lista_estados = sorted(df['ESTADO'].unique())
+    estado_seleccionado = st.selectbox(
+        "1. Selecciona el Estado:",
+        options=lista_estados,
+        index=0
+    )
+    
+    # Filtrar sucursales que pertenecen únicamente al estado elegido
+    df_filtrado_estado = df[df['ESTADO'] == estado_seleccionado]
+    lista_sucursales = sorted(df_filtrado_estado['SUCURSAL'].unique())
+    
+    # Menú 2: Selección de Sucursal dinámico
+    sucursal_seleccionada = st.selectbox(
+        "2. Selecciona la Sucursal:",
+        options=lista_sucursales,
+        index=0
+    )
+    
+    st.markdown("---")
+    
+    # TARJETA DE INFORMACIÓN INTEGRADA DIRECTAMENTE EN EL PANEL LATERAL
+    datos_filtrados = df_filtrado_estado[df_filtrado_estado['SUCURSAL'] == sucursal_seleccionada].to_dict(orient='records')
+    
+    if datos_filtrados:
+        fila = datos_filtrados[0]
+        
+        st.subheader(f"🏢 {fila['SUCURSAL']}")
+        st.markdown(f"**📍 Ubicación:** {fila['ESTADO']}, México")
+        
+        # Mostrar Líneas Telefónicas
+        st.markdown("**📞 Líneas Telmex:**")
+        for telefono in fila['TEL'].split(" / "):

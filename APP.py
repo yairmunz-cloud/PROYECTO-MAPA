@@ -30,34 +30,17 @@ st.markdown("""
         display: block !important;
     }
     
-    /* Contenedor en línea para alinear Nombre y Estatus */
-    .card-header {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 6px;
-        border-bottom: 1px solid rgba(0,0,0,0.06);
-        padding-bottom: 6px;
-    }
-    
-    .suc-title { font-size: 1.0rem !important; font-weight: bold; color: #1e293b; }
-    .tel-container { margin-top: 6px; display: block !important; }
-    .tel-item { font-size: 0.85rem !important; margin: 3px 0 !important; color: #334155; line-height: 1.2 !important; font-weight: 500; }
-    
-    /* Semáforos de alertas ultra-pequeños adaptados para modo horizontal */
-    .badge-inline {
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 0.75rem;
+    /* Estilo de texto plano solicitado para el reporte superior */
+    .badge-text-top {
+        font-size: 0.85rem !important;
         font-weight: bold;
-        display: inline-block;
+        display: block;
+        margin-bottom: 2px;
     }
-    .badge-normal { background: rgba(46,204,113,0.15); border: 1px solid #2ecc71; color: #1e7e34; }
-    .badge-yellow { background: rgba(241,196,15,0.15); border: 1px solid #f1c40f; color: #9a7d0a; }
-    .badge-orange { background: rgba(230,126,34,0.15); border: 1px solid #e67e22; color: #b75306; }
-    .badge-red { background: rgba(231,76,60,0.15); border: 1px solid #e74c3c; color: #a93226; }
+    
+    .suc-title { font-size: 1.0rem !important; font-weight: bold; color: #1e293b; margin-top: 2px; margin-bottom: 4px; display: block; }
+    .tel-container { margin-top: 4px; display: block !important; }
+    .tel-item { font-size: 0.85rem !important; margin: 2px 0 !important; color: #334155; line-height: 1.2 !important; font-weight: 500; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -102,12 +85,15 @@ def tiene_reporte_activo(valor_reporte):
         return False
     return True
 
-# Helper para limpiar los decimales .0 de los IDs de reporte
-def limpiar_reporte_id(valor_reporte):
+# Helper para forzar que el ID de reporte mantenga el .0 si es numérico
+def formatear_reporte_id(valor_reporte):
     texto = str(valor_reporte).strip()
-    if texto.endswith('.0'):
-        return texto[:-2]
-    return texto
+    try:
+        # Si es un número flotante válido o entero, aseguramos que termine en .0 tal como lo solicitas
+        float_val = float(texto)
+        return f"{int(float_val)}.0"
+    except ValueError:
+        return texto
 
 # --- LISTA GLOBAL DE ESTADOS ---
 lista_estados = sorted(df[col_est].dropna().unique())
@@ -130,7 +116,6 @@ def limpiar_filtro_sucursal_callback():
 # --- FILA 1: FILTRO POR ESTADO COMPACTO ---
 st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
 
-# CORRECCIÓN EN ESTA LÍNEA: Se asignan las proporciones explícitas de espacio para evitar el TypeError
 col_buscador, col_espacio_libre = st.columns([1, 2])
 with col_buscador:
     idx_actual = 0
@@ -194,33 +179,45 @@ if not df_resultado.empty:
             if col_rep:
                 rep_raw = str(fila[col_rep]).strip()
                 if not tiene_reporte_activo(rep_raw):
-                    badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
+                    badge_html = '<span class="badge-text-top" style="color: #27ae60;">🟢 OK (Sin Reportes Activos)</span>'
                 else:
-                    rep_actual = limpiar_reporte_id(rep_raw)
+                    # Aplicamos el formateador explícito para mantener el decimal .0
+                    rep_actual = formatear_reporte_id(rep_raw)
                     fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
                     
                     if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
-                        badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Fecha pend.</span>'
+                        badge_html = f'<span class="badge-text-top" style="color: #b7950b;">🟡 Rep: {rep_actual} | Fecha pendiente</span>'
                     else:
                         fecha_dt = pd.to_datetime(fecha_raw, errors='coerce', dayfirst=True)
                         if pd.isna(fecha_dt):
-                            badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | Formato inválido</span>'
+                            badge_html = f'<span class="badge-text-top" style="color: #b7950b;">🟡 Rep: {rep_actual} | Formato inválido</span>'
                         else:
                             dias_atraso = (datetime.now() - fecha_dt).days
                             if dias_atraso <= 3:
-                                badge_html = f'<span class="badge-inline badge-yellow">🟡 Rep: {rep_actual} | {dias_atraso} días</span>'
+                                badge_html = f'<span class="badge-text-top" style="color: #b7950b;">🟡 Rep: {rep_actual} | {dias_atraso} días</span>'
                             elif dias_atraso <= 7:
-                                badge_html = f'<span class="badge-inline badge-orange">🟠 Rep: {rep_actual} | {dias_atraso} días</span>'
+                                badge_html = f'<span class="badge-text-top" style="color: #d35400;">🟠 Rep: {rep_actual} | {dias_atraso} días</span>'
                             else:
-                                badge_html = f'<span class="badge-inline badge-red">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
+                                badge_html = f'<span class="badge-text-top" style="color: #c0392b;">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
             else:
-                badge_html = '<span class="badge-inline badge-normal">🟢 OK</span>'
+                badge_html = '<span class="badge-text-top" style="color: #27ae60;">🟢 OK (Sin Reportes Activos)</span>'
 
-            # Construcción segura de la lista de teléfonos como HTML integrado
+            # Construcción e integración de las líneas telefónicas
             telefonos_html = ""
             tel_raw = str(fila[col_tel]).strip()
             if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
                 telefonos_html = '<div class="tel-item"><i>Sin líneas registradas</i></div>'
             else:
                 lista_tels = tel_raw.replace("\r", "").replace(" / ", "\n").split("\n")
+                for t in lista_tels:
+                    if t.strip():
+                        telefonos_html += f'<div class="tel-item">• {t.strip()}</div>'
+
+            # ESTRUCTURA EXACTA:
+            # 1. Alerta / Días (Texto plano arriba)
+            # 2. Nombre de la Sucursal (Centro)
+            # 3. Teléfonos (Abajo)
+            st.markdown(f"""
+            <div class="glass-card">
+                {badge_html}
 

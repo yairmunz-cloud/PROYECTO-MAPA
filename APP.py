@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -117,10 +116,15 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
 with f1:
     st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
-    estado_temp = st.selectbox("Estado", lista_estados, index=lista_estados.index(st.session_state.estado_sel), label_visibility="collapsed")
+    estado_temp = st.selectbox("Estado", lista_estados, index=lista_estados.index(st.session_state.estado_sel), label_visibility="collapsed", key="sel_estado")
     if estado_temp != st.session_state.estado_sel:
         st.session_state.estado_sel = estado_temp
         st.session_state.sucursal_sel = None
+        # Limpiar el widget de sucursales para que no quede con valor viejo
+        if "sel_sucursal" in st.session_state:
+            del st.session_state["sel_sucursal"]
+        if "Sucursales" in st.session_state:
+            del st.session_state["Sucursales"]
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -129,11 +133,12 @@ lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
 
 with f2:
     st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {st.session_state.estado_sel}</div>', unsafe_allow_html=True)
+    # Asegurar que la sucursal seleccionada pertenece al estado actual
     if not st.session_state.sucursal_sel or st.session_state.sucursal_sel not in lista_suc:
         if lista_suc:
             st.session_state.sucursal_sel = lista_suc[0]
     idx_suc = lista_suc.index(st.session_state.sucursal_sel) if st.session_state.sucursal_sel in lista_suc else 0
-    suc_temp = st.selectbox("Sucursales", lista_suc, index=idx_suc, label_visibility="collapsed")
+    suc_temp = st.selectbox("Sucursales", lista_suc, index=idx_suc, label_visibility="collapsed", key="sel_sucursal")
     if suc_temp != st.session_state.sucursal_sel:
         st.session_state.sucursal_sel = suc_temp
         st.rerun()

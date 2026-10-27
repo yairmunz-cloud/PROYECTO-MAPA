@@ -62,16 +62,94 @@ def split_tels(raw):
     if pd.isna(raw) or str(raw).lower() in ['nan','none','']: return []
     return [t.strip() for t in re.split(r'[\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
 
+# USUARIOS AUTORIZADOS - DOS USUARIOS
+USUARIOS = {
+    "yair": "AtlasY",
+    "francisco": "AtlasF"
+}
+
+def check_login(user, pwd):
+    try:
+        # Si hay secrets, usarlos, si no usar diccionario local
+        if "users" in st.secrets:
+            users_secret = st.secrets["users"]
+            return user in users_secret and users_secret[user] == pwd
+        else:
+            return USUARIOS.get(user) == pwd
+    except:
+        return USUARIOS.get(user) == pwd
+
+def log_acceso(usuario, accion="Login"):
+    """Registra acceso en hoja LOG_ACCESOS"""
+    now = datetime.now()
+    fecha = now.strftime("%d/%m/%Y")
+    hora = now.strftime("%H:%M:%S")
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            client = gspread.authorize(creds)
+            sheet_id = st.secrets.get("sheet_id", "1QbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90")
+            sh = client.open_by_key(sheet_id)
+            try:
+                ws = sh.worksheet("LOG_ACCESOS")
+            except:
+                ws = sh.add_worksheet(title="LOG_ACCESOS", rows=1000, cols=10)
+                ws.append_row(["FECHA", "HORA", "USUARIO", "ACCION", "DETALLE"])
+            ws.append_row([fecha, hora, usuario, accion, f"Acceso desde app"])
+    except Exception as e:
+        # Guardar local si no hay credenciales
+        if 'log_accesos_demo' not in st.session_state:
+            st.session_state['log_accesos_demo'] = []
+        st.session_state['log_accesos_demo'].append({"fecha": fecha, "hora": hora, "usuario": usuario, "accion": accion})
+
+def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, tel=""):
+    """Registra reporte en HISTORIAL_REPORTES para graficas y consultas por dia/mes/año"""
+    now = datetime.now()
+    fecha_reg = now.strftime("%d/%m/%Y")
+    hora_reg = now.strftime("%H:%M:%S")
+    mes = now.strftime("%m")
+    anio = now.strftime("%Y")
+    dia = now.strftime("%d")
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            client = gspread.authorize(creds)
+            sheet_id = st.secrets.get("sheet_id", "1QbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90")
+            sh = client.open_by_key(sheet_id)
+            try:
+                ws = sh.worksheet("HISTORIAL_REPORTES")
+            except:
+                ws = sh.add_worksheet(title="HISTORIAL_REPORTES", rows=5000, cols=15)
+                ws.append_row(["FECHA_REGISTRO", "HORA_REGISTRO", "DIA", "MES", "ANIO", "USUARIO", "ESTADO", "SUCURSAL", "NO_REPORTE", "FECHA_REPORTE", "TEL"])
+            ws.append_row([fecha_reg, hora_reg, dia, mes, anio, usuario, estado, sucursal, no_reporte, fecha_reporte, tel])
+    except Exception as e:
+        if 'historial_demo' not in st.session_state:
+            st.session_state['historial_demo'] = []
+        st.session_state['historial_demo'].append({"fecha_reg": fecha_reg, "hora": hora_reg, "dia": dia, "mes": mes, "anio": anio, "usuario": usuario, "estado": estado, "sucursal": sucursal, "no_reporte": no_reporte, "fecha_reporte": fecha_reporte})
+
 lista_estados = sorted(df[COL_EST].dropna().unique())
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
 
-# --- HEADER ---
+if 'admin_auth' not in st.session_state:
+    st.session_state['admin_auth'] = False
+if 'show_login' not in st.session_state:
+    st.session_state['show_login'] = False
+if 'show_add_form' not in st.session_state:
+    st.session_state['show_add_form'] = False
+if 'current_user' not in st.session_state:
+    st.session_state['current_user'] = None
+
+# HEADER
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
     st.markdown(f"""
     <div style="display:flex; align-items:center; gap:16px">
         <div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white">
-            <img src="data:image/png;base64,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" style="width:100%; height:100%; object-fit:cover">
+            <img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover">
         </div>
         <div style="font-size:2rem; font-weight:900; letter-spacing:-0.8px">SUCURSALES</div>
     </div>
@@ -93,7 +171,6 @@ with c2:
         if sel != "Seleccionar reporte...":
             if st.session_state.get('last_jump') != sel:
                 est_jump, suc_jump = opciones[sel]
-                # FORZAR actualizacion directa de los widgets de estado y sucursal
                 st.session_state['estado_real'] = est_jump
                 st.session_state['sucursal_real'] = suc_jump
                 st.session_state['jump_est'] = est_jump
@@ -101,10 +178,8 @@ with c2:
                 st.session_state['last_jump'] = sel
                 st.rerun()
 
-# --- DETERMINAR INDICES PARA JUMP ---
 default_est_idx = 0
 default_suc = None
-# Si ya hay valor en el widget de estado (por salto), usarlo
 if 'estado_real' in st.session_state and st.session_state['estado_real'] in lista_estados:
     default_est_idx = lista_estados.index(st.session_state['estado_real'])
     default_suc = st.session_state.get('sucursal_real')
@@ -112,19 +187,18 @@ elif 'jump_est' in st.session_state and st.session_state['jump_est'] in lista_es
     default_est_idx = lista_estados.index(st.session_state['jump_est'])
     default_suc = st.session_state.get('jump_suc')
 
-# --- FILTROS SIN LOGICA COMPLICADA ---
+# FILTROS
 f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
 with f1:
     st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
     estado_actual = st.selectbox("Estado", lista_estados, index=default_est_idx, key="estado_real", label_visibility="collapsed")
+    if 'jump_est' in st.session_state and estado_actual != st.session_state['jump_est']:
+        if 'jump_est' in st.session_state:
+            del st.session_state['jump_est']
+        if 'jump_suc' in st.session_state:
+            del st.session_state['jump_suc']
+        default_suc = None
     st.markdown('</div>', unsafe_allow_html=True)
-
-# Limpiar jump si el usuario cambio manualmente de estado
-if 'jump_est' in st.session_state and estado_actual != st.session_state['jump_est']:
-    del st.session_state['jump_est']
-    if 'jump_suc' in st.session_state:
-        del st.session_state['jump_suc']
-    default_suc = None
 
 df_estado = df[df[COL_EST] == estado_actual]
 lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
@@ -140,14 +214,230 @@ with f2:
 
 with f3:
     st.markdown('<div class="filter-pill"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
-    if st.button("🔄 Actualizar", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
+    ca1, ca2 = st.columns(2)
+    with ca1:
+        if st.button("🔄", use_container_width=True, help="Actualizar"):
+            st.cache_data.clear()
+            st.rerun()
+    with ca2:
+        if st.button("➕", use_container_width=True, help="Agregar reporte - solo admin"):
+            st.session_state['show_login'] = True
+            st.session_state['show_add_form'] = False
+            st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
+# LOGIN MODAL - DOS USUARIOS
+if st.session_state['show_login'] and not st.session_state['admin_auth']:
+    st.markdown('<div class="glass" style="border:2px solid #0f172a; padding:24px">', unsafe_allow_html=True)
+    st.markdown("### 🔐 Login Administrador")
+    st.caption("Usuarios autorizados: yair / francisco")
+    u = st.text_input("Usuario", placeholder="yair o francisco", key="login_user")
+    p = st.text_input("Contraseña", type="password", key="login_pwd")
+    cl1, cl2 = st.columns(2)
+    with cl1:
+        if st.button("Ingresar", type="primary", use_container_width=True):
+            if check_login(u.lower().strip(), p):
+                st.session_state['admin_auth'] = True
+                st.session_state['current_user'] = u.lower().strip()
+                st.session_state['show_login'] = False
+                st.session_state['show_add_form'] = True
+                log_acceso(u.lower().strip(), "Login exitoso")
+                st.success(f"Bienvenido {u}")
+                st.rerun()
+            else:
+                st.error("Usuario o contraseña incorrectos. Usuarios validos: yair / francisco")
+    with cl2:
+        if st.button("Cancelar", use_container_width=True):
+            st.session_state['show_login'] = False
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# FORMULARIO AGREGAR REPORTE
+if st.session_state['admin_auth'] and st.session_state['show_add_form']:
+    st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px">', unsafe_allow_html=True)
+    st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}**")
+    st.info(f"{len(df)} sucursales • Se guardara en BDSUCURSALES + HISTORIAL + LOG")
+    
+    with st.form("form_add_reporte"):
+        fc1, fc2 = st.columns(2)
+        with fc1:
+            est_new = st.selectbox("Estado", lista_estados, index=lista_estados.index(estado_actual) if estado_actual in lista_estados else 0)
+            suc_new = st.text_input("Sucursal", value=sucursal_actual)
+            rep_new = st.text_input("No. Reporte *", placeholder="Ej: 51564186")
+        with fc2:
+            tel_new = st.text_input("Lineas Telefonicas", placeholder="Ej: 551-102-2050")
+            fec_new = st.date_input("Fecha Reporte", value=datetime.now().date())
+        
+        c_f1, c_f2 = st.columns(2)
+        with c_f1:
+            submitted = st.form_submit_button("💾 Guardar en Google Sheets", type="primary", use_container_width=True)
+        with c_f2:
+            cerrar = st.form_submit_button("Cerrar formulario", use_container_width=True)
+        
+        if cerrar:
+            st.session_state['show_add_form'] = False
+            st.rerun()
+        
+        if submitted:
+            if not rep_new:
+                st.error("No. Reporte obligatorio")
+            else:
+                try:
+                    if "gcp_service_account" in st.secrets:
+                        import gspread
+                        from google.oauth2.service_account import Credentials
+                        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+                        client = gspread.authorize(creds)
+                        sheet_id = st.secrets.get("sheet_id", "1QbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90")
+                        sh = client.open_by_key(sheet_id)
+                        # Hoja principal
+                        try:
+                            ws_main = sh.worksheet("BDSUCURSALES")
+                        except:
+                            ws_main = sh.sheet1
+                        ws_main.append_row([est_new, suc_new, tel_new, rep_new, fec_new.strftime("%d/%m/%Y")])
+                        
+                        # LOG_ACCESOS y HISTORIAL ya se manejan en funciones
+                        log_acceso(st.session_state['current_user'], f"Agrego reporte {rep_new} en {suc_new}")
+                        log_reporte_historial(st.session_state['current_user'], est_new, suc_new, rep_new, fec_new.strftime("%d/%m/%Y"), tel_new)
+                        
+                        st.success(f"Reporte {rep_new} agregado a {suc_new}")
+                        st.cache_data.clear()
+                        st.balloons()
+                    else:
+                        st.warning("Modo demo - sin credenciales reales")
+                        log_acceso(st.session_state['current_user'], f"Demo: agrego {rep_new} en {suc_new}")
+                        log_reporte_historial(st.session_state['current_user'], est_new, suc_new, rep_new, fec_new.strftime("%d/%m/%Y"), tel_new)
+                        st.success(f"Demo: {rep_new} guardado localmente")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+if st.session_state['admin_auth']:
+    with st.sidebar:
+        st.success(f"👤 {st.session_state['current_user']} conectado")
+        if st.button("🔓 Cerrar sesion"):
+            log_acceso(st.session_state['current_user'], "Logout")
+            st.session_state['admin_auth'] = False
+            st.session_state['show_add_form'] = False
+            st.session_state['show_login'] = False
+            st.session_state['current_user'] = None
+            st.rerun()
+        
+        st.markdown("---")
+        st.markdown("### 🔍 Consultas Historial")
+        st.caption("Filtra reportes por dia, mes, año, usuario y No. Reporte")
+        
+        # Cargar historial (real si hay credenciales, si no demo)
+        df_hist_real = pd.DataFrame()
+        if 'historial_demo' in st.session_state and st.session_state['historial_demo']:
+            df_hist_real = pd.DataFrame(st.session_state['historial_demo'])
+        else:
+            # Intentar cargar desde Google Sheets si hay credenciales
+            try:
+                if "gcp_service_account" in st.secrets:
+                    import gspread
+                    from google.oauth2.service_account import Credentials
+                    creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
+                    client = gspread.authorize(creds)
+                    sheet_id = st.secrets.get("sheet_id", "1QbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90")
+                    sh = client.open_by_key(sheet_id)
+                    ws = sh.worksheet("HISTORIAL_REPORTES")
+                    data = ws.get_all_records()
+                    if data:
+                        df_hist_real = pd.DataFrame(data)
+            except:
+                pass
+        
+        if not df_hist_real.empty:
+            # Filtros
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                filtro_anio = st.selectbox("Año", ["Todos"] + sorted(df_hist_real['ANIO'].astype(str).unique().tolist() if 'ANIO' in df_hist_real.columns else df_hist_real['anio'].astype(str).unique().tolist() if 'anio' in df_hist_real.columns else []), key="f_anio")
+            with col_f2:
+                filtro_mes = st.selectbox("Mes", ["Todos"] + sorted(df_hist_real['MES'].astype(str).unique().tolist() if 'MES' in df_hist_real.columns else df_hist_real['mes'].astype(str).unique().tolist() if 'mes' in df_hist_real.columns else []), key="f_mes")
+            
+            filtro_usuario = st.selectbox("Usuario", ["Todos"] + sorted(df_hist_real['USUARIO'].astype(str).unique().tolist() if 'USUARIO' in df_hist_real.columns else df_hist_real['usuario'].astype(str).unique().tolist() if 'usuario' in df_hist_real.columns else []), key="f_user")
+            
+            filtro_suc = st.text_input("Filtrar por sucursal", placeholder="Ej: CORDOBA", key="f_suc")
+            filtro_rep = st.text_input("🔍 Buscar No. Reporte", placeholder="Ej: 51564186", key="f_rep")
+            
+            # Aplicar filtros
+            df_filtrado = df_hist_real.copy()
+            # Normalizar nombres de columnas (mayusculas o minusculas)
+            df_filtrado.columns = [c.upper() for c in df_filtrado.columns]
+            
+            if filtro_anio != "Todos" and 'ANIO' in df_filtrado.columns:
+                df_filtrado = df_filtrado[df_filtrado['ANIO'].astype(str) == filtro_anio]
+            if filtro_mes != "Todos" and 'MES' in df_filtrado.columns:
+                df_filtrado = df_filtrado[df_filtrado['MES'].astype(str) == filtro_mes]
+            if filtro_usuario != "Todos" and 'USUARIO' in df_filtrado.columns:
+                df_filtrado = df_filtrado[df_filtrado['USUARIO'].astype(str) == filtro_usuario]
+            if filtro_suc and 'SUCURSAL' in df_filtrado.columns:
+                df_filtrado = df_filtrado[df_filtrado['SUCURSAL'].astype(str).str.contains(filtro_suc, case=False, na=False)]
+            if filtro_rep and 'NO_REPORTE' in df_filtrado.columns:
+                df_filtrado = df_filtrado[df_filtrado['NO_REPORTE'].astype(str).str.contains(filtro_rep, case=False, na=False)]
+            
+            st.markdown(f"**{len(df_filtrado)} reportes encontrados**")
+            
+            # Metricas
+            m1, m2 = st.columns(2)
+            with m1:
+                st.metric("Total", len(df_filtrado))
+            with m2:
+                if 'SUCURSAL' in df_filtrado.columns:
+                    st.metric("Sucursales", df_filtrado['SUCURSAL'].nunique())
+            
+            # Graficas
+            if not df_filtrado.empty:
+                if 'FECHA_REGISTRO' in df_filtrado.columns:
+                    st.markdown("**Por dia**")
+                    por_dia = df_filtrado.groupby('FECHA_REGISTRO').size()
+                    st.bar_chart(por_dia)
+                elif 'FECHA_REG' in df_filtrado.columns:
+                    st.markdown("**Por dia**")
+                    por_dia = df_filtrado.groupby('FECHA_REG').size()
+                    st.bar_chart(por_dia)
+                
+                if 'SUCURSAL' in df_filtrado.columns:
+                    st.markdown("**Por sucursal (Top 10)**")
+                    por_suc = df_filtrado.groupby('SUCURSAL').size().sort_values(ascending=False).head(10)
+                    st.bar_chart(por_suc)
+                
+                if 'MES' in df_filtrado.columns:
+                    st.markdown("**Por mes**")
+                    por_mes = df_filtrado.groupby('MES').size()
+                    st.bar_chart(por_mes)
+                
+                if 'USUARIO' in df_filtrado.columns:
+                    st.markdown("**Por usuario**")
+                    por_user = df_filtrado.groupby('USUARIO').size()
+                    st.bar_chart(por_user)
+                
+                st.markdown("**Tabla filtrada**")
+                st.dataframe(df_filtrado, use_container_width=True, height=300)
+                
+                # Boton exportar
+                csv = df_filtrado.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Descargar CSV filtrado", csv, f"reportes_filtrados_{filtro_anio}_{filtro_mes}.csv", "text/csv", use_container_width=True)
+            else:
+                st.warning("Sin resultados con esos filtros")
+        else:
+            st.info("Aun no hay historial. Agrega reportes con el boton ➕")
+            # Mostrar demo vacio o con datos de ejemplo si no hay nada
+            if 'log_accesos_demo' in st.session_state and st.session_state['log_accesos_demo']:
+                st.markdown("---")
+                st.markdown("### 📝 Log Accesos")
+                df_log = pd.DataFrame(st.session_state['log_accesos_demo'])
+                # Filtro log
+                f_log_user = st.selectbox("Filtrar log por usuario", ["Todos"] + sorted(df_log['usuario'].unique().tolist() if 'usuario' in df_log.columns else []), key="f_log_user")
+                if f_log_user != "Todos":
+                    df_log = df_log[df_log['usuario'] == f_log_user]
+                st.dataframe(df_log, use_container_width=True)
 
 st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
 
-# --- DETALLE USA DIRECTAMENTE LAS VARIABLES DE LOS WIDGETS ---
+# DETALLE
 if lista_suc and sucursal_actual:
     fila_df = df_estado[df_estado[COL_SUC] == sucursal_actual]
     if fila_df.empty:
@@ -189,7 +479,10 @@ if lista_suc and sucursal_actual:
                     st.markdown(f'<div class="glass" style="padding:12px 16px; margin-bottom:10px">📞 {t}</div>', unsafe_allow_html=True)
     with c_det2:
         st.markdown(f'<div class="glass" style="text-align:center; padding:24px"><div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase">Dias con reporte</div><div style="font-size:3rem; font-weight:900; color:{c_dias}">{dias if dias is not None else "—"}</div><div style="color:#64748b">{txt}</div></div>', unsafe_allow_html=True)
-
-# No borrar jump_est inmediatamente - dejarlo para que mantenga el estado seleccionado
-# Se borra solo cuando el usuario cambia manualmente de estado (arriba)
-pass
+        # Grafica historica de esta sucursal si hay historial
+        if 'historial_demo' in st.session_state and st.session_state['historial_demo']:
+            df_h = pd.DataFrame(st.session_state['historial_demo'])
+            df_suc_h = df_h[df_h['sucursal'] == sucursal_actual]
+            if not df_suc_h.empty:
+                st.markdown(f'<div class="glass" style="padding:16px; margin-top:12px"><div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:8px">Historial de esta sucursal ({len(df_suc_h)} reportes)</div></div>', unsafe_allow_html=True)
+                st.bar_chart(df_suc_h.groupby('fecha_reg').size())

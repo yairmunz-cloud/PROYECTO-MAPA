@@ -3,6 +3,18 @@ import pandas as pd
 from datetime import datetime
 import re
 import time
+import base64
+
+# Cargar logo Atlas - intentar desde archivo local o usar base64 embebido
+try:
+    with open("image_af8068.png", "rb") as f:
+        b64_logo = base64.b64encode(f.read()).decode()
+except:
+    try:
+        with open("/mnt/data/image_af8068.png", "rb") as f:
+            b64_logo = base64.b64encode(f.read()).decode()
+    except:
+        b64_logo = ""
 
 st.set_page_config(page_title="SUCURSALES", layout="wide", page_icon="🏢")
 

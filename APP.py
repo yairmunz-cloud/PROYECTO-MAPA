@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -92,10 +91,15 @@ with c2:
         opciones = {f"{r[COL_SUC]} ({r[COL_EST]})": (str(r[COL_EST]), str(r[COL_SUC])) for _, r in df_reportes.iterrows()}
         sel = st.selectbox("jump", ["Seleccionar reporte..."] + list(opciones.keys()), label_visibility="collapsed", key="jump_rep_final")
         if sel != "Seleccionar reporte...":
-            est_jump, suc_jump = opciones[sel]
-            st.session_state['jump_est'] = est_jump
-            st.session_state['jump_suc'] = suc_jump
-            st.rerun()
+            # Evitar bucle infinito: solo procesar si es diferente al ultimo procesado
+            if st.session_state.get('last_jump') != sel:
+                est_jump, suc_jump = opciones[sel]
+                st.session_state['jump_est'] = est_jump
+                st.session_state['jump_suc'] = suc_jump
+                st.session_state['last_jump'] = sel
+                st.rerun()
+            # Reset visual del dropdown a "Seleccionar reporte..." para no quedarse ciclado
+            st.session_state['jump_rep_final'] = "Seleccionar reporte..."
 
 # --- DETERMINAR INDICES PARA JUMP ---
 default_est_idx = 0
@@ -183,8 +187,6 @@ if lista_suc and sucursal_actual:
     with c_det2:
         st.markdown(f'<div class="glass" style="text-align:center; padding:24px"><div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase">Dias con reporte</div><div style="font-size:3rem; font-weight:900; color:{c_dias}">{dias if dias is not None else "—"}</div><div style="color:#64748b">{txt}</div></div>', unsafe_allow_html=True)
 
-# Limpiar jump despues de usarlo una vez para que no se quede pegado
-if 'jump_est' in st.session_state and 'jump_suc' in st.session_state:
-    if sucursal_actual == st.session_state['jump_suc']:
-        del st.session_state['jump_est']
-        del st.session_state['jump_suc']
+# No borrar jump_est inmediatamente - dejarlo para que mantenga el estado seleccionado
+# Se borra solo cuando el usuario cambia manualmente de estado (arriba)
+pass

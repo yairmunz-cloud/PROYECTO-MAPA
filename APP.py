@@ -242,8 +242,8 @@ with f3:
 if st.session_state['show_login'] and not st.session_state['admin_auth']:
     st.markdown('<div class="glass" style="border:2px solid #0f172a; padding:24px">', unsafe_allow_html=True)
     st.markdown("### 🔐 Login Administrador")
-    st.caption("Usuarios autorizados: yair / francisco")
-    u = st.text_input("Usuario", placeholder="yair o francisco", key="login_user")
+    st.caption("Acceso restringido - Solo personal autorizado")
+    u = st.text_input("Usuario", placeholder="Ingresa tu usuario", key="login_user")
     p = st.text_input("Contraseña", type="password", key="login_pwd")
     cl1, cl2 = st.columns(2)
     with cl1:
@@ -257,7 +257,7 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
                 st.success(f"Bienvenido {u}")
                 st.rerun()
             else:
-                st.error("Usuario o contraseña incorrectos. Usuarios validos: yair / francisco")
+                st.error("Usuario o contraseña incorrectos")
     with cl2:
         if st.button("Cancelar", use_container_width=True):
             st.session_state['show_login'] = False
@@ -317,10 +317,12 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         st.cache_data.clear()
                         st.balloons()
                     else:
-                        st.warning("Modo demo - sin credenciales reales")
-                        log_acceso(st.session_state['current_user'], f"Demo: agrego {rep_new} en {suc_new}")
+                        st.warning("⚠️ MODO DEMO - El reporte NO se guardo en Google Sheets real")
+                        st.error("Faltan credenciales de Google. Para que guarde real, debes configurar Service Account en Secrets.")
+                        log_acceso(st.session_state['current_user'], f"Demo: intento agregar {rep_new} en {suc_new} - SIN GUARDAR EN SHEET")
                         log_reporte_historial(st.session_state['current_user'], est_new, suc_new, rep_new, fec_new.strftime("%d/%m/%Y"), tel_new)
-                        st.success(f"Demo: {rep_new} guardado localmente")
+                        st.info(f"Reporte {rep_new} guardado SOLO en memoria local (se borra al recargar). Para guardado permanente, configura Secrets.")
+                        st.success(f"Demo local: {rep_new} - {suc_new}")
                 except Exception as e:
                     st.error(f"Error: {e}")
     st.markdown('</div>', unsafe_allow_html=True)

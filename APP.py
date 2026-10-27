@@ -231,10 +231,7 @@ with f3:
     if st.button("🔄 Actualizar", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
-    if st.session_state.sucursal_sel:
-        if st.button("✕ Limpiar", use_container_width=True):
-            st.session_state.sucursal_sel = None
-            st.rerun()
+    # Boton Limpiar eliminado a peticion del usuario
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)

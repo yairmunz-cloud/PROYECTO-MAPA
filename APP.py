@@ -365,9 +365,9 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     with st.form("form_reporte_final", clear_on_submit=True):
         fc1, fc2 = st.columns(2)
         with fc1:
-            rep_new = st.text_input("No. Reporte *", placeholder="45163", key="form_rep_final")
+            rep_new = st.text_input("No. Reporte *", placeholder="45163", key="form_rep_final", help="Solo numeros, sin letras ni guiones")
         with fc2:
-            fec_new = st.date_input("Fecha Reporte", value=datetime.now().date(), key="form_fec_final")
+            fec_new = st.date_input("Fecha Reporte", value=datetime.now().date(), max_value=datetime.now().date(), key="form_fec_final", help="No se permite fecha futura")
         obs_new = st.text_area("📝 Observaciones / Falla reportada *", placeholder="Ej: falla, sin linea, ruido...", height=90, key="form_obs_final")
         st.markdown("---")
         c1f, c2f = st.columns([1.3, 0.7])
@@ -379,15 +379,23 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             st.session_state['show_add_form'] = False
             st.rerun()
         if btn_add:
-            if not rep_new:
+            # Validacion: solo numeros en No. Reporte
+            rep_new_clean = str(rep_new).strip()
+            if not rep_new_clean:
                 st.error("No. Reporte obligatorio")
+            elif not rep_new_clean.isdigit():
+                st.error("❌ No. Reporte solo debe contener numeros (0-9), sin letras ni simbolos")
             elif not suc_new:
                 st.error("Sucursal obligatoria")
             elif not tel_final:
                 st.error("Selecciona al menos una linea con falla")
             elif not obs_new:
                 st.error("Observaciones obligatoria")
+            elif fec_new > datetime.now().date():
+                st.error("❌ La fecha no puede ser futura")
             else:
+                # Usar el valor limpio numerico
+                rep_new = rep_new_clean
                 nuevo = {"estado": est_new, "sucursal": suc_new, "tel": tel_final, "no_reporte": rep_new, "fecha_reporte": fec_new.strftime("%d/%m/%Y"), "obs": obs_new}
                 st.session_state['batch_reportes'].append(nuevo)
                 st.success(f"✅ Reporte {rep_new} agregado - Total: {len(st.session_state['batch_reportes'])}")

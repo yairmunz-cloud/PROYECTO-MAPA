@@ -550,12 +550,58 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             st.session_state['batch_reportes'] = []
             st.rerun()
         if btn_add:
-            # Validacion: solo numeros en No. Reporte
+            # Validacion: solo numeros en No. Reporte + duplicados
             rep_new_clean = str(rep_new).strip()
+            # Listas de reportes existentes
+            try:
+                reportes_activos_existentes = [str(r).strip() for r in df[COL_REP].dropna().tolist() if tiene_reporte(r)] if COL_REP in df.columns else []
+            except:
+                reportes_activos_existentes = []
+            try:
+                reportes_en_cola = [str(r['no_reporte']).strip() for r in st.session_state.get('batch_reportes', [])]
+            except:
+                reportes_en_cola = []
+            try:
+                hist_existentes = [str(r.get('no_reporte','')).strip() for r in st.session_state.get('historial_demo', [])]
+            except:
+                hist_existentes = []
+            try:
+                cerrados_existentes = [str(r.get('no_reporte','')).strip() for r in st.session_state.get('reportes_demo', [])]
+            except:
+                cerrados_existentes = []
+
             if not rep_new_clean:
                 st.error("No. Reporte obligatorio")
             elif not rep_new_clean.isdigit():
                 st.error("❌ No. Reporte solo debe contener numeros (0-9), sin letras ni simbolos")
+            elif rep_new_clean in reportes_activos_existentes:
+                # Buscar en que sucursal esta ese reporte activo
+                try:
+                    fila_dup = df[df[COL_REP].astype(str).str.strip() == rep_new_clean]
+                    if not fila_dup.empty:
+                        suc_dup = fila_dup.iloc[0][COL_SUC]
+                        est_dup = fila_dup.iloc[0][COL_EST]
+                        st.error(f"❌ El reporte {rep_new_clean} ya existe como reporte ACTIVO en {suc_dup} ({est_dup}) - No se puede duplicar")
+                    else:
+                        st.error(f"❌ El reporte {rep_new_clean} ya existe como reporte activo")
+                except:
+                    st.error(f"❌ El reporte {rep_new_clean} ya existe como reporte activo")
+            elif rep_new_clean in reportes_en_cola:
+                st.error(f"❌ El reporte {rep_new_clean} ya esta en la cola para guardar - Revisa la lista debajo")
+            elif rep_new_clean in hist_existentes or rep_new_clean in cerrados_existentes:
+                st.warning(f"⚠️ El reporte {rep_new_clean} ya fue usado antes (historial). ¿Seguro que no es duplicado? Si es una reincidencia, puedes continuar, pero verifica.")
+                # Permitir continuar pero con confirmacion visual - no bloqueamos, solo advertimos
+                # Para bloquear totalmente, cambia a st.error y return
+                if not suc_new:
+                    st.error("Sucursal obligatoria")
+                elif not tel_final:
+                    st.error("Selecciona al menos una linea con falla")
+                elif not obs_new:
+                    st.error("Observaciones obligatoria")
+                elif fec_new > datetime.now().date():
+                    st.error("❌ La fecha no puede ser futura")
+                else:
+                    rep_new = rep_new_clean
             elif not suc_new:
                 st.error("Sucursal obligatoria")
             elif not tel_final:

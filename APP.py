@@ -589,29 +589,121 @@ if st.session_state['admin_auth']:
             st.session_state['batch_reportes'] = []
             st.rerun()
         st.markdown("---")
-        st.markdown("### 🔍 Consultas Historial")
-        df_hist = pd.DataFrame(st.session_state.get('historial_demo', []))
-        if not df_hist.empty:
-            f_anio = st.selectbox("Año", ["Todos"] + sorted(df_hist['anio'].unique().tolist()), key="f_anio2")
-            f_mes = st.selectbox("Mes", ["Todos"] + sorted(df_hist['mes'].unique().tolist()), key="f_mes2")
-            f_user = st.selectbox("Usuario", ["Todos"] + sorted(df_hist['usuario'].unique().tolist()), key="f_user2")
-            f_suc = st.text_input("Sucursal", placeholder="CORDOBA", key="f_suc2")
-            f_rep = st.text_input("No. Reporte", placeholder="51564186", key="f_rep2")
-            df_f = df_hist.copy()
-            if f_anio != "Todos":
-                df_f = df_f[df_f['anio'] == f_anio]
-            if f_mes != "Todos":
-                df_f = df_f[df_f['mes'] == f_mes]
-            if f_user != "Todos":
-                df_f = df_f[df_f['usuario'] == f_user]
-            if f_suc:
-                df_f = df_f[df_f['sucursal'].str.contains(f_suc, case=False, na=False)]
-            if f_rep:
-                df_f = df_f[df_f['no_reporte'].str.contains(f_rep, case=False, na=False)]
-            st.write(f"{len(df_f)} reportes")
-            if not df_f.empty:
-                st.bar_chart(df_f.groupby('sucursal').size())
-                st.dataframe(df_f, use_container_width=True)
+        # Preparar listas de estados y sucursales para filtros desplegables
+        try:
+            lista_est_filtro = sorted(df[COL_EST].dropna().unique().tolist())
+        except:
+            lista_est_filtro = []
+        try:
+            dict_est_suc = {est: sorted(df[df[COL_EST]==est][COL_SUC].dropna().unique().tolist()) for est in lista_est_filtro}
+        except:
+            dict_est_suc = {}
+
+        st.markdown("### 📊 Consultas Reportes")
+        tipo_consulta = st.selectbox("Tipo de reporte", ["Total reportes generados", "Reportes cerrados / solucionados"], key="tipo_consulta_rep")
+
+        if tipo_consulta == "Total reportes generados":
+            df_hist = pd.DataFrame(st.session_state.get('historial_demo', []))
+            if not df_hist.empty:
+                # Calcular semana si no existe
+                if 'semana' not in df_hist.columns:
+                    try:
+                        df_hist['fecha_dt'] = pd.to_datetime(df_hist['fecha_reg'], dayfirst=True, errors='coerce')
+                        df_hist['semana'] = df_hist['fecha_dt'].dt.isocalendar().week.astype(str).fillna("N/A")
+                    except:
+                        df_hist['semana'] = "N/A"
+                f_anio = st.selectbox("Año", ["Todos"] + sorted(df_hist['anio'].unique().tolist()), key="f_anio_total")
+                f_mes = st.selectbox("Mes", ["Todos"] + sorted(df_hist['mes'].unique().tolist()), key="f_mes_total")
+                semanas_unicas = sorted(df_hist['semana'].dropna().unique().tolist()) if 'semana' in df_hist.columns else []
+                f_sem = st.selectbox("Semana", ["Todos"] + semanas_unicas, key="f_sem_total")
+                # Estado y sucursal desplegables
+                f_est = st.selectbox("Estado", ["Todos"] + lista_est_filtro, key="f_est_total")
+                if f_est != "Todos" and f_est in dict_est_suc:
+                    suc_opts = ["Todas"] + dict_est_suc[f_est]
+                else:
+                    suc_opts = ["Todas"] + sorted(df_hist['sucursal'].dropna().unique().tolist())
+                f_suc = st.selectbox("Sucursal", suc_opts, key="f_suc_total")
+                f_user = st.selectbox("Usuario", ["Todos"] + sorted(df_hist['usuario'].dropna().unique().tolist()), key="f_user_total")
+                f_rep = st.text_input("No. Reporte", placeholder="51564186", key="f_rep_total")
+
+                df_f = df_hist.copy()
+                if f_anio != "Todos":
+                    df_f = df_f[df_f['anio'] == f_anio]
+                if f_mes != "Todos":
+                    df_f = df_f[df_f['mes'] == f_mes]
+                if f_sem != "Todos":
+                    df_f = df_f[df_f['semana'] == f_sem]
+                if f_est != "Todos":
+                    df_f = df_f[df_f['estado'] == f_est]
+                if f_suc != "Todas":
+                    df_f = df_f[df_f['sucursal'] == f_suc]
+                if f_user != "Todos":
+                    df_f = df_f[df_f['usuario'] == f_user]
+                if f_rep:
+                    df_f = df_f[df_f['no_reporte'].str.contains(f_rep, case=False, na=False)]
+
+                st.write(f"**{len(df_f)} reportes generados**")
+                if not df_f.empty:
+                    # Metricas por sucursal
+                    incid = df_f.groupby('sucursal').size().reset_index(name='total_reportes')
+                    st.markdown("**Incidencias por sucursal**")
+                    st.dataframe(incid.sort_values('total_reportes', ascending=False), use_container_width=True)
+                    st.bar_chart(df_f.groupby('sucursal').size())
+                    # Por mes
+                    if 'mes' in df_f.columns:
+                        st.markdown("**Por mes**")
+                        st.bar_chart(df_f.groupby('mes').size())
+                    st.dataframe(df_f, use_container_width=True)
+                    csv = df_f.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 CSV Total generados", csv, "total_reportes_generados.csv", "text/csv", use_container_width=True)
+            else:
+                st.caption("Aun no hay reportes generados en demo")
+        else:
+            df_rep_cerrados = pd.DataFrame(st.session_state.get('reportes_demo', []))
+            if not df_rep_cerrados.empty:
+                if 'semana' not in df_rep_cerrados.columns:
+                    try:
+                        df_rep_cerrados['fecha_dt'] = pd.to_datetime(df_rep_cerrados['fecha_cierre'], dayfirst=True, errors='coerce')
+                        df_rep_cerrados['semana'] = df_rep_cerrados['fecha_dt'].dt.isocalendar().week.astype(str).fillna("N/A")
+                    except:
+                        df_rep_cerrados['semana'] = "N/A"
+                f_anio_c = st.selectbox("Año cierre", ["Todos"] + sorted(df_rep_cerrados['anio'].unique().tolist()), key="f_anio_cierre")
+                f_mes_c = st.selectbox("Mes cierre", ["Todos"] + sorted(df_rep_cerrados['mes'].unique().tolist()), key="f_mes_cierre2")
+                semanas_c = sorted(df_rep_cerrados['semana'].dropna().unique().tolist()) if 'semana' in df_rep_cerrados.columns else []
+                f_sem_c = st.selectbox("Semana cierre", ["Todos"] + semanas_c, key="f_sem_cierre")
+                f_est_c = st.selectbox("Estado cierre", ["Todos"] + lista_est_filtro, key="f_est_cierre")
+                if f_est_c != "Todos" and f_est_c in dict_est_suc:
+                    suc_opts_c = ["Todas"] + dict_est_suc[f_est_c]
+                else:
+                    suc_opts_c = ["Todas"] + sorted(df_rep_cerrados['sucursal'].dropna().unique().tolist())
+                f_suc_c = st.selectbox("Sucursal cerrada", suc_opts_c, key="f_suc_cierre2")
+                f_user_c = st.selectbox("Usuario cierre", ["Todos"] + sorted(df_rep_cerrados['usuario_cierre'].dropna().unique().tolist()) if 'usuario_cierre' in df_rep_cerrados.columns else ["Todos"], key="f_user_cierre")
+
+                df_c = df_rep_cerrados.copy()
+                if f_anio_c != "Todos":
+                    df_c = df_c[df_c['anio'] == f_anio_c]
+                if f_mes_c != "Todos":
+                    df_c = df_c[df_c['mes'] == f_mes_c]
+                if f_sem_c != "Todos":
+                    df_c = df_c[df_c['semana'] == f_sem_c]
+                if f_est_c != "Todos":
+                    df_c = df_c[df_c['estado'] == f_est_c]
+                if f_suc_c != "Todas":
+                    df_c = df_c[df_c['sucursal'] == f_suc_c]
+                if f_user_c != "Todos":
+                    df_c = df_c[df_c['usuario_cierre'] == f_user_c]
+
+                st.write(f"**{len(df_c)} reportes cerrados**")
+                if not df_c.empty:
+                    incidencias = df_c.groupby('sucursal').size().reset_index(name='incidencias_cerradas')
+                    st.markdown("**Incidencias cerradas por sucursal**")
+                    st.dataframe(incidencias.sort_values('incidencias_cerradas', ascending=False), use_container_width=True)
+                    st.bar_chart(df_c.groupby('sucursal').size())
+                    st.dataframe(df_c, use_container_width=True)
+                    csv_c = df_c.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 CSV Reportes cerrados", csv_c, "reportes_cerrados.csv", "text/csv", use_container_width=True)
+            else:
+                st.caption("Aun no hay reportes cerrados - Se guardaran en hoja 'reportes'")
 
 # DETALLE PRINCIPAL - OCULTO EN MODO AGREGAR
 if not st.session_state.get('show_add_form', False):
@@ -728,33 +820,3 @@ if st.session_state.get('show_close_confirm') and st.session_state.get('close_au
                 st.session_state['close_target'] = None
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
-
-# CONSULTA REPORTES CERRADOS POR ANO MES DIA
-if st.session_state.get('admin_auth'):
-    with st.sidebar:
-        st.markdown("---")
-        st.markdown("### 📊 Consulta Reportes Cerrados")
-        df_rep_cerrados = pd.DataFrame(st.session_state.get('reportes_demo', []))
-        if not df_rep_cerrados.empty:
-            anios = sorted(df_rep_cerrados['anio'].unique().tolist())
-            meses = sorted(df_rep_cerrados['mes'].unique().tolist())
-            f_anio_c = st.selectbox("Año cierre", ["Todos"] + anios, key="f_anio_cierre")
-            f_mes_c = st.selectbox("Mes cierre", ["Todos"] + meses, key="f_mes_cierre")
-            f_suc_c = st.text_input("Sucursal cerrada", placeholder="TIJUANA", key="f_suc_cierre")
-            df_c = df_rep_cerrados.copy()
-            if f_anio_c != "Todos":
-                df_c = df_c[df_c['anio'] == f_anio_c]
-            if f_mes_c != "Todos":
-                df_c = df_c[df_c['mes'] == f_mes_c]
-            if f_suc_c:
-                df_c = df_c[df_c['sucursal'].str.contains(f_suc_c, case=False, na=False)]
-            st.write(f"{len(df_c)} reportes cerrados")
-            if not df_c.empty:
-                st.bar_chart(df_c.groupby('sucursal').size())
-                incidencias = df_c.groupby('sucursal').size().reset_index(name='incidencias')
-                st.dataframe(incidencias, use_container_width=True)
-                st.dataframe(df_c, use_container_width=True)
-                csv_c = df_c.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 CSV Reportes cerrados", csv_c, "reportes_cerrados.csv", "text/csv", use_container_width=True)
-        else:
-            st.caption("Aun no hay reportes cerrados - Se guardaran en hoja 'reportes'")

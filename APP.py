@@ -56,6 +56,7 @@ COL_SUC = buscar_col(['SUCURSAL','SUC','SITIO'])
 COL_TEL = buscar_col(['TELMEX','TEL','LINEA'])
 COL_REP = buscar_col(['NO. REPORTE','NO REPORTE','REPORTE'])
 COL_FEC = buscar_col(['FECHA','FEC'])
+COL_OBS = buscar_col(['OBSERVACIONES','OBS','FALLA','COMENTARIO'])
 
 df[COL_EST] = df[COL_EST].astype(str).str.strip().replace({'nan':'', 'None':''}).replace('', pd.NA).ffill().str.strip()
 df[COL_SUC] = df[COL_SUC].astype(str).str.strip()
@@ -116,7 +117,7 @@ def log_acceso(usuario, accion="Login"):
             st.session_state['log_accesos_demo'] = []
         st.session_state['log_accesos_demo'].append({"fecha": fecha, "hora": hora, "usuario": usuario, "accion": accion})
 
-def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, tel=""):
+def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, tel="", observaciones=""):
     """Registra reporte en HISTORIAL_REPORTES para graficas y consultas por dia/mes/año"""
     now = datetime.now()
     fecha_reg = now.strftime("%d/%m/%Y")
@@ -136,12 +137,12 @@ def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, 
                 ws = sh.worksheet("HISTORIAL_REPORTES")
             except:
                 ws = sh.add_worksheet(title="HISTORIAL_REPORTES", rows=5000, cols=15)
-                ws.append_row(["FECHA_REGISTRO", "HORA_REGISTRO", "DIA", "MES", "ANIO", "USUARIO", "ESTADO", "SUCURSAL", "NO_REPORTE", "FECHA_REPORTE", "TEL"])
-            ws.append_row([fecha_reg, hora_reg, dia, mes, anio, usuario, estado, sucursal, no_reporte, fecha_reporte, tel])
+                ws.append_row(["FECHA_REGISTRO", "HORA_REGISTRO", "DIA", "MES", "ANIO", "USUARIO", "ESTADO", "SUCURSAL", "NO_REPORTE", "FECHA_REPORTE", "TEL", "OBSERVACIONES"])
+            ws.append_row([fecha_reg, hora_reg, dia, mes, anio, usuario, estado, sucursal, no_reporte, fecha_reporte, tel, observaciones])
     except Exception as e:
         if 'historial_demo' not in st.session_state:
             st.session_state['historial_demo'] = []
-        st.session_state['historial_demo'].append({"fecha_reg": fecha_reg, "hora": hora_reg, "dia": dia, "mes": mes, "anio": anio, "usuario": usuario, "estado": estado, "sucursal": sucursal, "no_reporte": no_reporte, "fecha_reporte": fecha_reporte})
+        st.session_state['historial_demo'].append({"fecha_reg": fecha_reg, "hora": hora_reg, "dia": dia, "mes": mes, "anio": anio, "usuario": usuario, "estado": estado, "sucursal": sucursal, "no_reporte": no_reporte, "fecha_reporte": fecha_reporte, "tel": tel, "observaciones": observaciones})
 
 lista_estados = sorted(df[COL_EST].dropna().unique())
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
@@ -273,12 +274,43 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     with st.form("form_add_reporte"):
         fc1, fc2 = st.columns(2)
         with fc1:
-            est_new = st.selectbox("Estado", lista_estados, index=lista_estados.index(estado_actual) if estado_actual in lista_estados else 0)
-            suc_new = st.text_input("Sucursal", value=sucursal_actual)
-            rep_new = st.text_input("No. Reporte *", placeholder="Ej: 51564186")
+            est_new = st.selectbox("Estado (formulario)", lista_estados, index=lista_estados.index(estado_actual) if estado_actual in lista_estados else 0, key="form_est")
+            # Filtrar sucursales solo de ese estado para evitar errores
+            df_suc_filtro = df[df[COL_EST] == est_new]
+            lista_suc_filtro = sorted(df_suc_filtro[COL_SUC].dropna().unique())
+            # Agregar opcion para nueva sucursal
+            opciones_suc = lista_suc_filtro + ["➕ Otra / Nueva sucursal..."]
+            # Si la sucursal actual esta en ese estado, preseleccionarla
+            idx_default = 0
+            if sucursal_actual in lista_suc_filtro:
+                idx_default = lista_suc_filtro.index(sucursal_actual)
+            
+            suc_seleccionada = st.selectbox(f"Sucursal - {len(lista_suc_filtro)} disponibles en {est_new}", opciones_suc, index=idx_default, key="form_suc_select")
+            
+            # Si selecciona nueva, mostrar campo texto
+            if suc_seleccionada == "➕ Otra / Nueva sucursal...":
+                suc_new = st.text_input("Escribe nueva sucursal *", placeholder="Ej: CORDOBA, LA PAZ...", key="form_suc_new")
+                if suc_new:
+                    st.warning(f"Se creara nueva sucursal: {suc_new} en {est_new}")
+            else:
+                suc_new = suc_seleccionada
+                st.success(f"Sucursal seleccionada: {suc_new}")
+            
+            rep_new = st.text_input("No. Reporte *", placeholder="Ej: 51564186", key="form_rep")
         with fc2:
-            tel_new = st.text_input("Lineas Telefonicas", placeholder="Ej: 551-102-2050")
-            fec_new = st.date_input("Fecha Reporte", value=datetime.now().date())
+            # Autocompletar telefono si selecciona sucursal existente
+            tel_default = ""
+            if suc_new and suc_new != "➕ Otra / Nueva sucursal..." and suc_new in df_suc_filtro[COL_SUC].values:
+                fila_tel = df_suc_filtro[df_suc_filtro[COL_SUC] == suc_new]
+                if not fila_tel.empty:
+                    tel_default = str(fila_tel.iloc[0].get(COL_TEL, ""))
+                    if tel_default.lower() == "nan":
+                        tel_default = ""
+            
+            tel_new = st.text_input("Lineas Telefonicas", value=tel_default, placeholder="Ej: 551-102-2050", key="form_tel")
+            fec_new = st.date_input("Fecha Reporte", value=datetime.now().date(), key="form_fec")
+        
+        obs_new = st.text_area("📝 Observaciones / Falla reportada", placeholder="Ej: Linea sin tono, falla en internet, ruido en linea, no entra ni sale llamada...", height=100, key="form_obs")
         
         c_f1, c_f2 = st.columns(2)
         with c_f1:
@@ -307,11 +339,11 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                             ws_main = sh.worksheet("BDSUCURSALES")
                         except:
                             ws_main = sh.sheet1
-                        ws_main.append_row([est_new, suc_new, tel_new, rep_new, fec_new.strftime("%d/%m/%Y")])
+                        ws_main.append_row([est_new, suc_new, tel_new, rep_new, fec_new.strftime("%d/%m/%Y"), obs_new])
                         
                         # LOG_ACCESOS y HISTORIAL ya se manejan en funciones
                         log_acceso(st.session_state['current_user'], f"Agrego reporte {rep_new} en {suc_new}")
-                        log_reporte_historial(st.session_state['current_user'], est_new, suc_new, rep_new, fec_new.strftime("%d/%m/%Y"), tel_new)
+                        log_reporte_historial(st.session_state['current_user'], est_new, suc_new, rep_new, fec_new.strftime("%d/%m/%Y"), tel_new, obs_new)
                         
                         st.success(f"Reporte {rep_new} agregado a {suc_new}")
                         st.cache_data.clear()
@@ -320,7 +352,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         st.warning("⚠️ MODO DEMO - El reporte NO se guardo en Google Sheets real")
                         st.error("Faltan credenciales de Google. Para que guarde real, debes configurar Service Account en Secrets.")
                         log_acceso(st.session_state['current_user'], f"Demo: intento agregar {rep_new} en {suc_new} - SIN GUARDAR EN SHEET")
-                        log_reporte_historial(st.session_state['current_user'], est_new, suc_new, rep_new, fec_new.strftime("%d/%m/%Y"), tel_new)
+                        log_reporte_historial(st.session_state['current_user'], est_new, suc_new, rep_new, fec_new.strftime("%d/%m/%Y"), tel_new, obs_new)
                         st.info(f"Reporte {rep_new} guardado SOLO en memoria local (se borra al recargar). Para guardado permanente, configura Secrets.")
                         st.success(f"Demo local: {rep_new} - {suc_new}")
                 except Exception as e:
@@ -483,6 +515,11 @@ if lista_suc and sucursal_actual:
             f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Lineas</div><div style="font-weight:700">{len(tels)} numeros</div></div></div></div>',
             unsafe_allow_html=True
         )
+        # Mostrar observaciones si existe columna
+        if COL_OBS and COL_OBS in fila and str(fila.get(COL_OBS, "")).strip().lower() not in ["", "nan", "none"]:
+            obs_mostrar = fila.get(COL_OBS, "")
+            st.markdown(f'<div class="glass" style="padding:16px; margin-bottom:16px; border-left:4px solid #f59e0b"><div style="font-size:0.75rem; font-weight:700; color:#92400e; text-transform:uppercase; margin-bottom:6px">📝 Observaciones / Falla</div><div style="font-size:0.95rem; color:#0f172a">{obs_mostrar}</div></div>', unsafe_allow_html=True)
+
         st.markdown("### 📞 Lineas Telefonicas")
         if not tels:
             st.markdown('<div class="glass" style="text-align:center; padding:20px; color:#64748b">Sin lineas</div>', unsafe_allow_html=True)

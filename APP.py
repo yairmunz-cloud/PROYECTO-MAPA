@@ -91,22 +91,26 @@ with c2:
         opciones = {f"{r[COL_SUC]} ({r[COL_EST]})": (str(r[COL_EST]), str(r[COL_SUC])) for _, r in df_reportes.iterrows()}
         sel = st.selectbox("jump", ["Seleccionar reporte..."] + list(opciones.keys()), label_visibility="collapsed", key="jump_rep_final")
         if sel != "Seleccionar reporte...":
-            # Evitar bucle infinito: solo procesar si es diferente al ultimo procesado
             if st.session_state.get('last_jump') != sel:
                 est_jump, suc_jump = opciones[sel]
+                # FORZAR actualizacion directa de los widgets de estado y sucursal
+                st.session_state['estado_real'] = est_jump
+                st.session_state['sucursal_real'] = suc_jump
                 st.session_state['jump_est'] = est_jump
                 st.session_state['jump_suc'] = suc_jump
                 st.session_state['last_jump'] = sel
                 st.rerun()
-            # No resetear aqui - causaba StreamlitWidgetAlreadyInstantiatedError. El check de last_jump evita el bucle infinito
 
 # --- DETERMINAR INDICES PARA JUMP ---
 default_est_idx = 0
 default_suc = None
-if 'jump_est' in st.session_state:
-    if st.session_state['jump_est'] in lista_estados:
-        default_est_idx = lista_estados.index(st.session_state['jump_est'])
-        default_suc = st.session_state.get('jump_suc')
+# Si ya hay valor en el widget de estado (por salto), usarlo
+if 'estado_real' in st.session_state and st.session_state['estado_real'] in lista_estados:
+    default_est_idx = lista_estados.index(st.session_state['estado_real'])
+    default_suc = st.session_state.get('sucursal_real')
+elif 'jump_est' in st.session_state and st.session_state['jump_est'] in lista_estados:
+    default_est_idx = lista_estados.index(st.session_state['jump_est'])
+    default_suc = st.session_state.get('jump_suc')
 
 # --- FILTROS SIN LOGICA COMPLICADA ---
 f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")

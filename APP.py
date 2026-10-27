@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import re
 
-st.set_page_config(page_title="BDSUCRSALES • Premium", layout="wide", page_icon="🏢")
+st.set_page_config(page_title="SUCRSALES • Premium", layout="wide", page_icon="🏢")
 
 # --- DISEÑO PREMIUM ---
 st.markdown("""
@@ -53,7 +53,7 @@ st.markdown("""
         box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     }
     
-    /* Selectbox mas grande y bonito */
+    /* Selectbox */
     div[data-baseweb="select"] > div {
         background: rgba(255,255,255,0.9) !important;
         border-radius: 12px !important;
@@ -294,7 +294,7 @@ with f2:
 
 with f3:
     st.markdown('<div class="filter-pill" style="align-items:center; justify-content:center">', unsafe_allow_html=True)
-    st.markdown('<div class="filter-label" style="align-self:flex-start">⚡ Acciones</div>', unsafe_allow_html=True)
+    st.markdown('<div class="filter-label" style="align-self:flex-start"> Acciones</div>', unsafe_allow_html=True)
     if st.button("🔄 Actualizar", use_container_width=True):
         st.cache_data.clear()
         st.rerun()

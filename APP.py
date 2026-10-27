@@ -139,6 +139,55 @@ def log_acceso(usuario, accion="Login"):
             st.session_state['log_accesos_demo'] = []
         st.session_state['log_accesos_demo'].append({"fecha": fecha, "hora": hora, "usuario": usuario, "accion": accion})
 
+def log_visita(estado_consultado, sucursal_consultada, usuario="anonimo"):
+    now = datetime.now()
+    fecha = now.strftime("%d/%m/%Y")
+    hora = now.strftime("%H:%M:%S")
+    dia = now.strftime("%d")
+    mes = now.strftime("%m")
+    anio = now.strftime("%Y")
+    semana = now.strftime("%V")
+    # Evitar spam: no logear si es la misma consulta consecutiva en menos de 5 seg
+    last = st.session_state.get('last_visita_log')
+    key_now = f"{estado_consultado}|{sucursal_consultada}|{usuario}"
+    if last and last.get('key') == key_now:
+        try:
+            diff = (now - last.get('time')).total_seconds()
+            if diff < 5:
+                return
+        except:
+            pass
+    st.session_state['last_visita_log'] = {"key": key_now, "time": now}
+
+    if "gcp_service_account" not in st.secrets:
+        if 'visitas_demo' not in st.session_state:
+            st.session_state['visitas_demo'] = []
+        st.session_state['visitas_demo'].append({
+            "fecha": fecha, "hora": hora, "dia": dia, "mes": mes, "anio": anio, "semana": semana,
+            "estado": estado_consultado, "sucursal": sucursal_consultada, "usuario": usuario
+        })
+        return
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+        client = gspread.authorize(creds)
+        sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
+        sh = client.open_by_key(sheet_id)
+        try:
+            ws = sh.worksheet("VISITAS")
+        except:
+            ws = sh.add_worksheet(title="VISITAS", rows=10000, cols=15)
+            ws.append_row(["FECHA", "HORA", "DIA", "MES", "ANIO", "SEMANA", "ESTADO", "SUCURSAL", "USUARIO"])
+        ws.append_row([fecha, hora, dia, mes, anio, semana, estado_consultado, sucursal_consultada, usuario])
+    except:
+        if 'visitas_demo' not in st.session_state:
+            st.session_state['visitas_demo'] = []
+        st.session_state['visitas_demo'].append({
+            "fecha": fecha, "hora": hora, "dia": dia, "mes": mes, "anio": anio, "semana": semana,
+            "estado": estado_consultado, "sucursal": sucursal_consultada, "usuario": usuario
+        })
+
 def guardar_en_hoja_reportes(estado, sucursal, no_reporte, fecha_reporte_original, tel, observaciones_original, dias_activo, usuario_cierre):
     now = datetime.now()
     fecha_cierre = now.strftime("%d/%m/%Y")
@@ -278,6 +327,12 @@ if 'close_auth' not in st.session_state:
     st.session_state['close_auth'] = False
 if 'close_user' not in st.session_state:
     st.session_state['close_user'] = None
+if 'last_logged_suc' not in st.session_state:
+    st.session_state['last_logged_suc'] = None
+if 'last_visita_log' not in st.session_state:
+    st.session_state['last_visita_log'] = None
+if 'visitas_demo' not in st.session_state:
+    st.session_state['visitas_demo'] = []
 
 # HEADER
 c1, c2 = st.columns([2.2, 1.3])
@@ -313,6 +368,16 @@ with c2:
                 st.session_state['jump_suc'] = suc_jump
                 st.session_state['last_jump'] = sel
                 st.rerun()
+
+# Contador discreto opcion 3 - arriba donde no estorbe
+try:
+    visitas_list = st.session_state.get('visitas_demo', [])
+    total_vis = len(visitas_list)
+    hoy_str = datetime.now().strftime("%d/%m/%Y")
+    hoy_vis = len([v for v in visitas_list if v.get('fecha') == hoy_str])
+    st.markdown(f"<div style='text-align:right; margin-top:8px; font-size:0.75rem; color:#94a3b8; font-weight:600'>👁️ {total_vis} consultas totales | {hoy_vis} hoy | 📊 {len(df_reportes)} reportes activos</div>", unsafe_allow_html=True)
+except:
+    pass
 
 default_est_idx = 0
 default_suc = None
@@ -578,7 +643,9 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         for r in st.session_state['batch_reportes']:
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
-                        st.warning(f"DEMO: {guardados} reportes solo en memoria")
+                        st.success(f"✅ DEMO: {guardados} reportes guardados en memoria - Ver grafica en sidebar → Total reportes generados")
+                        st.balloons()
+                        time.sleep(1)
                         st.session_state['batch_reportes'] = []
                         st.rerun()
                 except Exception as e:
@@ -612,7 +679,30 @@ if st.session_state['admin_auth']:
         tipo_consulta = st.selectbox("Tipo de reporte", ["Total reportes generados", "Reportes cerrados / solucionados"], key="tipo_consulta_rep")
 
         if tipo_consulta == "Total reportes generados":
-            df_hist = pd.DataFrame(st.session_state.get('historial_demo', []))
+            # Combinar historial guardado + cola actual para ver grafica inmediata
+            hist_list = st.session_state.get('historial_demo', [])
+            batch_list = st.session_state.get('batch_reportes', [])
+            # Convertir batch a formato similar a historial para visualizacion
+            batch_as_hist = []
+            for b in batch_list:
+                now = datetime.now()
+                batch_as_hist.append({
+                    "fecha_reg": now.strftime("%d/%m/%Y"),
+                    "hora_reg": now.strftime("%H:%M:%S"),
+                    "dia": now.strftime("%d"),
+                    "mes": now.strftime("%m"),
+                    "anio": now.strftime("%Y"),
+                    "usuario": st.session_state.get('current_user', 'demo'),
+                    "estado": b.get('estado', ''),
+                    "sucursal": b.get('sucursal', ''),
+                    "no_reporte": b.get('no_reporte', ''),
+                    "fecha_reporte": b.get('fecha_reporte', ''),
+                    "tel": b.get('tel', ''),
+                    "observaciones": b.get('obs', ''),
+                    "origen": "En cola"
+                })
+            combined = hist_list + batch_as_hist
+            df_hist = pd.DataFrame(combined)
             if not df_hist.empty:
                 # Calcular semana si no existe
                 if 'semana' not in df_hist.columns:
@@ -621,6 +711,10 @@ if st.session_state['admin_auth']:
                         df_hist['semana'] = df_hist['fecha_dt'].dt.isocalendar().week.astype(str).fillna("N/A")
                     except:
                         df_hist['semana'] = "N/A"
+                # Mostrar aviso si hay en cola
+                if batch_list:
+                    st.info(f"ℹ️ {len(batch_list)} en cola + {len(hist_list)} guardados = {len(combined)} total para grafica")
+                
                 f_anio = st.selectbox("Año", ["Todos"] + sorted(df_hist['anio'].unique().tolist()), key="f_anio_total")
                 f_mes = st.selectbox("Mes", ["Todos"] + sorted(df_hist['mes'].unique().tolist()), key="f_mes_total")
                 semanas_unicas = sorted(df_hist['semana'].dropna().unique().tolist()) if 'semana' in df_hist.columns else []
@@ -666,7 +760,12 @@ if st.session_state['admin_auth']:
                     csv = df_f.to_csv(index=False).encode('utf-8')
                     st.download_button("📥 CSV Total generados", csv, "total_reportes_generados.csv", "text/csv", use_container_width=True)
             else:
-                st.caption("Aun no hay reportes generados en demo")
+                # Si no hay nada, mostrar ayuda
+                if st.session_state.get('batch_reportes'):
+                    st.caption(f"Tienes {len(st.session_state.get('batch_reportes', []))} reportes en cola - Dale Guardar para verlos en historial")
+                else:
+                    st.caption("Aun no hay reportes generados en demo - Agrega reportes con el boton + Reporte y luego Guarda")
+
         else:
             df_rep_cerrados = pd.DataFrame(st.session_state.get('reportes_demo', []))
             if not df_rep_cerrados.empty:
@@ -713,6 +812,43 @@ if st.session_state['admin_auth']:
                     st.download_button("📥 CSV Reportes cerrados", csv_c, "reportes_cerrados.csv", "text/csv", use_container_width=True)
             else:
                 st.caption("Aun no hay reportes cerrados - Se guardaran en hoja 'reportes'")
+
+        # Dashboard de visitas solo con login - opcion 1
+        st.markdown("---")
+        st.markdown("### 👁️ Visitas / Consultas (solo admin)")
+        visitas_df = pd.DataFrame(st.session_state.get('visitas_demo', []))
+        if not visitas_df.empty:
+            hoy_str = datetime.now().strftime("%d/%m/%Y")
+            mes_actual = datetime.now().strftime("%m")
+            anio_actual = datetime.now().strftime("%Y")
+            total = len(visitas_df)
+            hoy_total = len(visitas_df[visitas_df['fecha'] == hoy_str])
+            mes_total = len(visitas_df[visitas_df['mes'] == mes_actual])
+            st.metric("Total consultas", total)
+            c_v1, c_v2 = st.columns(2)
+            with c_v1:
+                st.metric("Hoy", hoy_total)
+            with c_v2:
+                st.metric("Este mes", mes_total)
+            st.markdown("**Top sucursales más consultadas**")
+            top_suc = visitas_df.groupby('sucursal').size().reset_index(name='consultas').sort_values('consultas', ascending=False).head(10)
+            st.dataframe(top_suc, use_container_width=True)
+            st.bar_chart(visitas_df.groupby('sucursal').size().head(10))
+            st.markdown("**Top estados más consultados**")
+            top_est = visitas_df.groupby('estado').size().reset_index(name='consultas').sort_values('consultas', ascending=False)
+            st.dataframe(top_est, use_container_width=True)
+            st.markdown("**Consultas por día**")
+            try:
+                por_dia = visitas_df.groupby('fecha').size()
+                st.bar_chart(por_dia)
+            except:
+                pass
+            st.dataframe(visitas_df.tail(20), use_container_width=True)
+            csv_v = visitas_df.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 CSV Visitas", csv_v, "visitas.csv", "text/csv", use_container_width=True)
+        else:
+            st.caption("Aún no hay visitas registradas - Se guardarán en hoja VISITAS cuando compartas el link")
+
 
 # DETALLE PRINCIPAL - OCULTO EN MODO AGREGAR
 if not st.session_state.get('show_add_form', False):

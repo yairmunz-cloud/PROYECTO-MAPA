@@ -362,7 +362,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown("#### 3️⃣ Datos del reporte")
     st.markdown(f"**Resumen:** Estado: {est_new} | Sucursal: {suc_new} | Lineas: {tel_final if tel_final else 'Ninguna seleccionada'}")
     
-    with st.form("form_reporte_final"):
+    with st.form("form_reporte_final", clear_on_submit=True):
         fc1, fc2 = st.columns(2)
         with fc1:
             rep_new = st.text_input("No. Reporte *", placeholder="45163", key="form_rep_final")
@@ -395,13 +395,16 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                 st.rerun()
     
     if st.session_state.get('clear_after_add'):
+        # Limpiar checkboxes de lineas
         for k in list(st.session_state.keys()):
             if k.startswith("chk_linea_"):
                 del st.session_state[k]
-        for k in ["form_rep_final", "form_obs_final", "tel_extra_outside", "tel_new_suc_outside"]:
+        # Limpiar campos del form
+        for k in ["form_rep_final", "form_obs_final", "tel_extra_outside", "tel_new_suc_outside", "tel_final", "seleccionadas"]:
             if k in st.session_state:
                 del st.session_state[k]
         st.session_state['clear_after_add'] = False
+        st.rerun()
 
     # LISTA DE REPORTES EN COLA - DEBAJO DEL BOTON AGREGAR (como en tu 2da imagen)
     if st.session_state['batch_reportes']:

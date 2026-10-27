@@ -98,8 +98,7 @@ with c2:
                 st.session_state['jump_suc'] = suc_jump
                 st.session_state['last_jump'] = sel
                 st.rerun()
-            # Reset visual del dropdown a "Seleccionar reporte..." para no quedarse ciclado
-            st.session_state['jump_rep_final'] = "Seleccionar reporte..."
+            # No resetear aqui - causaba StreamlitWidgetAlreadyInstantiatedError. El check de last_jump evita el bucle infinito
 
 # --- DETERMINAR INDICES PARA JUMP ---
 default_est_idx = 0

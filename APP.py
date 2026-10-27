@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import re
 
-st.set_page_config(page_title="BDSUCRSALES • Premium", layout="wide", page_icon="🏢")
+st.set_page_config(page_title="SUCRSALES • Premium", layout="wide", page_icon="🏢")
 
 # --- DISEÑO PREMIUM ---
 st.markdown("""

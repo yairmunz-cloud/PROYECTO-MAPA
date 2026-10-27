@@ -214,12 +214,51 @@ with c_head2:
 
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-# --- FILTROS AESTHETIC ---
+# --- FILTROS AESTHETIC - TITULOS DENTRO DEL CUADRO BLANCO ---
+st.markdown("""
+<style>
+    /* Hacer que los 3 filtros sean pills blancos con titulo dentro */
+    .filter-pill {
+        background: rgba(255,255,255,0.92) !important;
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.9);
+        border-radius: 50px !important;
+        padding: 10px 18px 12px 18px !important;
+        box-shadow: 0 4px 20px rgba(15,23,42,0.06);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .filter-pill .filter-label {
+        font-size: 0.72rem !important;
+        font-weight: 800 !important;
+        color: #64748b !important;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        margin-left: 6px;
+        margin-bottom: 2px;
+    }
+    /* Quitar fondo del select para que quede integrado en el pill */
+    .filter-pill div[data-baseweb="select"] > div {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        min-height: 32px !important;
+        padding-left: 0px !important;
+    }
+    .filter-pill div[data-baseweb="select"] span {
+        font-size: 1.0rem !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
 
 with f1:
-    st.markdown('<div class="glass" style="padding:16px">', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.8rem; font-weight:700; color:#64748b; letter-spacing:0.8px; margin-bottom:8px; text-transform:uppercase">📍 Estado</div>', unsafe_allow_html=True)
+    st.markdown('<div class="filter-pill">', unsafe_allow_html=True)
+    st.markdown('<div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
     estado_temp = st.selectbox("Estado", options=lista_estados, index=lista_estados.index(st.session_state.estado_sel) if st.session_state.estado_sel in lista_estados else 0, label_visibility="collapsed")
     if estado_temp != st.session_state.estado_sel:
         st.session_state.estado_sel = estado_temp
@@ -231,10 +270,9 @@ df_estado = df[df[COL_EST] == st.session_state.estado_sel]
 lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
 
 with f2:
-    st.markdown('<div class="glass" style="padding:16px">', unsafe_allow_html=True)
-    st.markdown(f'<div style="font-size:0.8rem; font-weight:700; color:#64748b; letter-spacing:0.8px; margin-bottom:8px; text-transform:uppercase">🏬 Sucursales • {len(lista_suc)} en {st.session_state.estado_sel}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="filter-pill">', unsafe_allow_html=True)
+    st.markdown(f'<div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {st.session_state.estado_sel}</div>', unsafe_allow_html=True)
     
-    # FIX: Por defecto muestra la primera sucursal del estado
     if not st.session_state.sucursal_sel or st.session_state.sucursal_sel not in lista_suc:
         if lista_suc:
             st.session_state.sucursal_sel = lista_suc[0]
@@ -252,16 +290,14 @@ with f2:
     if suc_temp != st.session_state.sucursal_sel:
         st.session_state.sucursal_sel = suc_temp
         st.rerun()
-        
     st.markdown('</div>', unsafe_allow_html=True)
 
 with f3:
-    st.markdown('<div class="glass" style="padding:16px; text-align:center">', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.8rem; font-weight:700; color:#64748b; letter-spacing:0.8px; margin-bottom:10px; text-transform:uppercase">Acciones</div>', unsafe_allow_html=True)
+    st.markdown('<div class="filter-pill" style="align-items:center; justify-content:center">', unsafe_allow_html=True)
+    st.markdown('<div class="filter-label" style="align-self:flex-start">⚡ Acciones</div>', unsafe_allow_html=True)
     if st.button("🔄 Actualizar", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
-    # Boton Limpiar eliminado a peticion del usuario
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)

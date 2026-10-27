@@ -146,78 +146,87 @@ def guardar_en_hoja_reportes(estado, sucursal, no_reporte, fecha_reporte_origina
     mes = now.strftime("%m")
     anio = now.strftime("%Y")
     dia = now.strftime("%d")
+    if "gcp_service_account" not in st.secrets:
+        if 'reportes_demo' not in st.session_state:
+            st.session_state['reportes_demo'] = []
+        st.session_state['reportes_demo'].append({
+            "fecha_cierre": fecha_cierre, "hora_cierre": hora_cierre, "dia": dia, "mes": mes, "anio": anio,
+            "estado": estado, "sucursal": sucursal, "no_reporte": no_reporte,
+            "fecha_reporte_original": fecha_reporte_original, "dias_activo": dias_activo,
+            "tel": tel, "obs": observaciones_original, "usuario_cierre": usuario_cierre, "estatus": "SOLUCIONADO"
+        })
+        return True
     try:
-        if "gcp_service_account" in st.secrets:
-            import gspread
-            from google.oauth2.service_account import Credentials
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
-            client = gspread.authorize(creds)
-            sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
-            sh = client.open_by_key(sheet_id)
-            try:
-                ws = sh.worksheet("reportes")
-            except:
-                ws = sh.add_worksheet(title="reportes", rows=10000, cols=20)
-                ws.append_row(["ID", "FECHA_CIERRE", "HORA_CIERRE", "DIA", "MES", "ANIO", "ESTADO", "SUCURSAL", "NO_REPORTE", "FECHA_REPORTE_ORIGINAL", "DIAS_ACTIVO", "TEL", "OBSERVACIONES_ORIGINAL", "USUARIO_CIERRE", "ESTATUS"])
-            try:
-                all_vals = ws.get_all_values()
-                next_id = len(all_vals)
-            except:
-                next_id = 1
-            ws.append_row([next_id, fecha_cierre, hora_cierre, dia, mes, anio, estado, sucursal, no_reporte, fecha_reporte_original, dias_activo, tel, observaciones_original, usuario_cierre, "SOLUCIONADO"])
-            return True
+        import gspread
+        from google.oauth2.service_account import Credentials
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+        client = gspread.authorize(creds)
+        sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
+        sh = client.open_by_key(sheet_id)
+        try:
+            ws = sh.worksheet("reportes")
+        except:
+            ws = sh.add_worksheet(title="reportes", rows=10000, cols=20)
+            ws.append_row(["ID", "FECHA_CIERRE", "HORA_CIERRE", "DIA", "MES", "ANIO", "ESTADO", "SUCURSAL", "NO_REPORTE", "FECHA_REPORTE_ORIGINAL", "DIAS_ACTIVO", "TEL", "OBSERVACIONES_ORIGINAL", "USUARIO_CIERRE", "ESTATUS"])
+        try:
+            all_vals = ws.get_all_values()
+            next_id = len(all_vals)
+        except:
+            next_id = 1
+        ws.append_row([next_id, fecha_cierre, hora_cierre, dia, mes, anio, estado, sucursal, no_reporte, fecha_reporte_original, dias_activo, tel, observaciones_original, usuario_cierre, "SOLUCIONADO"])
+        return True
     except Exception as e:
         st.error(f"Error guardando en hoja reportes: {e}")
-        return False
-    if 'reportes_demo' not in st.session_state:
-        st.session_state['reportes_demo'] = []
-    st.session_state['reportes_demo'].append({
-        "fecha_cierre": fecha_cierre, "hora_cierre": hora_cierre, "dia": dia, "mes": mes, "anio": anio,
-        "estado": estado, "sucursal": sucursal, "no_reporte": no_reporte,
-        "fecha_reporte_original": fecha_reporte_original, "dias_activo": dias_activo,
-        "tel": tel, "obs": observaciones_original, "usuario_cierre": usuario_cierre, "estatus": "SOLUCIONADO"
-    })
-    return True
+        # Guardar en demo aunque falle
+        if 'reportes_demo' not in st.session_state:
+            st.session_state['reportes_demo'] = []
+        st.session_state['reportes_demo'].append({
+            "fecha_cierre": fecha_cierre, "hora_cierre": hora_cierre, "dia": dia, "mes": mes, "anio": anio,
+            "estado": estado, "sucursal": sucursal, "no_reporte": no_reporte,
+            "fecha_reporte_original": fecha_reporte_original, "dias_activo": dias_activo,
+            "tel": tel, "obs": observaciones_original, "usuario_cierre": usuario_cierre, "estatus": "SOLUCIONADO"
+        })
+        return True
 
 def cerrar_reporte_en_hoja1(sucursal_nombre, estado_nombre):
+    if "gcp_service_account" not in st.secrets:
+        return True
     try:
-        if "gcp_service_account" in st.secrets:
-            import gspread
-            from google.oauth2.service_account import Credentials
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
-            client = gspread.authorize(creds)
-            sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
-            sh = client.open_by_key(sheet_id)
-            try:
-                ws_main = sh.worksheet("BDSUCURSALES")
-            except:
-                ws_main = sh.worksheet("Hoja1")
-            all_data = ws_main.get_all_records()
-            for idx, row in enumerate(all_data):
-                suc_in_sheet = str(row.get("SUCURSAL", row.get("Sucursal", ""))).strip()
-                if suc_in_sheet.upper() == str(sucursal_nombre).strip().upper():
-                    row_num = idx + 2
-                    headers = ws_main.row_values(1)
-                    headers_upper = [h.strip().upper() for h in headers]
-                    col_rep = None
-                    col_fec = None
-                    for i, h in enumerate(headers_upper):
-                        if "NO" in h and "REPORTE" in h:
-                            col_rep = i+1
-                        if "FECHA" in h and ("REP" in h or h=="FECHA" or "FEC" in h):
-                            if col_fec is None:
-                                col_fec = i+1
-                    if col_rep:
-                        ws_main.update_cell(row_num, col_rep, "")
-                    if col_fec:
-                        ws_main.update_cell(row_num, col_fec, "")
-                    return True
-            st.warning(f"No se encontro {sucursal_nombre} en Hoja1")
-            return False
+        import gspread
+        from google.oauth2.service_account import Credentials
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+        client = gspread.authorize(creds)
+        sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
+        sh = client.open_by_key(sheet_id)
+        try:
+            ws_main = sh.worksheet("BDSUCURSALES")
+        except:
+            ws_main = sh.worksheet("Hoja1")
+        all_data = ws_main.get_all_records()
+        for idx, row in enumerate(all_data):
+            suc_in_sheet = str(row.get("SUCURSAL", row.get("Sucursal", ""))).strip()
+            if suc_in_sheet.upper() == str(sucursal_nombre).strip().upper():
+                row_num = idx + 2
+                headers = ws_main.row_values(1)
+                headers_upper = [h.strip().upper() for h in headers]
+                col_rep = None
+                col_fec = None
+                for i, h in enumerate(headers_upper):
+                    if "NO" in h and "REPORTE" in h:
+                        col_rep = i+1
+                    if "FECHA" in h and ("REP" in h or h=="FECHA" or "FEC" in h):
+                        if col_fec is None:
+                            col_fec = i+1
+                if col_rep:
+                    ws_main.update_cell(row_num, col_rep, "")
+                if col_fec:
+                    ws_main.update_cell(row_num, col_fec, "")
+                return True
+        st.warning(f"No se encontro {sucursal_nombre} en Hoja1")
+        return False
     except Exception as e:
         st.error(f"Error cerrando en Hoja1: {e}")
         return False
-    return True
 
 def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, tel="", observaciones=""):
     now = datetime.now()

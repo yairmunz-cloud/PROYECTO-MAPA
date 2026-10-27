@@ -1,7 +1,9 @@
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 import re
+import time
 
 st.set_page_config(page_title="SUCURSALES", layout="wide", page_icon="🏢")
 
@@ -9,29 +11,25 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-    .stApp {
-        background: radial-gradient(1200px 600px at 10% -10%, #dbeafe 0%, transparent 60%),
-                    radial-gradient(1000px 500px at 90% 10%, #e0e7ff 0%, transparent 60%),
-                    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-    }
+    .stApp { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
-    .glass { background: rgba(255,255,255,0.78) !important; backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.85); border-radius: 18px; padding: 20px 22px; box-shadow: 0 8px 32px rgba(15,23,42,0.08); }
+    .glass { background: rgba(255,255,255,0.85) !important; backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.85); border-radius: 18px; padding: 20px 22px; box-shadow: 0 8px 32px rgba(15,23,42,0.08); }
     .glass-dark { background: rgba(15,23,42,0.88) !important; color: white; border-radius: 18px; padding: 16px 18px; }
     .badge { display:inline-flex; padding:6px 12px; border-radius:100px; font-size:0.82rem; font-weight:700; }
     .badge-ok { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
     .badge-warn { background:#fef9c3; color:#854d0e; border:1px solid #fde68a; }
     .badge-orange { background:#ffedd5; color:#9a3412; border:1px solid #fed7aa; }
     .badge-red { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
-    .filter-pill { background: rgba(255,255,255,0.92) !important; backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.9); border-radius: 50px !important; padding: 10px 18px 12px 18px !important; box-shadow: 0 4px 20px rgba(15,23,42,0.06); }
+    .filter-pill { background: rgba(255,255,255,0.95) !important; border: 1px solid #e2e8f0; border-radius: 50px !important; padding: 10px 18px 12px 18px !important; box-shadow: 0 4px 20px rgba(15,23,42,0.06); }
     .filter-label { font-size:0.72rem !important; font-weight:800 !important; color:#64748b !important; letter-spacing:0.8px; text-transform:uppercase; margin-left:6px; margin-bottom:2px; }
-    .filter-pill div[data-baseweb="select"] > div { background: transparent !important; border: none !important; box-shadow: none !important; min-height: 32px !important; padding-left: 0px !important; }
-    .filter-pill div[data-baseweb="select"] span { font-size:1.0rem !important; font-weight:700 !important; color:#0f172a !important; }
 </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=60, show_spinner=False)
+@st.cache_data(ttl=10, show_spinner=False)
 def cargar_datos():
-    url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
+    base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
+    # anti-cache bust
+    url = f"{base_url}&cb={int(time.time())}"
     df = pd.read_csv(url, dtype=str)
     df.columns = df.columns.str.strip().str.upper()
     return df.dropna(how='all')
@@ -70,13 +68,22 @@ def split_tels(raw):
     return [t.strip() for t in re.split(r'[\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
 
 lista_estados = sorted(df[COL_EST].dropna().unique())
-if "estado_sel" not in st.session_state:
-    st.session_state.estado_sel = lista_estados[0]
-if "sucursal_sel" not in st.session_state:
-    st.session_state.sucursal_sel = None
+
+# --- CALLBACK PARA LIMPIAR SUCURSAL CUANDO CAMBIA ESTADO ---
+def on_estado_change():
+    # Este callback se ejecuta ANTES del rerun, limpia la sucursal
+    st.session_state['sucursal_sel'] = None
+    if 'sel_sucursal_widget' in st.session_state:
+        del st.session_state['sel_sucursal_widget']
+
+if 'sel_estado_widget' not in st.session_state:
+    st.session_state['sel_estado_widget'] = lista_estados[0]
+if 'sucursal_sel' not in st.session_state:
+    st.session_state['sucursal_sel'] = None
 
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
 
+# HEADER
 c1, c2 = st.columns([2.2, 1.3], gap="medium")
 with c1:
     st.markdown(f"""
@@ -106,107 +113,114 @@ with c2:
         sel = st.selectbox("Ir a reporte", ["Seleccionar..."] + lista_rep, label_visibility="collapsed", key="jump_rep")
         if sel != "Seleccionar...":
             est_j, suc_j = mapa_rep[sel]
-            if est_j != st.session_state.estado_sel or suc_j != st.session_state.sucursal_sel:
-                st.session_state.estado_sel = est_j
-                st.session_state.sucursal_sel = suc_j
-                st.rerun()
+            st.session_state['sel_estado_widget'] = est_j
+            st.session_state['sucursal_sel'] = suc_j
+            if 'sel_sucursal_widget' in st.session_state:
+                del st.session_state['sel_sucursal_widget']
+            st.rerun()
 
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
+# FILTROS - VERSION CORREGIDA
 f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
+
 with f1:
     st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
-    estado_temp = st.selectbox("Estado", lista_estados, index=lista_estados.index(st.session_state.estado_sel), label_visibility="collapsed", key="sel_estado")
-    if estado_temp != st.session_state.estado_sel:
-        st.session_state.estado_sel = estado_temp
-        st.session_state.sucursal_sel = None
-        # Limpiar el widget de sucursales para que no quede con valor viejo
-        if "sel_sucursal" in st.session_state:
-            del st.session_state["sel_sucursal"]
-        if "Sucursales" in st.session_state:
-            del st.session_state["Sucursales"]
-        st.rerun()
+    # Este selectbox ahora usa callback on_change que limpia sucursal
+    st.selectbox("Estado", lista_estados, key="sel_estado_widget", on_change=on_estado_change, label_visibility="collapsed")
     st.markdown('</div>', unsafe_allow_html=True)
 
-df_estado = df[df[COL_EST] == st.session_state.estado_sel]
+# El estado actual viene del widget, no de otra variable
+estado_actual = st.session_state['sel_estado_widget']
+df_estado = df[df[COL_EST] == estado_actual]
 lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
 
 with f2:
-    st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {st.session_state.estado_sel}</div>', unsafe_allow_html=True)
-    # Asegurar que la sucursal seleccionada pertenece al estado actual
-    if not st.session_state.sucursal_sel or st.session_state.sucursal_sel not in lista_suc:
+    st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {estado_actual}</div>', unsafe_allow_html=True)
+    # Si la sucursal guardada no pertenece al estado actual, forzar a la primera
+    if not st.session_state['sucursal_sel'] or st.session_state['sucursal_sel'] not in lista_suc:
         if lista_suc:
-            st.session_state.sucursal_sel = lista_suc[0]
-    idx_suc = lista_suc.index(st.session_state.sucursal_sel) if st.session_state.sucursal_sel in lista_suc else 0
-    suc_temp = st.selectbox("Sucursales", lista_suc, index=idx_suc, label_visibility="collapsed", key="sel_sucursal")
-    if suc_temp != st.session_state.sucursal_sel:
-        st.session_state.sucursal_sel = suc_temp
-        st.rerun()
+            st.session_state['sucursal_sel'] = lista_suc[0]
+    
+    # Sincronizar widget de sucursal con el estado
+    if 'sel_sucursal_widget' not in st.session_state or st.session_state['sel_sucursal_widget'] not in lista_suc:
+        st.session_state['sel_sucursal_widget'] = st.session_state['sucursal_sel']
+    
+    def on_sucursal_change():
+        st.session_state['sucursal_sel'] = st.session_state['sel_sucursal_widget']
+    
+    st.selectbox("Sucursales", lista_suc, key="sel_sucursal_widget", on_change=on_sucursal_change, label_visibility="collapsed")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with f3:
     st.markdown('<div class="filter-pill" style="align-items:center"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
-    if st.button("🔄 Actualizar", use_container_width=True):
+    if st.button("🔄 Actualizar", use_container_width=True, key="btn_actualizar"):
         st.cache_data.clear()
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
 
-if st.session_state.sucursal_sel:
-    fila_df = df[df[COL_SUC] == st.session_state.sucursal_sel]
-    fila_match = fila_df[fila_df[COL_EST] == st.session_state.estado_sel]
+# DETALLE
+sucursal_actual = st.session_state['sucursal_sel']
+
+if sucursal_actual:
+    fila_df = df[df[COL_SUC] == sucursal_actual]
+    fila_match = fila_df[fila_df[COL_EST] == estado_actual]
     if not fila_match.empty:
         fila_df = fila_match
-    fila = fila_df.iloc[0]
-    rep = fila.get(COL_REP, "")
-    fec = fila.get(COL_FEC, "")
-    tels = split_tels(fila.get(COL_TEL, ""))
-    dias, txt = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin reporte")
-
-    if dias is None:
-        b_class = "badge-ok"; b_txt = "🟢 Sin reporte"; c_dias = "#166534"
-    elif dias <= 3:
-        b_class = "badge-warn"; b_txt = f"🟡 {dias} dias"; c_dias = "#854d0e"
-    elif dias <= 7:
-        b_class = "badge-orange"; b_txt = f"🟠 {dias} dias"; c_dias = "#9a3412"
+    if fila_df.empty:
+        st.warning(f"No se encontró {sucursal_actual} en {estado_actual}")
     else:
-        b_class = "badge-red"; b_txt = f"🔴 {dias} dias"; c_dias = "#991b1b"
+        fila = fila_df.iloc[0]
+        rep = fila.get(COL_REP, "")
+        fec = fila.get(COL_FEC, "")
+        tels = split_tels(fila.get(COL_TEL, ""))
+        dias, txt = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin reporte")
 
-    c_det1, c_det2 = st.columns([2.2, 1], gap="large")
-    with c_det1:
-        if tiene_reporte(rep):
-            rep_html = f'<span style="background:#fee2e2; color:#991b1b; padding:5px 12px; border-radius:20px; font-weight:800; font-size:0.95rem; border:1px solid #fecaca">REP: {rep}</span>'
+        if dias is None:
+            b_class = "badge-ok"; b_txt = "🟢 Sin reporte"; c_dias = "#166534"
+        elif dias <= 3:
+            b_class = "badge-warn"; b_txt = f"🟡 {dias} dias"; c_dias = "#854d0e"
+        elif dias <= 7:
+            b_class = "badge-orange"; b_txt = f"🟠 {dias} dias"; c_dias = "#9a3412"
         else:
-            rep_html = '<span style="color:#16a34a; font-weight:700">🟢 Sin reporte</span>'
+            b_class = "badge-red"; b_txt = f"🔴 {dias} dias"; c_dias = "#991b1b"
 
-        st.markdown(
-            '<div class="glass" style="padding:26px">'
-            f'<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">'
-            f'<div class="badge {b_class}">{b_txt}</div>'
-            f'<div style="font-size:0.85rem; color:#64748b; font-weight:600; display:flex; gap:8px; align-items:center"><span>{fila[COL_EST]}</span><span>•</span>{rep_html}</div>'
-            f'</div>'
-            f'<div style="font-size:1.9rem; font-weight:800; margin-top:14px">🏢 {fila[COL_SUC]}</div>'
-            f'<div style="display:flex; gap:28px; margin-top:18px; flex-wrap:wrap">'
-            f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Fecha reporte</div><div style="font-weight:700; margin-top:2px">{fec if str(fec)!="nan" else "N/A"}</div></div>'
-            f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Dias transcurridos</div><div style="font-size:1.35rem; font-weight:900; color:{c_dias}; margin-top:2px">{txt}</div></div>'
-            f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Lineas</div><div style="font-weight:700; margin-top:2px">{len(tels)} numeros</div></div>'
-            f'</div></div>',
-            unsafe_allow_html=True
-        )
-        st.markdown("### 📞 Lineas Telefonicas")
-        if not tels:
-            st.markdown('<div class="glass" style="text-align:center; padding:20px; color:#64748b">Sin lineas</div>', unsafe_allow_html=True)
-        else:
-            cols_t = st.columns(2)
-            for i, t in enumerate(tels):
-                with cols_t[i % 2]:
-                    st.markdown(f'<div class="glass" style="padding:12px 16px; margin-bottom:10px">📞 {t}</div>', unsafe_allow_html=True)
-    with c_det2:
-        st.markdown(f'<div class="glass" style="text-align:center; padding:24px"><div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase">Dias con reporte</div><div style="font-size:3rem; font-weight:900; color:{c_dias}">{dias if dias is not None else "—"}</div><div style="color:#64748b">{txt}</div></div>', unsafe_allow_html=True)
+        c_det1, c_det2 = st.columns([2.2, 1], gap="large")
+        with c_det1:
+            if tiene_reporte(rep):
+                rep_html = f'<span style="background:#fee2e2; color:#991b1b; padding:5px 12px; border-radius:20px; font-weight:800; font-size:0.95rem; border:1px solid #fecaca">REP: {rep}</span>'
+            else:
+                rep_html = '<span style="color:#16a34a; font-weight:700">🟢 Sin reporte</span>'
+
+            st.markdown(
+                '<div class="glass" style="padding:26px">'
+                f'<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">'
+                f'<div class="badge {b_class}">{b_txt}</div>'
+                f'<div style="font-size:0.85rem; color:#64748b; font-weight:600; display:flex; gap:8px; align-items:center"><span>{fila[COL_EST]}</span><span>•</span>{rep_html}</div>'
+                f'</div>'
+                f'<div style="font-size:1.9rem; font-weight:800; margin-top:14px">🏢 {fila[COL_SUC]}</div>'
+                f'<div style="display:flex; gap:28px; margin-top:18px; flex-wrap:wrap">'
+                f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Fecha reporte</div><div style="font-weight:700; margin-top:2px">{fec if str(fec)!="nan" else "N/A"}</div></div>'
+                f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Dias transcurridos</div><div style="font-size:1.35rem; font-weight:900; color:{c_dias}; margin-top:2px">{txt}</div></div>'
+                f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Lineas</div><div style="font-weight:700; margin-top:2px">{len(tels)} numeros</div></div>'
+                f'</div></div>',
+                unsafe_allow_html=True
+            )
+            st.markdown("### 📞 Lineas Telefonicas")
+            if not tels:
+                st.markdown('<div class="glass" style="text-align:center; padding:20px; color:#64748b">Sin lineas</div>', unsafe_allow_html=True)
+            else:
+                cols_t = st.columns(2)
+                for i, t in enumerate(tels):
+                    with cols_t[i % 2]:
+                        st.markdown(f'<div class="glass" style="padding:12px 16px; margin-bottom:10px">📞 {t}</div>', unsafe_allow_html=True)
+        with c_det2:
+            st.markdown(f'<div class="glass" style="text-align:center; padding:24px"><div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase">Dias con reporte</div><div style="font-size:3rem; font-weight:900; color:{c_dias}">{dias if dias is not None else "—"}</div><div style="color:#64748b">{txt}</div></div>', unsafe_allow_html=True)
 
 else:
-    st.markdown(f"### 🏬 Sucursales en {st.session_state.estado_sel}")
+    st.markdown(f"### 🏬 Sucursales en {estado_actual}")
     filtro = st.text_input("", placeholder="🔍 Filtra por nombre o telefono...", label_visibility="collapsed")
     df_mostrar = df_estado
     if filtro:
@@ -240,6 +254,7 @@ else:
                 tels_html = "".join([f"<div>• {t}</div>" for t in tels])
                 st.markdown(f'<div class="glass"><div style="display:flex; justify-content:space-between"><div>{badge}</div><span style="font-size:0.8rem; color:#94a3b8">{r[COL_EST]}</span></div><div style="font-weight:800; margin:10px 0">🏢 {r[COL_SUC]}</div><div style="min-height:40px">{tels_html}</div></div>', unsafe_allow_html=True)
                 if st.button("Ver detalle", key=f"ver_{idx}_{r[COL_SUC]}_{r[COL_EST]}", use_container_width=True):
-                    st.session_state.estado_sel = str(r[COL_EST]).strip()
-                    st.session_state.sucursal_sel = str(r[COL_SUC]).strip()
+                    st.session_state['sel_estado_widget'] = str(r[COL_EST]).strip()
+                    st.session_state['sucursal_sel'] = str(r[COL_SUC]).strip()
+                    st.session_state['sel_sucursal_widget'] = str(r[COL_SUC]).strip()
                     st.rerun()

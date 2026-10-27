@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -25,10 +24,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=10, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def cargar_datos():
     base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
-    # anti-cache bust
     url = f"{base_url}&cb={int(time.time())}"
     df = pd.read_csv(url, dtype=str)
     df.columns = df.columns.str.strip().str.upper()
@@ -65,25 +63,19 @@ def dias_desde(fecha_str):
 
 def split_tels(raw):
     if pd.isna(raw) or str(raw).lower() in ['nan','none','']: return []
-    return [t.strip() for t in re.split(r'[\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
+    return [t.strip() for t in re.split(r'[\\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
 
 lista_estados = sorted(df[COL_EST].dropna().unique())
-
-# --- CALLBACK PARA LIMPIAR SUCURSAL CUANDO CAMBIA ESTADO ---
-def on_estado_change():
-    # Este callback se ejecuta ANTES del rerun, limpia la sucursal
-    st.session_state['sucursal_sel'] = None
-    if 'sel_sucursal_widget' in st.session_state:
-        del st.session_state['sel_sucursal_widget']
 
 if 'sel_estado_widget' not in st.session_state:
     st.session_state['sel_estado_widget'] = lista_estados[0]
 if 'sucursal_sel' not in st.session_state:
     st.session_state['sucursal_sel'] = None
+if 'sel_sucursal_widget' not in st.session_state:
+    st.session_state['sel_sucursal_widget'] = None
 
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
 
-# HEADER
 c1, c2 = st.columns([2.2, 1.3], gap="medium")
 with c1:
     st.markdown(f"""
@@ -115,41 +107,44 @@ with c2:
             est_j, suc_j = mapa_rep[sel]
             st.session_state['sel_estado_widget'] = est_j
             st.session_state['sucursal_sel'] = suc_j
-            if 'sel_sucursal_widget' in st.session_state:
-                del st.session_state['sel_sucursal_widget']
+            st.session_state['sel_sucursal_widget'] = suc_j
             st.rerun()
 
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-# FILTROS - VERSION CORREGIDA
+# FILTROS CORREGIDOS SIN CALLBACK QUE FALLA
 f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
 
 with f1:
     st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
-    # Este selectbox ahora usa callback on_change que limpia sucursal
-    st.selectbox("Estado", lista_estados, key="sel_estado_widget", on_change=on_estado_change, label_visibility="collapsed")
+    estado_seleccionado = st.selectbox("Estado", lista_estados, key="sel_estado_widget", label_visibility="collapsed")
+    # Detectar cambio de estado manualmente sin callback
+    if st.session_state.get('estado_anterior') != estado_seleccionado:
+        st.session_state['estado_anterior'] = estado_seleccionado
+        st.session_state['sucursal_sel'] = None
+        st.session_state['sel_sucursal_widget'] = None
+        st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-# El estado actual viene del widget, no de otra variable
 estado_actual = st.session_state['sel_estado_widget']
 df_estado = df[df[COL_EST] == estado_actual]
 lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
 
 with f2:
     st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {estado_actual}</div>', unsafe_allow_html=True)
-    # Si la sucursal guardada no pertenece al estado actual, forzar a la primera
     if not st.session_state['sucursal_sel'] or st.session_state['sucursal_sel'] not in lista_suc:
         if lista_suc:
             st.session_state['sucursal_sel'] = lista_suc[0]
     
-    # Sincronizar widget de sucursal con el estado
-    if 'sel_sucursal_widget' not in st.session_state or st.session_state['sel_sucursal_widget'] not in lista_suc:
+    # Si el widget es None o no esta en la lista, sincronizar
+    if not st.session_state.get('sel_sucursal_widget') or st.session_state['sel_sucursal_widget'] not in lista_suc:
         st.session_state['sel_sucursal_widget'] = st.session_state['sucursal_sel']
     
-    def on_sucursal_change():
-        st.session_state['sucursal_sel'] = st.session_state['sel_sucursal_widget']
-    
-    st.selectbox("Sucursales", lista_suc, key="sel_sucursal_widget", on_change=on_sucursal_change, label_visibility="collapsed")
+    sucursal_elegida = st.selectbox("Sucursales", lista_suc, key="sel_sucursal_widget", label_visibility="collapsed")
+    # Actualizar sucursal_sel cuando cambia el widget, sin callback que de KeyError
+    if sucursal_elegida != st.session_state['sucursal_sel']:
+        st.session_state['sucursal_sel'] = sucursal_elegida
+        st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
 with f3:
@@ -218,43 +213,3 @@ if sucursal_actual:
                         st.markdown(f'<div class="glass" style="padding:12px 16px; margin-bottom:10px">📞 {t}</div>', unsafe_allow_html=True)
         with c_det2:
             st.markdown(f'<div class="glass" style="text-align:center; padding:24px"><div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase">Dias con reporte</div><div style="font-size:3rem; font-weight:900; color:{c_dias}">{dias if dias is not None else "—"}</div><div style="color:#64748b">{txt}</div></div>', unsafe_allow_html=True)
-
-else:
-    st.markdown(f"### 🏬 Sucursales en {estado_actual}")
-    filtro = st.text_input("", placeholder="🔍 Filtra por nombre o telefono...", label_visibility="collapsed")
-    df_mostrar = df_estado
-    if filtro:
-        mask = df_mostrar[COL_SUC].str.contains(filtro, case=False, na=False)
-        if COL_TEL:
-            mask = mask | df_mostrar[COL_TEL].astype(str).str.contains(filtro, case=False, na=False)
-        df_mostrar = df_mostrar[mask]
-
-    if df_mostrar.empty:
-        st.markdown('<div class="glass" style="text-align:center; padding:30px; color:#64748b">Sin resultados</div>', unsafe_allow_html=True)
-    else:
-        cols = st.columns(3)
-        for idx, (_, r) in enumerate(df_mostrar.iterrows()):
-            with cols[idx % 3]:
-                rep_r = r.get(COL_REP, "")
-                fec_r = r.get(COL_FEC, "")
-                activo = tiene_reporte(rep_r)
-                if activo:
-                    d, _ = dias_desde(fec_r)
-                    if d is None:
-                        badge = '<span class="badge badge-warn">🟡 Pendiente</span>'
-                    elif d <= 3:
-                        badge = f'<span class="badge badge-warn">🟡 {d}d</span>'
-                    elif d <= 7:
-                        badge = f'<span class="badge badge-orange">🟠 {d}d</span>'
-                    else:
-                        badge = f'<span class="badge badge-red">🔴 {d}d</span>'
-                else:
-                    badge = '<span class="badge badge-ok">🟢 OK</span>'
-                tels = split_tels(r.get(COL_TEL, ""))[:3]
-                tels_html = "".join([f"<div>• {t}</div>" for t in tels])
-                st.markdown(f'<div class="glass"><div style="display:flex; justify-content:space-between"><div>{badge}</div><span style="font-size:0.8rem; color:#94a3b8">{r[COL_EST]}</span></div><div style="font-weight:800; margin:10px 0">🏢 {r[COL_SUC]}</div><div style="min-height:40px">{tels_html}</div></div>', unsafe_allow_html=True)
-                if st.button("Ver detalle", key=f"ver_{idx}_{r[COL_SUC]}_{r[COL_EST]}", use_container_width=True):
-                    st.session_state['sel_estado_widget'] = str(r[COL_EST]).strip()
-                    st.session_state['sucursal_sel'] = str(r[COL_SUC]).strip()
-                    st.session_state['sel_sucursal_widget'] = str(r[COL_SUC]).strip()
-                    st.rerun()

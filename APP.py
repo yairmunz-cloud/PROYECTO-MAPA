@@ -370,13 +370,19 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             fec_new = st.date_input("Fecha Reporte", value=datetime.now().date(), max_value=datetime.now().date(), key="form_fec_final", help="No se permite fecha futura")
         obs_new = st.text_area("📝 Observaciones / Falla reportada *", placeholder="Ej: falla, sin linea, ruido...", height=90, key="form_obs_final")
         st.markdown("---")
-        c1f, c2f = st.columns([1.3, 0.7])
+        c1f, c2f = st.columns([0.7, 1.3])
         with c1f:
-            btn_add = st.form_submit_button("➕ AGREGAR REPORTE A LA LISTA", type="primary", use_container_width=True)
-        with c2f:
             btn_close = st.form_submit_button("Cerrar formulario", use_container_width=True)
+        with c2f:
+            btn_add = st.form_submit_button("➕ AGREGAR REPORTE A LA LISTA", type="primary", use_container_width=True)
         if btn_close:
+            # Cerrar formulario y cerrar sesion automaticamente como pides
+            log_acceso(st.session_state['current_user'], "Cerro formulario y logout")
+            st.session_state['admin_auth'] = False
             st.session_state['show_add_form'] = False
+            st.session_state['show_login'] = False
+            st.session_state['current_user'] = None
+            st.session_state['batch_reportes'] = []
             st.rerun()
         if btn_add:
             # Validacion: solo numeros en No. Reporte
@@ -403,15 +409,19 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                 st.rerun()
     
     if st.session_state.get('clear_after_add'):
-        # Limpiar checkboxes de lineas
+        # Limpiar TODAS las cajas de seleccion de lineas telefonicas
         for k in list(st.session_state.keys()):
             if k.startswith("chk_linea_"):
                 del st.session_state[k]
-        # Limpiar campos del form
-        for k in ["form_rep_final", "form_obs_final", "tel_extra_outside", "tel_new_suc_outside", "tel_final", "seleccionadas"]:
+        # Limpiar todos los campos de texto del reporte
+        for k in ["form_rep_final", "form_obs_final", "tel_extra_outside", "tel_new_suc_outside", "tel_final", "seleccionadas", "form_fec_final"]:
             if k in st.session_state:
-                del st.session_state[k]
+                try:
+                    del st.session_state[k]
+                except:
+                    pass
         st.session_state['clear_after_add'] = False
+        # Forzar rerun para que se vean limpias las cajas
         st.rerun()
 
     # LISTA DE REPORTES EN COLA - DEBAJO DEL BOTON AGREGAR (como en tu 2da imagen)
@@ -429,8 +439,12 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                     st.session_state['batch_reportes'].pop(idx)
                     st.rerun()
         st.markdown("---")
-        c_save1, c_save2 = st.columns([1.5, 0.5])
+        c_save1, c_save2 = st.columns([0.5, 1.5])
         with c_save1:
+            if st.button("🗑️ Limpiar lista", use_container_width=True):
+                st.session_state['batch_reportes'] = []
+                st.rerun()
+        with c_save2:
             if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS", type="primary", use_container_width=True):
                 try:
                     guardados = 0
@@ -469,10 +483,6 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         st.rerun()
                 except Exception as e:
                     st.error(f"Error: {e}")
-        with c_save2:
-            if st.button("🗑️ Limpiar lista", use_container_width=True):
-                st.session_state['batch_reportes'] = []
-                st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
 

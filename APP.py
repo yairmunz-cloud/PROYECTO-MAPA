@@ -5,7 +5,6 @@ import re
 
 st.set_page_config(page_title="BDSUCRSALES - Consulta Interactiva", layout="wide", page_icon="🏢")
 
-# --- ESTILOS ---
 st.markdown("""
 <style>
     .block-container { padding-top: 1.5rem !important; }
@@ -16,8 +15,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 1. CARGA AUTO-ACTUALIZABLE ---
-@st.cache_data(ttl=60, show_spinner="Actualizando desde Google Sheets...") # Se actualiza solo cada 60 seg
+@st.cache_data(ttl=60, show_spinner="Actualizando desde Google Sheets...")
 def cargar_datos():
     url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
     df = pd.read_csv(url, dtype=str)
@@ -27,7 +25,6 @@ def cargar_datos():
 
 df = cargar_datos()
 
-# --- 2. DETECTOR DE COLUMNAS ---
 def col(keywords):
     for c in df.columns:
         for kw in keywords:
@@ -45,11 +42,9 @@ if not COL_EST or not COL_SUC:
     st.error(f"No detecté columnas de Estado/Sucursal. Columnas: {list(df.columns)}")
     st.stop()
 
-# Limpieza
 df[COL_EST] = df[COL_EST].astype(str).str.strip().replace({'nan':'', 'None':''}).replace('', pd.NA).ffill().str.strip()
 df[COL_SUC] = df[COL_SUC].astype(str).str.strip()
 
-# Helpers
 def tiene_reporte(v):
     if pd.isna(v): return False
     return str(v).strip().lower() not in ["","0","0.0","sin reporte","none","nan","vacio","s/r"]
@@ -65,112 +60,126 @@ def split_tels(raw):
     if pd.isna(raw) or str(raw).lower() in ['nan','none','']: return []
     return [t.strip() for t in re.split(r'[\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
 
-# --- 3. SESSION STATE ---
+# --- SESSION STATE INICIALIZADO CORRECTAMENTE ---
+lista_estados = sorted(df[COL_EST].dropna().unique())
+
 if "estado_sel" not in st.session_state:
-    st.session_state.estado_sel = sorted(df[COL_EST].dropna().unique())[0]
+    st.session_state.estado_sel = lista_estados[0] if lista_estados else ""
 if "sucursal_sel" not in st.session_state:
     st.session_state.sucursal_sel = None
 
-def seleccionar_sucursal(estado, sucursal):
-    st.session_state.estado_sel = estado
-    st.session_state.sucursal_sel = sucursal
-
-# --- 4. BARRA SUPERIOR DE BÚSQUEDA DESPLEGABLE POR ESTADOS ---
+# --- UI SUPERIOR ---
 st.title("🏢 Consulta Interactiva BDSUCRSALES")
-st.caption(f"Conectado en vivo a Google Sheets • Última actualización: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} • Se actualiza automático cada 60s")
+st.caption(f"Actualizado: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} • Auto-actualiza cada 60s")
 
 col1, col2, col3 = st.columns([1, 1.5, 0.8])
 
-lista_estados = sorted(df[COL_EST].dropna().unique())
-
 with col1:
-    estado = st.selectbox("1️⃣ Selecciona Estado", options=lista_estados, 
-                          index=lista_estados.index(st.session_state.estado_sel) if st.session_state.estado_sel in lista_estados else 0,
-                          key="sel_estado_ui")
-    st.session_state.estado_sel = estado
-    if st.session_state.sucursal_sel:
-        # si cambias de estado y la sucursal no pertenece a ese estado, limpiamos
-        suc_pertenece = df[(df[COL_EST]==estado) & (df[COL_SUC]==st.session_state.sucursal_sel)]
-        if suc_pertenece.empty:
-            st.session_state.sucursal_sel = None
+    # IMPORTANTE: No usar key que choque con session_state, usamos valor temporal
+    estado_temp = st.selectbox(
+        "1️⃣ Selecciona Estado", 
+        options=lista_estados, 
+        index=lista_estados.index(st.session_state.estado_sel) if st.session_state.estado_sel in lista_estados else 0
+    )
+    # Si cambia el selectbox, actualizamos session_state y limpiamos sucursal si no pertenece
+    if estado_temp != st.session_state.estado_sel:
+        st.session_state.estado_sel = estado_temp
+        st.session_state.sucursal_sel = None
+        st.rerun()
 
 df_estado = df[df[COL_EST] == st.session_state.estado_sel]
 lista_sucursales_estado = sorted(df_estado[COL_SUC].dropna().unique())
 
 with col2:
-    sucursal_busqueda = st.selectbox(
-        f"2️⃣ Buscar Sucursal en {st.session_state.estado_sel} ({len(lista_sucursales_estado)})",
-        options=["-- Ver todas --"] + lista_sucursales_estado,
-        index=0 if not st.session_state.sucursal_sel else (lista_sucursales_estado.index(st.session_state.sucursal_sel)+1 if st.session_state.sucursal_sel in lista_sucursales_estado else 0)
-    )
-    if sucursal_busqueda != "-- Ver todas --":
-        st.session_state.sucursal_sel = sucursal_busqueda
+    opciones = ["-- Ver todas --"] + lista_sucursales_estado
+    # Calcular indice actual
+    if st.session_state.sucursal_sel in lista_sucursales_estado:
+        idx_suc = lista_sucursales_estado.index(st.session_state.sucursal_sel) + 1
     else:
-        if st.button("Limpiar selección de sucursal"):
-            st.session_state.sucursal_sel = None
+        idx_suc = 0
+    
+    suc_temp = st.selectbox(
+        f"2️⃣ Buscar Sucursal en {st.session_state.estado_sel} ({len(lista_sucursales_estado)})",
+        options=opciones,
+        index=idx_suc
+    )
+    if suc_temp == "-- Ver todas --":
+        if st.session_state.sucursal_sel is not None:
+            # si el usuario selecciona ver todas, limpiamos
+            if st.button("Limpiar selección"):
+                st.session_state.sucursal_sel = None
+                st.rerun()
+    else:
+        if suc_temp != st.session_state.sucursal_sel:
+            st.session_state.sucursal_sel = suc_temp
             st.rerun()
 
 with col3:
-    st.write(" ")
-    st.write(" ")
-    if st.button("🔄 Forzar actualización ahora", use_container_width=True):
+    st.write("")
+    st.write("")
+    if st.button("🔄 Forzar actualización", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
 st.divider()
 
-# --- 5. LISTA DE SUCURSALES CON REPORTE ABIERTO ---
+# --- LISTA REPORTES ABIERTOS - CORREGIDO ---
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
-
-st.subheader(f"🚨 Sucursales con Reporte Abierto ({len(df_reportes)}) - Clic para ver detalle")
+st.subheader(f"🚨 Sucursales con Reporte Abierto ({len(df_reportes)})")
 
 if not df_reportes.empty:
-    # Mostrar en 4 columnas
     cols_rep = st.columns(4)
     for i, (_, r) in enumerate(df_reportes.iterrows()):
         with cols_rep[i % 4]:
-            est = r[COL_EST]
-            suc = r[COL_SUC]
-            rep = r[COL_REP]
+            est = str(r[COL_EST]).strip()
+            suc = str(r[COL_SUC]).strip()
+            rep = str(r[COL_REP]).strip()
             fec = r[COL_FEC] if COL_FEC else ""
             dias, _ = dias_desde(fec)
             label_dias = f" • {dias}d" if dias is not None else ""
             
-            # Boton que cambia el estado y la sucursal
-            st.button(f"🚨 {suc} ({est}) - Rep: {rep}{label_dias}", 
-                      key=f"rep_{i}_{suc}", 
-                      use_container_width=True,
-                      on_click=seleccionar_sucursal,
-                      args=(est, suc))
+            # FORMA CORRECTA: if button -> set state -> rerun
+            if st.button(f"🚨 {suc} ({est}) - {rep}{label_dias}", key=f"rep_{i}_{suc}_{est}", use_container_width=True):
+                st.session_state.estado_sel = est
+                st.session_state.sucursal_sel = suc
+                st.rerun()
 else:
-    st.success("✅ No hay reportes abiertos actualmente en todo el país.")
+    st.success("✅ Sin reportes abiertos.")
 
 st.divider()
 
-# --- 6. VISTA PRINCIPAL: DETALLE DE SUCURSAL SELECCIONADA ---
+# --- DETALLE ---
 if st.session_state.sucursal_sel:
-    # Vista de detalle de UNA sucursal
-    fila = df_estado[df_estado[COL_SUC] == st.session_state.sucursal_sel]
-    if fila.empty: # puede ser que venga de otro estado
-        fila = df[df[COL_SUC] == st.session_state.sucursal_sel]
+    fila_df = df[df[COL_SUC] == st.session_state.sucursal_sel]
+    # Si hay duplicadas por estado, filtrar por estado seleccionado primero
+    fila_estado_match = fila_df[fila_df[COL_EST] == st.session_state.estado_sel]
+    if not fila_estado_match.empty:
+        fila_df = fila_estado_match
     
-    if not fila.empty:
-        fila = fila.iloc[0]
+    if fila_df.empty:
+        st.error(f"No encontré datos para {st.session_state.sucursal_sel}")
+        if st.button("Volver a todas"):
+            st.session_state.sucursal_sel = None
+            st.rerun()
+    else:
+        fila = fila_df.iloc[0]
         rep = fila.get(COL_REP, "")
         fec = fila.get(COL_FEC, "")
         tels = split_tels(fila.get(COL_TEL, ""))
         dias, texto_dias = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin reporte")
 
+        st.markdown(f"### 📍 Detalle: {fila[COL_SUC]} ({fila[COL_EST]})")
+        
         c_det1, c_det2 = st.columns([2,1])
         with c_det1:
+            color_dias = '#c0392b' if dias and dias>7 else '#d35400' if dias and dias>3 else '#27ae60' if dias else '#64748b'
+            
             st.markdown(f"""
             <div class="glass-card">
-                <div class="kpi-label">Sucursal Seleccionada</div>
-                <div class="detalle-suc">🏢 {fila[COL_SUC]} - {fila[COL_EST]}</div>
-                <hr>
-                <b>Número de Reporte:</b> {rep if tiene_reporte(rep) else '🟢 Sin reporte'}<br>
-                <b>Fecha de Reporte:</b> {fec if str(fec)!='nan' else 'N/A'}<br>
-                <b>Días transcurridos:</b> <span style="font-weight:800; color:{'#c0392b' if dias and dias>7 else '#d35400' if dias and dias>3 else '#27ae60'}">{texto_dias}</span>
+                <div class="kpi-label">Información del Reporte</div>
+                <div style="margin-top:8px"><b>Número de Reporte:</b> {rep if tiene_reporte(rep) else '🟢 Sin reporte activo'}</div>
+                <div><b>Fecha:</b> {fec if str(fec)!='nan' else 'N/A'}</div>
+                <div><b>Días transcurridos:</b> <span style="font-weight:800; color:{color_dias}">{texto_dias}</span></div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -180,20 +189,18 @@ if st.session_state.sucursal_sel:
             else:
                 for t in tels:
                     st.markdown(f"<div class='glass-card' style='padding:8px 12px; margin-bottom:6px'>• {t}</div>", unsafe_allow_html=True)
+
         with c_det2:
-            # KPIs
             st.markdown(f"<div class='glass-card'><div class='kpi-label'>Estado</div><div class='kpi'>{fila[COL_EST]}</div></div>", unsafe_allow_html=True)
-            st.markdown(f"<div class='glass-card'><div class='kpi-label'>Días con reporte</div><div class='kpi'>{texto_dias}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='glass-card'><div class='kpi-label'>Días con reporte</div><div class='kpi' style='color:{color_dias}'>{texto_dias}</div></div>", unsafe_allow_html=True)
             st.markdown(f"<div class='glass-card'><div class='kpi-label'>Líneas</div><div class='kpi'>{len(tels)}</div></div>", unsafe_allow_html=True)
-    else:
-        st.warning("No se encontró la sucursal.")
+            if st.button("⬅️ Volver al listado del estado", use_container_width=True):
+                st.session_state.sucursal_sel = None
+                st.rerun()
 
 else:
-    # Vista de todas las sucursales del estado seleccionado
     st.subheader(f"📍 Sucursales en {st.session_state.estado_sel} ({len(df_estado)})")
-    
-    # Buscador extra dentro del estado
-    filtro_texto = st.text_input("Filtrar por nombre o teléfono dentro del estado:", placeholder="Escribe parte del nombre...")
+    filtro_texto = st.text_input("Filtrar por nombre o teléfono dentro del estado:", placeholder="Escribe para filtrar...")
     df_mostrar = df_estado
     if filtro_texto:
         mask = df_mostrar[COL_SUC].str.contains(filtro_texto, case=False, na=False)
@@ -202,7 +209,7 @@ else:
         df_mostrar = df_mostrar[mask]
 
     if df_mostrar.empty:
-        st.warning("Sin resultados con ese filtro.")
+        st.warning("Sin resultados.")
     else:
         cols = st.columns(3)
         for idx, (_, r) in enumerate(df_mostrar.iterrows()):
@@ -210,25 +217,15 @@ else:
                 rep = r.get(COL_REP, "")
                 fec = r.get(COL_FEC, "")
                 es_activo = tiene_reporte(rep)
-                
                 if es_activo:
                     dias, txt = dias_desde(fec)
                     color = "#c0392b" if dias and dias>7 else "#d35400" if dias and dias>3 else "#b7950b"
                     badge = f"<span style='color:{color}; font-weight:700'>🚨 Rep: {rep} • {txt}</span>"
                 else:
                     badge = "<span style='color:#27ae60; font-weight:700'>🟢 OK</span>"
-
                 tels_html = "".join([f"<div style='font-size:0.85rem'>• {t}</div>" for t in split_tels(r.get(COL_TEL,""))]) or "<i style='font-size:0.8rem'>Sin líneas</i>"
-
-                st.markdown(f"""
-                <div class="glass-card">
-                    {badge}
-                    <div style="font-weight:700; margin:6px 0">🏢 {r[COL_SUC]}</div>
-                    <div>{tels_html}</div>
-                </div>
-                """, unsafe_allow_html=True)
-                if st.button(f"Ver detalle →", key=f"ver_{idx}_{r[COL_SUC]}", use_container_width=True):
-                    seleccionar_sucursal(r[COL_EST], r[COL_SUC])
+                st.markdown(f"<div class='glass-card'>{badge}<div style='font-weight:700; margin:6px 0'>🏢 {r[COL_SUC]}</div><div>{tels_html}</div></div>", unsafe_allow_html=True)
+                if st.button(f"Ver detalle →", key=f"ver_{idx}_{r[COL_SUC]}_{r[COL_EST]}", use_container_width=True):
+                    st.session_state.estado_sel = str(r[COL_EST]).strip()
+                    st.session_state.sucursal_sel = str(r[COL_SUC]).strip()
                     st.rerun()
-
-st.caption("Tip: Esta app lee directo de Google Sheets. Cualquier cambio que hagas en el Sheet se refleja aquí en máximo 60 segundos sin tener que re-desplegar.")

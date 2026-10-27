@@ -231,9 +231,7 @@ with f3:
     if st.button("🔄 Actualizar", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
-       st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+     st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
 
 # --- REPORTES ABIERTOS PREMIUM ---
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()

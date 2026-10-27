@@ -8,18 +8,17 @@ st.set_page_config(page_title="SUCURSALES", layout="wide", page_icon="🏢")
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    html, body, [class*="css"] { font-family: Inter, sans-serif; }
     .stApp { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
-    .glass { background: rgba(255,255,255,0.85) !important; backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.85); border-radius: 18px; padding: 20px 22px; box-shadow: 0 8px 32px rgba(15,23,42,0.08); }
+    .glass { background: rgba(255,255,255,0.9) !important; border: 1px solid rgba(255,255,255,0.9); border-radius: 18px; padding: 20px 22px; box-shadow: 0 8px 32px rgba(15,23,42,0.08); }
     .glass-dark { background: rgba(15,23,42,0.88) !important; color: white; border-radius: 18px; padding: 16px 18px; }
     .badge { display:inline-flex; padding:6px 12px; border-radius:100px; font-size:0.82rem; font-weight:700; }
     .badge-ok { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
     .badge-warn { background:#fef9c3; color:#854d0e; border:1px solid #fde68a; }
     .badge-orange { background:#ffedd5; color:#9a3412; border:1px solid #fed7aa; }
     .badge-red { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
-    .filter-pill { background: rgba(255,255,255,0.95) !important; border: 1px solid #e2e8f0; border-radius: 50px !important; padding: 10px 18px 12px 18px !important; box-shadow: 0 4px 20px rgba(15,23,42,0.06); }
+    .filter-pill { background: white !important; border: 1px solid #e2e8f0; border-radius: 50px !important; padding: 10px 18px 12px 18px !important; box-shadow: 0 4px 20px rgba(15,23,42,0.06); }
     .filter-label { font-size:0.72rem !important; font-weight:800 !important; color:#64748b !important; letter-spacing:0.8px; text-transform:uppercase; margin-left:6px; margin-bottom:2px; }
 </style>
 """, unsafe_allow_html=True)
@@ -63,19 +62,12 @@ def dias_desde(fecha_str):
 
 def split_tels(raw):
     if pd.isna(raw) or str(raw).lower() in ['nan','none','']: return []
-    return [t.strip() for t in re.split(r'[\\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
+    return [t.strip() for t in re.split(r'[\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
 
 lista_estados = sorted(df[COL_EST].dropna().unique())
-
-if 'sel_estado_widget' not in st.session_state:
-    st.session_state['sel_estado_widget'] = lista_estados[0]
-if 'sucursal_sel' not in st.session_state:
-    st.session_state['sucursal_sel'] = None
-if 'sel_sucursal_widget' not in st.session_state:
-    st.session_state['sel_sucursal_widget'] = None
-
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
 
+# HEADER
 c1, c2 = st.columns([2.2, 1.3], gap="medium")
 with c1:
     st.markdown(f"""
@@ -88,8 +80,6 @@ with c1:
     """, unsafe_allow_html=True)
 
 with c2:
-    lista_rep = [f"{r[COL_SUC]} ({r[COL_EST]})" for _, r in df_reportes.iterrows()]
-    mapa_rep = {f"{r[COL_SUC]} ({r[COL_EST]})": (str(r[COL_EST]).strip(), str(r[COL_SUC]).strip()) for _, r in df_reportes.iterrows()}
     st.markdown(f"""
     <div class="glass-dark">
         <div style="display:flex; justify-content:space-between; align-items:center">
@@ -101,71 +91,80 @@ with c2:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    if lista_rep:
-        sel = st.selectbox("Ir a reporte", ["Seleccionar..."] + lista_rep, label_visibility="collapsed", key="jump_rep")
-        if sel != "Seleccionar...":
-            est_j, suc_j = mapa_rep[sel]
-            st.session_state['sel_estado_widget'] = est_j
-            st.session_state['sucursal_sel'] = suc_j
-            st.session_state['sel_sucursal_widget'] = suc_j
-            st.rerun()
+    if not df_reportes.empty:
+        opciones_rep = ["Seleccionar reporte..."] + [f"{r[COL_SUC]} ({r[COL_EST]})" for _, r in df_reportes.iterrows()]
+        sel_rep = st.selectbox("Ir a reporte", opciones_rep, label_visibility="collapsed", key="jump_rep_box")
+        if sel_rep != "Seleccionar reporte...":
+            # Extraer sucursal y estado del texto seleccionado
+            # Buscar la fila correspondiente
+            for _, r in df_reportes.iterrows():
+                label = f"{r[COL_SUC]} ({r[COL_EST]})"
+                if label == sel_rep:
+                    st.session_state['estado_sel_simple'] = str(r[COL_EST]).strip()
+                    st.session_state['sucursal_sel_simple'] = str(r[COL_SUC]).strip()
+                    st.rerun()
+
+# Inicializar selecciones simples
+if 'estado_sel_simple' not in st.session_state:
+    st.session_state['estado_sel_simple'] = lista_estados[0]
+if 'sucursal_sel_simple' not in st.session_state:
+    st.session_state['sucursal_sel_simple'] = None
 
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-# FILTROS CORREGIDOS SIN CALLBACK QUE FALLA
+# FILTROS ULTRA SIMPLES SIN RERUNS INFINITOS
 f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
 
 with f1:
     st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
-    estado_seleccionado = st.selectbox("Estado", lista_estados, key="sel_estado_widget", label_visibility="collapsed")
-    # Detectar cambio de estado manualmente sin callback
-    if st.session_state.get('estado_anterior') != estado_seleccionado:
-        st.session_state['estado_anterior'] = estado_seleccionado
-        st.session_state['sucursal_sel'] = None
-        st.session_state['sel_sucursal_widget'] = None
+    # El estado viene de session si se selecciono desde reportes, si no del widget
+    idx_estado = lista_estados.index(st.session_state['estado_sel_simple']) if st.session_state['estado_sel_simple'] in lista_estados else 0
+    estado_actual = st.selectbox("Estado", lista_estados, index=idx_estado, key="estado_widget_simple", label_visibility="collapsed")
+    # Actualizar session si el usuario cambia manualmente
+    if estado_actual != st.session_state['estado_sel_simple']:
+        st.session_state['estado_sel_simple'] = estado_actual
+        st.session_state['sucursal_sel_simple'] = None
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-estado_actual = st.session_state['sel_estado_widget']
-df_estado = df[df[COL_EST] == estado_actual]
+df_estado = df[df[COL_EST] == st.session_state['estado_sel_simple']]
 lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
 
 with f2:
-    st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {estado_actual}</div>', unsafe_allow_html=True)
-    if not st.session_state['sucursal_sel'] or st.session_state['sucursal_sel'] not in lista_suc:
-        if lista_suc:
-            st.session_state['sucursal_sel'] = lista_suc[0]
-    
-    # Si el widget es None o no esta en la lista, sincronizar
-    if not st.session_state.get('sel_sucursal_widget') or st.session_state['sel_sucursal_widget'] not in lista_suc:
-        st.session_state['sel_sucursal_widget'] = st.session_state['sucursal_sel']
-    
-    sucursal_elegida = st.selectbox("Sucursales", lista_suc, key="sel_sucursal_widget", label_visibility="collapsed")
-    # Actualizar sucursal_sel cuando cambia el widget, sin callback que de KeyError
-    if sucursal_elegida != st.session_state['sucursal_sel']:
-        st.session_state['sucursal_sel'] = sucursal_elegida
-        st.rerun()
+    st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {st.session_state["estado_sel_simple"]}</div>', unsafe_allow_html=True)
+    if not lista_suc:
+        st.markdown('<div style="color:#64748b">Sin sucursales</div>', unsafe_allow_html=True)
+        sucursal_actual = None
+    else:
+        if not st.session_state['sucursal_sel_simple'] or st.session_state['sucursal_sel_simple'] not in lista_suc:
+            st.session_state['sucursal_sel_simple'] = lista_suc[0]
+        idx_suc = lista_suc.index(st.session_state['sucursal_sel_simple']) if st.session_state['sucursal_sel_simple'] in lista_suc else 0
+        sucursal_actual = st.selectbox("Sucursales", lista_suc, index=idx_suc, key="sucursal_widget_simple", label_visibility="collapsed")
+        if sucursal_actual != st.session_state['sucursal_sel_simple']:
+            st.session_state['sucursal_sel_simple'] = sucursal_actual
+            st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
 with f3:
     st.markdown('<div class="filter-pill" style="align-items:center"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
-    if st.button("🔄 Actualizar", use_container_width=True, key="btn_actualizar"):
+    if st.button("🔄 Actualizar", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
 
-# DETALLE
-sucursal_actual = st.session_state['sucursal_sel']
+# DETALLE - USA VARIABLES SIMPLES
+sucursal_final = st.session_state.get('sucursal_sel_simple')
+estado_final = st.session_state.get('estado_sel_simple')
 
-if sucursal_actual:
-    fila_df = df[df[COL_SUC] == sucursal_actual]
-    fila_match = fila_df[fila_df[COL_EST] == estado_actual]
+if sucursal_final and lista_suc:
+    fila_df = df[df[COL_SUC] == sucursal_final]
+    fila_match = fila_df[fila_df[COL_EST] == estado_final]
     if not fila_match.empty:
         fila_df = fila_match
     if fila_df.empty:
-        st.warning(f"No se encontró {sucursal_actual} en {estado_actual}")
+        st.warning(f"No se encontró {sucursal_final} en {estado_final}")
     else:
         fila = fila_df.iloc[0]
         rep = fila.get(COL_REP, "")

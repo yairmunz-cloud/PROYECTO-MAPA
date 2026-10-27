@@ -139,8 +139,89 @@ def log_acceso(usuario, accion="Login"):
             st.session_state['log_accesos_demo'] = []
         st.session_state['log_accesos_demo'].append({"fecha": fecha, "hora": hora, "usuario": usuario, "accion": accion})
 
+def guardar_en_hoja_reportes(estado, sucursal, no_reporte, fecha_reporte_original, tel, observaciones_original, dias_activo, usuario_cierre):
+    now = datetime.now()
+    fecha_cierre = now.strftime("%d/%m/%Y")
+    hora_cierre = now.strftime("%H:%M:%S")
+    mes = now.strftime("%m")
+    anio = now.strftime("%Y")
+    dia = now.strftime("%d")
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            client = gspread.authorize(creds)
+            sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
+            sh = client.open_by_key(sheet_id)
+            try:
+                ws = sh.worksheet("reportes")
+            except:
+                ws = sh.add_worksheet(title="reportes", rows=10000, cols=20)
+                ws.append_row(["ID", "FECHA_CIERRE", "HORA_CIERRE", "DIA", "MES", "ANIO", "ESTADO", "SUCURSAL", "NO_REPORTE", "FECHA_REPORTE_ORIGINAL", "DIAS_ACTIVO", "TEL", "OBSERVACIONES_ORIGINAL", "USUARIO_CIERRE", "ESTATUS"])
+            try:
+                all_vals = ws.get_all_values()
+                next_id = len(all_vals)
+            except:
+                next_id = 1
+            ws.append_row([next_id, fecha_cierre, hora_cierre, dia, mes, anio, estado, sucursal, no_reporte, fecha_reporte_original, dias_activo, tel, observaciones_original, usuario_cierre, "SOLUCIONADO"])
+            return True
+    except Exception as e:
+        st.error(f"Error guardando en hoja reportes: {e}")
+        return False
+    if 'reportes_demo' not in st.session_state:
+        st.session_state['reportes_demo'] = []
+    st.session_state['reportes_demo'].append({
+        "fecha_cierre": fecha_cierre, "hora_cierre": hora_cierre, "dia": dia, "mes": mes, "anio": anio,
+        "estado": estado, "sucursal": sucursal, "no_reporte": no_reporte,
+        "fecha_reporte_original": fecha_reporte_original, "dias_activo": dias_activo,
+        "tel": tel, "obs": observaciones_original, "usuario_cierre": usuario_cierre, "estatus": "SOLUCIONADO"
+    })
+    return True
+
+def cerrar_reporte_en_hoja1(sucursal_nombre, estado_nombre):
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            client = gspread.authorize(creds)
+            sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
+            sh = client.open_by_key(sheet_id)
+            try:
+                ws_main = sh.worksheet("BDSUCURSALES")
+            except:
+                ws_main = sh.worksheet("Hoja1")
+            all_data = ws_main.get_all_records()
+            for idx, row in enumerate(all_data):
+                suc_in_sheet = str(row.get("SUCURSAL", row.get("Sucursal", ""))).strip()
+                if suc_in_sheet.upper() == str(sucursal_nombre).strip().upper():
+                    row_num = idx + 2
+                    headers = ws_main.row_values(1)
+                    headers_upper = [h.strip().upper() for h in headers]
+                    col_rep = None
+                    col_fec = None
+                    for i, h in enumerate(headers_upper):
+                        if "NO" in h and "REPORTE" in h:
+                            col_rep = i+1
+                        if "FECHA" in h and ("REP" in h or h=="FECHA" or "FEC" in h):
+                            if col_fec is None:
+                                col_fec = i+1
+                    if col_rep:
+                        ws_main.update_cell(row_num, col_rep, "")
+                    if col_fec:
+                        ws_main.update_cell(row_num, col_fec, "")
+                    return True
+            st.warning(f"No se encontro {sucursal_nombre} en Hoja1")
+            return False
+    except Exception as e:
+        st.error(f"Error cerrando en Hoja1: {e}")
+        return False
+    return True
+
 def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, tel="", observaciones=""):
     now = datetime.now()
+
     fecha_reg = now.strftime("%d/%m/%Y")
     hora_reg = now.strftime("%H:%M:%S")
     mes = now.strftime("%m")
@@ -178,6 +259,16 @@ if 'current_user' not in st.session_state:
     st.session_state['current_user'] = None
 if 'batch_reportes' not in st.session_state:
     st.session_state['batch_reportes'] = []
+if 'show_close_login' not in st.session_state:
+    st.session_state['show_close_login'] = False
+if 'show_close_confirm' not in st.session_state:
+    st.session_state['show_close_confirm'] = False
+if 'close_target' not in st.session_state:
+    st.session_state['close_target'] = None
+if 'close_auth' not in st.session_state:
+    st.session_state['close_auth'] = False
+if 'close_user' not in st.session_state:
+    st.session_state['close_user'] = None
 
 # HEADER
 c1, c2 = st.columns([2.2, 1.3])
@@ -564,3 +655,106 @@ if not st.session_state.get('show_add_form', False):
                         st.markdown(f'<div class="glass" style="padding:12px 16px; margin-bottom:10px">📞 {t}</div>', unsafe_allow_html=True)
         with c_det2:
             st.markdown(f'<div class="glass" style="text-align:center; padding:24px"><div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase">Dias con reporte</div><div style="font-size:3rem; font-weight:900; color:{c_dias}">{dias if dias is not None else "—"}</div><div style="color:#64748b">{txt}</div></div>', unsafe_allow_html=True)
+            if tiene_reporte(rep):
+                st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+                if st.button("✅ Cerrar reporte - Solucionado", type="primary", use_container_width=True, key=f"btn_cerrar_{fila[COL_SUC]}"):
+                    st.session_state['close_target'] = {"estado": str(fila[COL_EST]), "sucursal": str(fila[COL_SUC]), "no_reporte": str(rep), "fecha_reporte": str(fec), "tel": ", ".join(tels), "obs": str(fila.get(COL_OBS, "")), "dias": dias if dias is not None else 0}
+                    st.session_state['show_close_login'] = True
+                    st.session_state['show_close_confirm'] = False
+                    st.session_state['close_auth'] = False
+                    st.rerun()
+
+# MODAL LOGIN PARA CERRAR REPORTE
+if st.session_state.get('show_close_login') and not st.session_state.get('close_auth'):
+    st.markdown('<div class="glass" style="border:2px solid #dc2626; padding:24px; margin-top:16px">', unsafe_allow_html=True)
+    st.markdown("### 🔒 Login para cerrar reporte")
+    if st.session_state.get('close_target'):
+        ct = st.session_state['close_target']
+        st.warning(f"Esta por cerrar reporte de {ct['sucursal']} ({ct['estado']}) - REP: {ct['no_reporte']} - Se tomara como reporte solucionado")
+    u_close = st.text_input("Usuario cierre", key="close_user_input")
+    p_close = st.text_input("Contraseña cierre", type="password", key="close_pwd_input")
+    ccl1, ccl2 = st.columns(2)
+    with ccl1:
+        if st.button("Ingresar para cerrar", type="primary", use_container_width=True):
+            if check_login(u_close.lower().strip(), p_close):
+                st.session_state['close_auth'] = True
+                st.session_state['close_user'] = u_close.lower().strip()
+                st.session_state['show_close_login'] = False
+                st.session_state['show_close_confirm'] = True
+                log_acceso(u_close.lower().strip(), f"Login para cerrar reporte {st.session_state['close_target']['no_reporte'] if st.session_state.get('close_target') else ''}")
+                st.rerun()
+            else:
+                st.error("Usuario o contraseña incorrectos")
+    with ccl2:
+        if st.button("Cancelar cierre", use_container_width=True):
+            st.session_state['show_close_login'] = False
+            st.session_state['close_target'] = None
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# CONFIRMACION DE CIERRE
+if st.session_state.get('show_close_confirm') and st.session_state.get('close_auth'):
+    st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px; margin-top:16px">', unsafe_allow_html=True)
+    ct = st.session_state.get('close_target')
+    if ct:
+        st.markdown("### ✅ Confirmar cierre de reporte")
+        st.markdown("**Esta por cerrar reporte de esta sucursal y se tomara como reporte solucionado**")
+        st.markdown(f"Estado: {ct['estado']} | Sucursal: {ct['sucursal']} | REP: {ct['no_reporte']} | Fecha: {ct['fecha_reporte']} | Dias: {ct['dias']} | Lineas: {ct['tel']} | Usuario: {st.session_state.get('close_user')}")
+        obs_cierre = st.text_area("Observaciones de cierre (opcional)", placeholder="Ej: Linea restablecida, servicio ok...", key="obs_cierre_input")
+        cc1, cc2 = st.columns(2)
+        with cc1:
+            if st.button("✅ Confirmar - Cerrar como solucionado", type="primary", use_container_width=True):
+                ok_reportes = guardar_en_hoja_reportes(ct['estado'], ct['sucursal'], ct['no_reporte'], ct['fecha_reporte'], ct['tel'], ct['obs'], ct['dias'], st.session_state.get('close_user'))
+                ok_hoja1 = cerrar_reporte_en_hoja1(ct['sucursal'], ct['estado'])
+                if ok_reportes and ok_hoja1:
+                    log_acceso(st.session_state.get('close_user'), f"Cerro reporte {ct['no_reporte']} en {ct['sucursal']} como solucionado")
+                    log_reporte_historial(st.session_state.get('close_user'), ct['estado'], ct['sucursal'], ct['no_reporte'], ct['fecha_reporte'], ct['tel'], f"CERRADO - {obs_cierre} - {ct['obs']}")
+                    st.success(f"Reporte {ct['no_reporte']} de {ct['sucursal']} cerrado como solucionado")
+                    st.balloons()
+                    st.session_state['show_close_confirm'] = False
+                    st.session_state['show_close_login'] = False
+                    st.session_state['close_auth'] = False
+                    st.session_state['close_target'] = None
+                    st.cache_data.clear()
+                    time.sleep(1.5)
+                    st.rerun()
+                else:
+                    st.error("Error al cerrar, revisa logs")
+        with cc2:
+            if st.button("Cancelar cierre confirm", use_container_width=True):
+                st.session_state['show_close_confirm'] = False
+                st.session_state['show_close_login'] = False
+                st.session_state['close_auth'] = False
+                st.session_state['close_target'] = None
+                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# CONSULTA REPORTES CERRADOS POR ANO MES DIA
+if st.session_state.get('admin_auth'):
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 📊 Consulta Reportes Cerrados")
+        df_rep_cerrados = pd.DataFrame(st.session_state.get('reportes_demo', []))
+        if not df_rep_cerrados.empty:
+            anios = sorted(df_rep_cerrados['anio'].unique().tolist())
+            meses = sorted(df_rep_cerrados['mes'].unique().tolist())
+            f_anio_c = st.selectbox("Año cierre", ["Todos"] + anios, key="f_anio_cierre")
+            f_mes_c = st.selectbox("Mes cierre", ["Todos"] + meses, key="f_mes_cierre")
+            f_suc_c = st.text_input("Sucursal cerrada", placeholder="TIJUANA", key="f_suc_cierre")
+            df_c = df_rep_cerrados.copy()
+            if f_anio_c != "Todos":
+                df_c = df_c[df_c['anio'] == f_anio_c]
+            if f_mes_c != "Todos":
+                df_c = df_c[df_c['mes'] == f_mes_c]
+            if f_suc_c:
+                df_c = df_c[df_c['sucursal'].str.contains(f_suc_c, case=False, na=False)]
+            st.write(f"{len(df_c)} reportes cerrados")
+            if not df_c.empty:
+                st.bar_chart(df_c.groupby('sucursal').size())
+                incidencias = df_c.groupby('sucursal').size().reset_index(name='incidencias')
+                st.dataframe(incidencias, use_container_width=True)
+                st.dataframe(df_c, use_container_width=True)
+                csv_c = df_c.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 CSV Reportes cerrados", csv_c, "reportes_cerrados.csv", "text/csv", use_container_width=True)
+        else:
+            st.caption("Aun no hay reportes cerrados - Se guardaran en hoja 'reportes'")

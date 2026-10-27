@@ -73,42 +73,22 @@ def dias_desde(fecha_str):
 def split_tels(raw):
     if pd.isna(raw) or str(raw).lower() in ['nan','none','']: return []
     s = str(raw).strip()
-    # Si vienen pegados como 614-433-4947614-433-4948 sin coma, separarlos
-    # Inserta separador entre ...4947 y 614... (patron 3 digitos pegados a 3 digitos)
     s = re.sub(r'(\d{3})(\d{3}-\d{3}-\d{4})', r'\1,\2', s)
     s = re.sub(r'(\d{4})(\d{3}-)', r'\1,\2', s)
-    # Separar por cualquier delimitador incluyendo espacios
     partes = re.split(r'[\n,;/\s]+', s)
-    # Reconstruir telefonos tipo 614-433-4947 que fueron cortados por guion
     tels = []
-    buffer = ""
     for p in partes:
         p = p.strip()
         if not p or p.lower()=='nan': continue
-        # Si es solo guion o parte, acumular
         if re.match(r'^\d{3}-\d{3}-\d{4}$', p):
             tels.append(p)
         elif re.match(r'^\d{10}$', p):
             tels.append(f"{p[:3]}-{p[3:6]}-{p[6:]}")
         elif '-' in p and len(p)>=7:
             tels.append(p)
-        else:
-            # intentar juntar
-            if buffer:
-                comb = buffer + "-" + p
-                if re.match(r'^\d{3}-\d{3}-\d{4}$', comb):
-                    tels.append(comb)
-                    buffer = ""
-                else:
-                    buffer = p
-            else:
-                buffer = p
-    # Fallback: si no detecto nada, usar split original
     if not tels:
         raw_tels = [t.strip() for t in re.split(r'[\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
-        # Si un item contiene 2 numeros pegados, separarlo por longitud
         for item in raw_tels:
-            # Buscar todos los patrones de telefono en el string
             encontrados = re.findall(r'\d{3}[-\s]?\d{3}[-\s]?\d{4}|\d{10}', item)
             if encontrados:
                 for e in encontrados:
@@ -118,13 +98,10 @@ def split_tels(raw):
                     tels.append(e)
             else:
                 tels.append(item)
-    # Deduplicar manteniendo orden
-    seen = set()
-    uniq = []
+    seen=set(); uniq=[]
     for t in tels:
         if t not in seen:
-            seen.add(t)
-            uniq.append(t)
+            seen.add(t); uniq.append(t)
     return uniq
 
 USUARIOS = {"yair": "AtlasY", "francisco": "AtlasF"}
@@ -199,6 +176,8 @@ if 'show_add_form' not in st.session_state:
     st.session_state['show_add_form'] = False
 if 'current_user' not in st.session_state:
     st.session_state['current_user'] = None
+if 'batch_reportes' not in st.session_state:
+    st.session_state['batch_reportes'] = []
 
 # HEADER
 c1, c2 = st.columns([2.2, 1.3])
@@ -222,7 +201,7 @@ with c2:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    if not df_reportes.empty:
+    if not df_reportes.empty and not st.session_state.get('show_add_form'):
         opciones = {f"{r[COL_SUC]} ({r[COL_EST]})": (str(r[COL_EST]), str(r[COL_SUC])) for _, r in df_reportes.iterrows()}
         sel = st.selectbox("jump", ["Seleccionar reporte..."] + list(opciones.keys()), label_visibility="collapsed", key="jump_rep_final")
         if sel != "Seleccionar reporte...":
@@ -244,7 +223,6 @@ elif 'jump_est' in st.session_state and st.session_state['jump_est'] in lista_es
     default_est_idx = lista_estados.index(st.session_state['jump_est'])
     default_suc = st.session_state.get('jump_suc')
 
-# FILTROS PRINCIPALES - OCULTAR BOTONES SI ESTA EN MODO AGREGAR REPORTE
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 
 if not es_modo_agregar:
@@ -259,10 +237,8 @@ if not es_modo_agregar:
                 del st.session_state['jump_suc']
             default_suc = None
         st.markdown('</div>', unsafe_allow_html=True)
-
     df_estado = df[df[COL_EST] == estado_actual]
     lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
-
     with f2:
         st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {estado_actual}</div>', unsafe_allow_html=True)
         if default_suc and default_suc in lista_suc:
@@ -271,7 +247,6 @@ if not es_modo_agregar:
             idx_suc = 0
         sucursal_actual = st.selectbox("Sucursales", lista_suc, index=idx_suc, key="sucursal_real", label_visibility="collapsed")
         st.markdown('</div>', unsafe_allow_html=True)
-
     with f3:
         st.markdown('<div class="filter-pill"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
         ca1, ca2 = st.columns(2)
@@ -286,26 +261,20 @@ if not es_modo_agregar:
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 else:
-    # En modo agregar, definir valores por defecto pero no mostrar filtros principales
-    # Usar el estado/sucursal del jump o el primero
     if 'estado_real' in st.session_state and st.session_state['estado_real'] in lista_estados:
         estado_actual = st.session_state['estado_real']
     elif 'jump_est' in st.session_state and st.session_state['jump_est'] in lista_estados:
         estado_actual = st.session_state['jump_est']
     else:
         estado_actual = lista_estados[default_est_idx] if lista_estados else ""
-    
     df_estado = df[df[COL_EST] == estado_actual]
     lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
-    
     if 'sucursal_real' in st.session_state and st.session_state['sucursal_real'] in lista_suc:
         sucursal_actual = st.session_state['sucursal_real']
     elif 'jump_suc' in st.session_state and st.session_state['jump_suc'] in lista_suc:
         sucursal_actual = st.session_state['jump_suc']
     else:
         sucursal_actual = lista_suc[0] if lista_suc else ""
-    
-    st.markdown(f"<div style='background:#f1f5f9; padding:10px 16px; border-radius:10px; margin-bottom:12px; font-size:0.9rem'>📍 Modo Agregar Reporte | Estado base: <b>{estado_actual}</b> | Sucursal base: <b>{sucursal_actual}</b> | Usuario: <b>{st.session_state.get('current_user','')}</b></div>", unsafe_allow_html=True)
 
 # LOGIN
 if st.session_state['show_login'] and not st.session_state['admin_auth']:
@@ -332,27 +301,21 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-# FORMULARIO - CORREGIDO: FILTROS FUERA DEL FORM
+# FORMULARIO MODO LIMPIO
 if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px">', unsafe_allow_html=True)
     st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}**")
-    st.info(f"{len(df)} sucursales • Se guardara en BDSUCURSALES + HISTORIAL + LOG")
+    st.info(f"Modo lote: agrega N reportes y al final guarda todo en Google Sheets")
     
-    # PASO 1: Seleccion Estado y Sucursal FUERA del form para que se actualice al instante
     st.markdown("#### 1️⃣ Selecciona Estado y Sucursal (se filtra automaticamente)")
     fc_sel1, fc_sel2 = st.columns(2)
     with fc_sel1:
         est_new = st.selectbox("Estado del reporte", lista_estados, index=lista_estados.index(estado_actual) if estado_actual in lista_estados else 0, key="form_est_outside")
-    
-    # DEBUG: mostrar que estado se filtro
-    # Forzar uppercase y strip para evitar mismatch CDMX vs cdmx
     est_new_clean = str(est_new).strip().upper()
     df_suc_filtro = df[df[COL_EST].str.strip().str.upper() == est_new_clean]
     lista_suc_filtro = sorted(df_suc_filtro[COL_SUC].dropna().unique())
-    
     with fc_sel2:
         opciones_suc = lista_suc_filtro + ["➕ Otra / Nueva sucursal..."]
-        # Si cambias de estado, no intentes mantener la sucursal anterior si no existe en nuevo estado
         if sucursal_actual in lista_suc_filtro:
             idx_def = lista_suc_filtro.index(sucursal_actual)
         else:
@@ -375,8 +338,6 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     
     st.markdown("---")
     st.markdown("#### 2️⃣ Lineas con falla y datos")
-    
-    # Mostrar lineas como checkboxes FUERA del form para seleccion
     st.markdown("**📞 Lineas telefonicas de la sucursal - Selecciona cual tiene falla**")
     if lineas_sucursal:
         st.caption(f"{len(lineas_sucursal)} lineas en {suc_new}")
@@ -397,28 +358,27 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
         tel_final = st.text_input("Lineas con falla", placeholder="551-102-2050", key="tel_new_suc_outside")
         seleccionadas = [tel_final] if tel_final else []
     
-    # AHORA SI EL FORM SOLO PARA REPORTE, FECHA, OBS
+    st.markdown("---")
+    st.markdown("#### 3️⃣ Datos del reporte")
+    st.markdown(f"**Resumen:** Estado: {est_new} | Sucursal: {suc_new} | Lineas: {tel_final if tel_final else 'Ninguna seleccionada'}")
+    
     with st.form("form_reporte_final"):
-        st.markdown(f"**Resumen:** Estado: {est_new} | Sucursal: {suc_new} | Lineas: {tel_final if tel_final else 'Ninguna'}")
         fc1, fc2 = st.columns(2)
         with fc1:
-            rep_new = st.text_input("No. Reporte *", placeholder="51564186", key="form_rep_final")
+            rep_new = st.text_input("No. Reporte *", placeholder="45163", key="form_rep_final")
         with fc2:
             fec_new = st.date_input("Fecha Reporte", value=datetime.now().date(), key="form_fec_final")
-        
-        obs_new = st.text_area("📝 Observaciones / Falla reportada *", placeholder="Ej: Linea sin tono, falla internet, ruido...", height=100, key="form_obs_final")
-        
-        c1f, c2f = st.columns(2)
+        obs_new = st.text_area("📝 Observaciones / Falla reportada *", placeholder="Ej: falla, sin linea, ruido...", height=90, key="form_obs_final")
+        st.markdown("---")
+        c1f, c2f = st.columns([1.3, 0.7])
         with c1f:
-            submit = st.form_submit_button("💾 Guardar en Google Sheets", type="primary", use_container_width=True)
+            btn_add = st.form_submit_button("➕ AGREGAR REPORTE A LA LISTA", type="primary", use_container_width=True)
         with c2f:
-            cerrar = st.form_submit_button("Cerrar", use_container_width=True)
-        
-        if cerrar:
+            btn_close = st.form_submit_button("Cerrar formulario", use_container_width=True)
+        if btn_close:
             st.session_state['show_add_form'] = False
             st.rerun()
-        
-        if submit:
+        if btn_add:
             if not rep_new:
                 st.error("No. Reporte obligatorio")
             elif not suc_new:
@@ -426,33 +386,83 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             elif not tel_final:
                 st.error("Selecciona al menos una linea con falla")
             elif not obs_new:
-                st.error("Observaciones obligatorias")
+                st.error("Observaciones obligatoria")
             else:
+                nuevo = {"estado": est_new, "sucursal": suc_new, "tel": tel_final, "no_reporte": rep_new, "fecha_reporte": fec_new.strftime("%d/%m/%Y"), "obs": obs_new}
+                st.session_state['batch_reportes'].append(nuevo)
+                st.success(f"✅ Reporte {rep_new} agregado - Total: {len(st.session_state['batch_reportes'])}")
+                st.session_state['clear_after_add'] = True
+                st.rerun()
+    
+    if st.session_state.get('clear_after_add'):
+        for k in list(st.session_state.keys()):
+            if k.startswith("chk_linea_"):
+                del st.session_state[k]
+        for k in ["form_rep_final", "form_obs_final", "tel_extra_outside", "tel_new_suc_outside"]:
+            if k in st.session_state:
+                del st.session_state[k]
+        st.session_state['clear_after_add'] = False
+
+    # LISTA DE REPORTES EN COLA - DEBAJO DEL BOTON AGREGAR (como en tu 2da imagen)
+    if st.session_state['batch_reportes']:
+        st.markdown("---")
+        st.markdown(f"#### 📋 Reportes en cola ({len(st.session_state['batch_reportes'])}) - Aun no guardados")
+        for idx, r in enumerate(st.session_state['batch_reportes']):
+            col_r1, col_r2 = st.columns([5,1])
+            with col_r1:
+                st.markdown(f"<div style='background:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #16a34a; padding:10px 14px; border-radius:10px; margin-bottom:8px'>"
+                            f"<b>{idx+1}. {r['sucursal']} ({r['estado']})</b> - REP: {r['no_reporte']} - Lineas: {r['tel']}<br><small>{r['obs'][:100]}</small>"
+                            f"</div>", unsafe_allow_html=True)
+            with col_r2:
+                if st.button("❌", key=f"del_batch_{idx}_{r['no_reporte']}"):
+                    st.session_state['batch_reportes'].pop(idx)
+                    st.rerun()
+        st.markdown("---")
+        c_save1, c_save2 = st.columns([1.5, 0.5])
+        with c_save1:
+            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS", type="primary", use_container_width=True):
                 try:
+                    guardados = 0
                     if "gcp_service_account" in st.secrets:
                         import gspread
                         from google.oauth2.service_account import Credentials
                         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
                         client = gspread.authorize(creds)
-                        sheet_id = st.secrets.get("sheet_id", "[STRIPPED 79 bytes]")
+                        sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
                         sh = client.open_by_key(sheet_id)
                         try:
                             ws_main = sh.worksheet("BDSUCURSALES")
                         except:
                             ws_main = sh.sheet1
-                        ws_main.append_row([est_new, suc_new, tel_final, rep_new, fec_new.strftime("%d/%m/%Y"), obs_new])
-                        log_acceso(st.session_state['current_user'], f"Agrego reporte {rep_new} en {suc_new}")
-                        log_reporte_historial(st.session_state['current_user'], est_new, suc_new, rep_new, fec_new.strftime("%d/%m/%Y"), tel_final, obs_new)
-                        st.success(f"Reporte {rep_new} agregado")
+                        for r in st.session_state['batch_reportes']:
+                            ws_main.append_row([r['estado'], r['sucursal'], r['tel'], r['no_reporte'], r['fecha_reporte'], r['obs']])
+                            log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
+                            guardados += 1
+                        log_acceso(st.session_state['current_user'], f"Guardo lote de {guardados} reportes")
+                        st.success(f"✅ {guardados} reportes guardados - Cerrando sesion...")
+                        st.session_state['batch_reportes'] = []
                         st.cache_data.clear()
                         st.balloons()
+                        time.sleep(2)
+                        st.session_state['admin_auth'] = False
+                        st.session_state['show_add_form'] = False
+                        st.session_state['show_login'] = False
+                        st.session_state['current_user'] = None
+                        st.rerun()
                     else:
-                        st.warning("MODO DEMO - No se guardo en Sheet real")
-                        log_acceso(st.session_state['current_user'], f"Demo: {rep_new} en {suc_new}")
-                        log_reporte_historial(st.session_state['current_user'], est_new, suc_new, rep_new, fec_new.strftime("%d/%m/%Y"), tel_final, obs_new)
-                        st.success(f"Demo: {rep_new} en {suc_new} - Lineas: {tel_final}")
+                        for r in st.session_state['batch_reportes']:
+                            log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
+                            guardados += 1
+                        st.warning(f"DEMO: {guardados} reportes solo en memoria")
+                        st.session_state['batch_reportes'] = []
+                        st.rerun()
                 except Exception as e:
                     st.error(f"Error: {e}")
+        with c_save2:
+            if st.button("🗑️ Limpiar lista", use_container_width=True):
+                st.session_state['batch_reportes'] = []
+                st.rerun()
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 if st.session_state['admin_auth']:
@@ -464,6 +474,7 @@ if st.session_state['admin_auth']:
             st.session_state['show_add_form'] = False
             st.session_state['show_login'] = False
             st.session_state['current_user'] = None
+            st.session_state['batch_reportes'] = []
             st.rerun()
         st.markdown("---")
         st.markdown("### 🔍 Consultas Historial")
@@ -489,13 +500,10 @@ if st.session_state['admin_auth']:
             if not df_f.empty:
                 st.bar_chart(df_f.groupby('sucursal').size())
                 st.dataframe(df_f, use_container_width=True)
-                csv = df_f.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 CSV", csv, "reportes.csv", "text/csv", use_container_width=True)
 
-st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
-
-# NO mostrar detalle de sucursal si esta en modo agregar reporte (limpiar pantalla como pide)
+# DETALLE PRINCIPAL - OCULTO EN MODO AGREGAR
 if not st.session_state.get('show_add_form', False):
+    st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
     if lista_suc and sucursal_actual:
         fila_df = df_estado[df_estado[COL_SUC] == sucursal_actual]
         if fila_df.empty:

@@ -1,224 +1,234 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import re
 
-# 1. CONFIGURACIÓN DE PÁGINA ANCHA Y BLINDAJE CSS ULTRA-COMPACTO
-st.set_page_config(page_title="Tablero BDSUCRSALES", layout="wide")
+st.set_page_config(page_title="BDSUCRSALES - Consulta Interactiva", layout="wide", page_icon="🏢")
 
+# --- ESTILOS ---
 st.markdown("""
 <style>
-    /* Forzar compresión absoluta de márgenes en toda la pantalla con espacio para el título */
-    .block-container { padding-top: 2rem !important; padding-bottom: 0rem !important; margin-top: 0px !important; }
-    h1 { font-size: 1.8rem !important; padding-top: 5px !important; margin-top: 0px !important; margin-bottom: 12px !important; color: #0f172a !important; }
-    h3 { font-size: 1.1rem !important; margin-top: 2px !important; margin-bottom: 2px !important; }
-    h4 { font-size: 1.0rem !important; margin-top: 2px !important; margin-bottom: 2px !important; }
-    hr { margin-top: 4px !important; margin-bottom: 4px !important; padding: 0px !important; }
-    
-    /* Espacio super reducido para los selectores de Streamlit */
-    div[data-testid="stSelectbox"] { margin-bottom: 0px !important; padding-bottom: 0px !important; }
-    
-    /* Tarjetas compactas Glassmorphism optimizadas para una sola hoja */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.95) !important;
-        backdrop-filter: blur(6px);
-        border-radius: 8px;
-        padding: 12px;
-        border: 1px solid rgba(0, 0, 0, 0.12);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        margin-top: 6px;
-        margin-bottom: 6px;
-        display: block !important;
-    }
-    
-    /* Estilo de texto plano solicitado para el reporte superior */
-    .badge-text-top {
-        font-size: 0.85rem !important;
-        font-weight: bold;
-        display: block;
-        margin-bottom: 2px;
-    }
-    
-    .suc-title { font-size: 1.0rem !important; font-weight: bold; color: #1e293b; margin-top: 2px; margin-bottom: 4px; display: block; }
-    .tel-container { margin-top: 4px; display: block !important; }
-    .tel-item { font-size: 0.85rem !important; margin: 2px 0 !important; color: #334155; line-height: 1.2 !important; font-weight: 500; }
+    .block-container { padding-top: 1.5rem !important; }
+    .glass-card { background: white; border-radius: 10px; padding: 16px; border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.06); margin-bottom: 14px; }
+    .kpi { font-size: 1.8rem; font-weight: 800; color: #0f172a; }
+    .kpi-label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .detalle-suc { font-size: 1.3rem; font-weight: 700; }
 </style>
 """, unsafe_allow_html=True)
 
-# 2. FUNCIÓN CONECTADA EN VIVO A GOOGLE SHEETS
-def cargar_datos_desde_sheets():
-    url_maestra = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
-    df_sheets = pd.read_csv(url_maestra)
-    df_sheets.columns = df_sheets.columns.str.strip().str.upper()
-    return df_sheets
+# --- 1. CARGA AUTO-ACTUALIZABLE ---
+@st.cache_data(ttl=60, show_spinner="Actualizando desde Google Sheets...") # Se actualiza solo cada 60 seg
+def cargar_datos():
+    url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
+    df = pd.read_csv(url, dtype=str)
+    df.columns = df.columns.str.strip().str.upper()
+    df = df.dropna(how='all')
+    return df
 
-try:
-    df = cargar_datos_desde_sheets()
-except Exception as e:
-    st.error(f"Error crítico: {e}")
+df = cargar_datos()
+
+# --- 2. DETECTOR DE COLUMNAS ---
+def col(keywords):
+    for c in df.columns:
+        for kw in keywords:
+            if kw in c:
+                return c
+    return None
+
+COL_EST = col(['ESTADO','EDO'])
+COL_SUC = col(['SUCURSAL','SUC','SITIO'])
+COL_TEL = col(['TELMEX','TEL','LINEA'])
+COL_REP = col(['NO. REPORTE','NO REPORTE','REPORTE'])
+COL_FEC = col(['FECHA','FEC'])
+
+if not COL_EST or not COL_SUC:
+    st.error(f"No detecté columnas de Estado/Sucursal. Columnas: {list(df.columns)}")
     st.stop()
 
-# --- RECONOCEDOR DE COLUMNAS MEJORADO Y SEGURO ---
-col_est = next((c for c in df.columns if 'ESTADO' in c or 'EDO' in c), df.columns)
-col_suc = next((c for c in df.columns if 'SUCURSAL' in c or 'SUC' in c or 'SITIO' in c), df.columns)
-col_tel = next((c for c in df.columns if 'TELMEX' in c or 'TEL' in c or 'LINEA' in c), df.columns)
+# Limpieza
+df[COL_EST] = df[COL_EST].astype(str).str.strip().replace({'nan':'', 'None':''}).replace('', pd.NA).ffill().str.strip()
+df[COL_SUC] = df[COL_SUC].astype(str).str.strip()
 
-col_rep = None
-for col in df.columns:
-    if "NO. REPORTE" in col or "NO REPORTE" in col or col == "REPORTE":
-        col_rep = col
-        break
-if not col_rep:
-    col_rep = next((c for c in df.columns if "REP" in c and "FEC" not in c), None)
+# Helpers
+def tiene_reporte(v):
+    if pd.isna(v): return False
+    return str(v).strip().lower() not in ["","0","0.0","sin reporte","none","nan","vacio","s/r"]
 
-col_fec = next((c for c in df.columns if "FECHA" in c or "FEC" in c), None)
+def dias_desde(fecha_str):
+    if not fecha_str or str(fecha_str).lower() in ['nan','none','']: return None, "Fecha pendiente"
+    dt = pd.to_datetime(fecha_str, errors='coerce', dayfirst=True)
+    if pd.isna(dt): return None, f"Formato inválido: {fecha_str}"
+    dias = (datetime.now() - dt).days
+    return dias, f"{dias} días"
 
-# Limpieza absoluta de textos en las columnas clave para evitar fallas de comparación
-df[col_est] = df[col_est].ffill().astype(str).str.strip()
-df[col_suc] = df[col_suc].astype(str).str.strip()
+def split_tels(raw):
+    if pd.isna(raw) or str(raw).lower() in ['nan','none','']: return []
+    return [t.strip() for t in re.split(r'[\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
 
-# Helper lógico de reportes activos
-def tiene_reporte_activo(valor_reporte):
-    if pd.isna(valor_reporte):
-        return False
-    val = str(valor_reporte).strip().lower()
-    if val in ["", "0", "0.0", "sin reporte", "none", "nan", "vacio"]:
-        return False
-    return True
+# --- 3. SESSION STATE ---
+if "estado_sel" not in st.session_state:
+    st.session_state.estado_sel = sorted(df[COL_EST].dropna().unique())[0]
+if "sucursal_sel" not in st.session_state:
+    st.session_state.sucursal_sel = None
 
-# Helper para forzar que el ID de reporte mantenga el .0 si es numérico
-def formatear_reporte_id(valor_reporte):
-    texto = str(valor_reporte).strip()
-    try:
-        float_val = float(texto)
-        return f"{int(float_val)}.0"
-    except ValueError:
-        return texto
+def seleccionar_sucursal(estado, sucursal):
+    st.session_state.estado_sel = estado
+    st.session_state.sucursal_sel = sucursal
 
-# --- LISTA GLOBAL DE ESTADOS ---
-lista_estados = sorted(df[col_est].dropna().unique())
+# --- 4. BARRA SUPERIOR DE BÚSQUEDA DESPLEGABLE POR ESTADOS ---
+st.title("🏢 Consulta Interactiva BDSUCRSALES")
+st.caption(f"Conectado en vivo a Google Sheets • Última actualización: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} • Se actualiza automático cada 60s")
 
-# --- VARIABLES DE CONTROL EN SESSION STATE ---
-if "selector_estado_maestro" not in st.session_state:
-    st.session_state["selector_estado_maestro"] = lista_estados if lista_estados else ""
+col1, col2, col3 = st.columns([1, 1.5, 0.8])
 
-if "sucursal_filtrada" not in st.session_state:
-    st.session_state["sucursal_filtrada"] = None
+lista_estados = sorted(df[COL_EST].dropna().unique())
 
-# --- FUNCIONES CALLBACK DE NAVEGACIÓN ---
-def cambiar_estado_callback(nuevo_estado, nueva_sucursal):
-    st.session_state["selector_estado_maestro"] = nuevo_estado.strip()
-    st.session_state["sucursal_filtrada"] = nueva_sucursal.strip()
+with col1:
+    estado = st.selectbox("1️⃣ Selecciona Estado", options=lista_estados, 
+                          index=lista_estados.index(st.session_state.estado_sel) if st.session_state.estado_sel in lista_estados else 0,
+                          key="sel_estado_ui")
+    st.session_state.estado_sel = estado
+    if st.session_state.sucursal_sel:
+        # si cambias de estado y la sucursal no pertenece a ese estado, limpiamos
+        suc_pertenece = df[(df[COL_EST]==estado) & (df[COL_SUC]==st.session_state.sucursal_sel)]
+        if suc_pertenece.empty:
+            st.session_state.sucursal_sel = None
 
-def limpiar_filtro_sucursal_callback():
-    st.session_state["sucursal_filtrada"] = None
+df_estado = df[df[COL_EST] == st.session_state.estado_sel]
+lista_sucursales_estado = sorted(df_estado[COL_SUC].dropna().unique())
 
-# --- FILA 1: FILTRO POR ESTADO COMPACTO ---
-st.title("🏢 Consulta de Sucursales y Líneas Telefónicas")
-
-col_buscador, col_espacio_libre = st.columns()
-with col_buscador:
-    idx_actual = 0
-    if st.session_state["selector_estado_maestro"] in lista_estados:
-        idx_actual = lista_estados.index(st.session_state["selector_estado_maestro"])
-
-    estado_actual = st.selectbox(
-        "🔍 Filtrar por Estado:",
-        options=lista_estados,
-        index=idx_actual,
-        key="selector_estado_maestro",
-        on_change=limpiar_filtro_sucursal_callback
+with col2:
+    sucursal_busqueda = st.selectbox(
+        f"2️⃣ Buscar Sucursal en {st.session_state.estado_sel} ({len(lista_sucursales_estado)})",
+        options=["-- Ver todas --"] + lista_sucursales_estado,
+        index=0 if not st.session_state.sucursal_sel else (lista_sucursales_estado.index(st.session_state.sucursal_sel)+1 if st.session_state.sucursal_sel in lista_sucursales_estado else 0)
     )
+    if sucursal_busqueda != "-- Ver todas --":
+        st.session_state.sucursal_sel = sucursal_busqueda
+    else:
+        if st.button("Limpiar selección de sucursal"):
+            st.session_state.sucursal_sel = None
+            st.rerun()
 
-st.markdown("<hr>", unsafe_allow_html=True)
+with col3:
+    st.write(" ")
+    st.write(" ")
+    if st.button("🔄 Forzar actualización ahora", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
 
-# --- FILA 2: ACCESOS RÁPIDOS POR ALERTA ACTIVA ---
-st.markdown("### ⚠️ Sucursales con Reporte Activo (Clic para cambiar de Estado)")
+st.divider()
 
-df_con_reporte = df[df[col_rep].apply(tiene_reporte_activo)] if col_rep else pd.DataFrame()
+# --- 5. LISTA DE SUCURSALES CON REPORTE ABIERTO ---
+df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
 
-if not df_con_reporte.empty:
-    columnas_botones = st.columns(min(len(df_con_reporte), 8))
-    for i, (_, fila_rep) in enumerate(df_con_reporte.iterrows()):
-        col_idx = i % 8
-        with columnas_botones[col_idx]:
-            btn_suc = str(fila_rep[col_suc]).strip()
-            btn_est = str(fila_rep[col_est]).strip()
+st.subheader(f"🚨 Sucursales con Reporte Abierto ({len(df_reportes)}) - Clic para ver detalle")
+
+if not df_reportes.empty:
+    # Mostrar en 4 columnas
+    cols_rep = st.columns(4)
+    for i, (_, r) in enumerate(df_reportes.iterrows()):
+        with cols_rep[i % 4]:
+            est = r[COL_EST]
+            suc = r[COL_SUC]
+            rep = r[COL_REP]
+            fec = r[COL_FEC] if COL_FEC else ""
+            dias, _ = dias_desde(fec)
+            label_dias = f" • {dias}d" if dias is not None else ""
             
-            st.button(
-                f"🚨 {btn_suc}", 
-                key=f"btn_{btn_suc}_{i}", 
-                use_container_width=True,
-                on_click=cambiar_estado_callback,
-                args=(btn_est, btn_suc)
-            )
+            # Boton que cambia el estado y la sucursal
+            st.button(f"🚨 {suc} ({est}) - Rep: {rep}{label_dias}", 
+                      key=f"rep_{i}_{suc}", 
+                      use_container_width=True,
+                      on_click=seleccionar_sucursal,
+                      args=(est, suc))
 else:
-    st.success("🟢 Sin reportes activos en la República Mexicana.")
+    st.success("✅ No hay reportes abiertos actualmente en todo el país.")
 
-st.markdown("<hr>", unsafe_allow_html=True)
+st.divider()
 
-# --- FILA 3: CUADRÍCULA DE TARJETAS ---
-df_resultado = df[df[col_est] == st.session_state["selector_estado_maestro"]]
-
-if st.session_state["sucursal_filtrada"] is not None:
-    df_resultado = df_resultado[df_resultado[col_suc] == st.session_state["sucursal_filtrada"]]
-    texto_monitoreo = f"#### 📍 Monitoreo Exclusivo Alerta: {st.session_state['sucursal_filtrada']} ({st.session_state['selector_estado_maestro']})"
-else:
-    texto_monitoreo = f"#### 📍 Monitoreo: {st.session_state['selector_estado_maestro']} ({len(df_resultado)} Sucursales)"
-
-st.markdown(texto_monitoreo, unsafe_allow_html=True)
-
-if not df_resultado.empty:
-    columnas_grilla = st.columns(3)
+# --- 6. VISTA PRINCIPAL: DETALLE DE SUCURSAL SELECCIONADA ---
+if st.session_state.sucursal_sel:
+    # Vista de detalle de UNA sucursal
+    fila = df_estado[df_estado[COL_SUC] == st.session_state.sucursal_sel]
+    if fila.empty: # puede ser que venga de otro estado
+        fila = df[df[COL_SUC] == st.session_state.sucursal_sel]
     
-    for idx, (_, fila) in enumerate(df_resultado.iterrows()):
-        col_destino = idx % 3
-        
-        with columnas_grilla[col_destino]:
-            badge_html = ""
-            if col_rep:
-                rep_raw = str(fila[col_rep]).strip()
-                if not tiene_reporte_activo(rep_raw):
-                    badge_html = '<span class="badge-text-top" style="color: #27ae60;">🟢 OK (Sin Reportes Activos)</span>'
-                else:
-                    rep_actual = formatear_reporte_id(rep_raw)
-                    fecha_raw = str(fila[col_fec]).strip() if col_fec and col_fec in df.columns else ""
-                    
-                    if fecha_raw == "" or fecha_raw.lower() in ["nan", "none", "vacia"]:
-                        badge_html = f'<span class="badge-text-top" style="color: #b7950b;">🟡 Rep: {rep_actual} | Fecha pendiente</span>'
-                    else:
-                        fecha_dt = pd.to_datetime(fecha_raw, errors='coerce', dayfirst=True)
-                        if pd.isna(fecha_dt):
-                            badge_html = f'<span class="badge-text-top" style="color: #b7950b;">🟡 Rep: {rep_actual} | Formato inválido</span>'
-                        else:
-                            dias_atraso = (datetime.now() - fecha_dt).days
-                            if dias_atraso <= 3:
-                                badge_html = f'<span class="badge-text-top" style="color: #b7950b;">🟡 Rep: {rep_actual} | {dias_atraso} días</span>'
-                            elif dias_atraso <= 7:
-                                badge_html = f'<span class="badge-text-top" style="color: #d35400;">🟠 Rep: {rep_actual} | {dias_atraso} días</span>'
-                            else:
-                                badge_html = f'<span class="badge-text-top" style="color: #c0392b;">🔴 Rep: {rep_actual} | {dias_atraso} días</span>'
-            else:
-                badge_html = '<span class="badge-text-top" style="color: #27ae60;">🟢 OK (Sin Reportes Activos)</span>'
+    if not fila.empty:
+        fila = fila.iloc[0]
+        rep = fila.get(COL_REP, "")
+        fec = fila.get(COL_FEC, "")
+        tels = split_tels(fila.get(COL_TEL, ""))
+        dias, texto_dias = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin reporte")
 
-            # Construcción segura de los números telefónicos
-            telefonos_html = ""
-            tel_raw = str(fila[col_tel]).strip()
-            if tel_raw == "" or tel_raw.lower() in ["nan", "none", "sin telefono"]:
-                telefonos_html = '<div class="tel-item"><i>Sin líneas registradas</i></div>'
-            else:
-                lista_tels = tel_raw.replace("\r", "").replace(" / ", "\n").split("\n")
-                for t in lista_tels:
-                    if t.strip():
-                        telefonos_html += f'<div class="tel-item">• {t.strip()}</div>'
-
-            # Renderizado final atómico de la tarjeta
+        c_det1, c_det2 = st.columns([2,1])
+        with c_det1:
             st.markdown(f"""
             <div class="glass-card">
-                {badge_html}
-                <span class="suc-title">🏢 {fila[col_suc]}</span>
-                <div class="tel-container">
-                    {telefonos_html}
-                </div>
+                <div class="kpi-label">Sucursal Seleccionada</div>
+                <div class="detalle-suc">🏢 {fila[COL_SUC]} - {fila[COL_EST]}</div>
+                <hr>
+                <b>Número de Reporte:</b> {rep if tiene_reporte(rep) else '🟢 Sin reporte'}<br>
+                <b>Fecha de Reporte:</b> {fec if str(fec)!='nan' else 'N/A'}<br>
+                <b>Días transcurridos:</b> <span style="font-weight:800; color:{'#c0392b' if dias and dias>7 else '#d35400' if dias and dias>3 else '#27ae60'}">{texto_dias}</span>
             </div>
             """, unsafe_allow_html=True)
+
+            st.markdown("**📞 Números Telefónicos:**")
+            if not tels:
+                st.info("Sin líneas registradas")
+            else:
+                for t in tels:
+                    st.markdown(f"<div class='glass-card' style='padding:8px 12px; margin-bottom:6px'>• {t}</div>", unsafe_allow_html=True)
+        with c_det2:
+            # KPIs
+            st.markdown(f"<div class='glass-card'><div class='kpi-label'>Estado</div><div class='kpi'>{fila[COL_EST]}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='glass-card'><div class='kpi-label'>Días con reporte</div><div class='kpi'>{texto_dias}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='glass-card'><div class='kpi-label'>Líneas</div><div class='kpi'>{len(tels)}</div></div>", unsafe_allow_html=True)
+    else:
+        st.warning("No se encontró la sucursal.")
+
 else:
+    # Vista de todas las sucursales del estado seleccionado
+    st.subheader(f"📍 Sucursales en {st.session_state.estado_sel} ({len(df_estado)})")
+    
+    # Buscador extra dentro del estado
+    filtro_texto = st.text_input("Filtrar por nombre o teléfono dentro del estado:", placeholder="Escribe parte del nombre...")
+    df_mostrar = df_estado
+    if filtro_texto:
+        mask = df_mostrar[COL_SUC].str.contains(filtro_texto, case=False, na=False)
+        if COL_TEL:
+            mask = mask | df_mostrar[COL_TEL].astype(str).str.contains(filtro_texto, case=False, na=False)
+        df_mostrar = df_mostrar[mask]
+
+    if df_mostrar.empty:
+        st.warning("Sin resultados con ese filtro.")
+    else:
+        cols = st.columns(3)
+        for idx, (_, r) in enumerate(df_mostrar.iterrows()):
+            with cols[idx % 3]:
+                rep = r.get(COL_REP, "")
+                fec = r.get(COL_FEC, "")
+                es_activo = tiene_reporte(rep)
+                
+                if es_activo:
+                    dias, txt = dias_desde(fec)
+                    color = "#c0392b" if dias and dias>7 else "#d35400" if dias and dias>3 else "#b7950b"
+                    badge = f"<span style='color:{color}; font-weight:700'>🚨 Rep: {rep} • {txt}</span>"
+                else:
+                    badge = "<span style='color:#27ae60; font-weight:700'>🟢 OK</span>"
+
+                tels_html = "".join([f"<div style='font-size:0.85rem'>• {t}</div>" for t in split_tels(r.get(COL_TEL,""))]) or "<i style='font-size:0.8rem'>Sin líneas</i>"
+
+                st.markdown(f"""
+                <div class="glass-card">
+                    {badge}
+                    <div style="font-weight:700; margin:6px 0">🏢 {r[COL_SUC]}</div>
+                    <div>{tels_html}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"Ver detalle →", key=f"ver_{idx}_{r[COL_SUC]}", use_container_width=True):
+                    seleccionar_sucursal(r[COL_EST], r[COL_SUC])
+                    st.rerun()
+
+st.caption("Tip: Esta app lee directo de Google Sheets. Cualquier cambio que hagas en el Sheet se refleja aquí en máximo 60 segundos sin tener que re-desplegar.")

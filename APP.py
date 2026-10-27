@@ -244,44 +244,68 @@ elif 'jump_est' in st.session_state and st.session_state['jump_est'] in lista_es
     default_est_idx = lista_estados.index(st.session_state['jump_est'])
     default_suc = st.session_state.get('jump_suc')
 
-# FILTROS PRINCIPALES
-f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
-with f1:
-    st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
-    estado_actual = st.selectbox("Estado", lista_estados, index=default_est_idx, key="estado_real", label_visibility="collapsed")
-    if 'jump_est' in st.session_state and estado_actual != st.session_state['jump_est']:
-        if 'jump_est' in st.session_state:
-            del st.session_state['jump_est']
-        if 'jump_suc' in st.session_state:
-            del st.session_state['jump_suc']
-        default_suc = None
-    st.markdown('</div>', unsafe_allow_html=True)
+# FILTROS PRINCIPALES - OCULTAR BOTONES SI ESTA EN MODO AGREGAR REPORTE
+es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 
-df_estado = df[df[COL_EST] == estado_actual]
-lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
+if not es_modo_agregar:
+    f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
+    with f1:
+        st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
+        estado_actual = st.selectbox("Estado", lista_estados, index=default_est_idx, key="estado_real", label_visibility="collapsed")
+        if 'jump_est' in st.session_state and estado_actual != st.session_state['jump_est']:
+            if 'jump_est' in st.session_state:
+                del st.session_state['jump_est']
+            if 'jump_suc' in st.session_state:
+                del st.session_state['jump_suc']
+            default_suc = None
+        st.markdown('</div>', unsafe_allow_html=True)
 
-with f2:
-    st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {estado_actual}</div>', unsafe_allow_html=True)
-    if default_suc and default_suc in lista_suc:
-        idx_suc = lista_suc.index(default_suc)
+    df_estado = df[df[COL_EST] == estado_actual]
+    lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
+
+    with f2:
+        st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {estado_actual}</div>', unsafe_allow_html=True)
+        if default_suc and default_suc in lista_suc:
+            idx_suc = lista_suc.index(default_suc)
+        else:
+            idx_suc = 0
+        sucursal_actual = st.selectbox("Sucursales", lista_suc, index=idx_suc, key="sucursal_real", label_visibility="collapsed")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with f3:
+        st.markdown('<div class="filter-pill"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
+        ca1, ca2 = st.columns(2)
+        with ca1:
+            if st.button("🔄", use_container_width=True, help="Actualizar"):
+                st.cache_data.clear()
+                st.rerun()
+        with ca2:
+            if st.button("➕", use_container_width=True, help="Agregar reporte - solo admin"):
+                st.session_state['show_login'] = True
+                st.session_state['show_add_form'] = False
+                st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+else:
+    # En modo agregar, definir valores por defecto pero no mostrar filtros principales
+    # Usar el estado/sucursal del jump o el primero
+    if 'estado_real' in st.session_state and st.session_state['estado_real'] in lista_estados:
+        estado_actual = st.session_state['estado_real']
+    elif 'jump_est' in st.session_state and st.session_state['jump_est'] in lista_estados:
+        estado_actual = st.session_state['jump_est']
     else:
-        idx_suc = 0
-    sucursal_actual = st.selectbox("Sucursales", lista_suc, index=idx_suc, key="sucursal_real", label_visibility="collapsed")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with f3:
-    st.markdown('<div class="filter-pill"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
-    ca1, ca2 = st.columns(2)
-    with ca1:
-        if st.button("🔄", use_container_width=True, help="Actualizar"):
-            st.cache_data.clear()
-            st.rerun()
-    with ca2:
-        if st.button("➕", use_container_width=True, help="Agregar reporte - solo admin"):
-            st.session_state['show_login'] = True
-            st.session_state['show_add_form'] = False
-            st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+        estado_actual = lista_estados[default_est_idx] if lista_estados else ""
+    
+    df_estado = df[df[COL_EST] == estado_actual]
+    lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
+    
+    if 'sucursal_real' in st.session_state and st.session_state['sucursal_real'] in lista_suc:
+        sucursal_actual = st.session_state['sucursal_real']
+    elif 'jump_suc' in st.session_state and st.session_state['jump_suc'] in lista_suc:
+        sucursal_actual = st.session_state['jump_suc']
+    else:
+        sucursal_actual = lista_suc[0] if lista_suc else ""
+    
+    st.markdown(f"<div style='background:#f1f5f9; padding:10px 16px; border-radius:10px; margin-bottom:12px; font-size:0.9rem'>📍 Modo Agregar Reporte | Estado base: <b>{estado_actual}</b> | Sucursal base: <b>{sucursal_actual}</b> | Usuario: <b>{st.session_state.get('current_user','')}</b></div>", unsafe_allow_html=True)
 
 # LOGIN
 if st.session_state['show_login'] and not st.session_state['admin_auth']:
@@ -470,42 +494,44 @@ if st.session_state['admin_auth']:
 
 st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
 
-if lista_suc and sucursal_actual:
-    fila_df = df_estado[df_estado[COL_SUC] == sucursal_actual]
-    if fila_df.empty:
-        fila_df = df[df[COL_SUC] == sucursal_actual]
-    fila = fila_df.iloc[0]
-    rep = fila.get(COL_REP, "")
-    fec = fila.get(COL_FEC, "")
-    tels = split_tels(fila.get(COL_TEL, ""))
-    dias, txt = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin reporte")
-    if dias is None:
-        b_class = "badge-ok"; b_txt = "🟢 Sin reporte"; c_dias = "#166534"
-    elif dias <= 3:
-        b_class = "badge-warn"; b_txt = f"🟡 {dias} dias"; c_dias = "#854d0e"
-    elif dias <= 7:
-        b_class = "badge-orange"; b_txt = f"🟠 {dias} dias"; c_dias = "#9a3412"
-    else:
-        b_class = "badge-red"; b_txt = f"🔴 {dias} dias"; c_dias = "#991b1b"
-    c_det1, c_det2 = st.columns([2.2, 1])
-    with c_det1:
-        rep_html = f'<span style="background:#fee2e2; color:#991b1b; padding:5px 12px; border-radius:20px; font-weight:800; font-size:0.95rem; border:1px solid #fecaca">REP: {rep}</span>' if tiene_reporte(rep) else '<span style="color:#16a34a; font-weight:700">🟢 Sin reporte</span>'
-        st.markdown('<div class="glass" style="padding:26px">'
-            f'<div style="display:flex; justify-content:space-between; align-items:center"><div class="badge {b_class}">{b_txt}</div><div style="font-size:0.85rem; color:#64748b; font-weight:600; display:flex; gap:8px; align-items:center"><span>{fila[COL_EST]}</span>•{rep_html}</div></div>'
-            f'<div style="font-size:1.9rem; font-weight:800; margin-top:14px">🏢 {fila[COL_SUC]}</div>'
-            f'<div style="display:flex; gap:28px; margin-top:18px"><div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Fecha reporte</div><div style="font-weight:700">{fec if str(fec)!="nan" else "N/A"}</div></div>'
-            f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Dias</div><div style="font-size:1.35rem; font-weight:900; color:{c_dias}">{txt}</div></div>'
-            f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Lineas</div><div style="font-weight:700">{len(tels)} numeros</div></div></div></div>', unsafe_allow_html=True)
-        if COL_OBS and COL_OBS in fila and str(fila.get(COL_OBS, "")).strip().lower() not in ["", "nan", "none"]:
-            obs_mostrar = fila.get(COL_OBS, "")
-            st.markdown(f'<div class="glass" style="padding:16px; margin-top:12px; border-left:4px solid #f59e0b"><div style="font-size:0.75rem; font-weight:700; color:#92400e; text-transform:uppercase; margin-bottom:6px">📝 Observaciones / Falla</div><div style="font-size:0.95rem; color:#0f172a">{obs_mostrar}</div></div>', unsafe_allow_html=True)
-        st.markdown("### 📞 Lineas Telefonicas")
-        if not tels:
-            st.markdown('<div class="glass" style="text-align:center; padding:20px; color:#64748b">Sin lineas</div>', unsafe_allow_html=True)
+# NO mostrar detalle de sucursal si esta en modo agregar reporte (limpiar pantalla como pide)
+if not st.session_state.get('show_add_form', False):
+    if lista_suc and sucursal_actual:
+        fila_df = df_estado[df_estado[COL_SUC] == sucursal_actual]
+        if fila_df.empty:
+            fila_df = df[df[COL_SUC] == sucursal_actual]
+        fila = fila_df.iloc[0]
+        rep = fila.get(COL_REP, "")
+        fec = fila.get(COL_FEC, "")
+        tels = split_tels(fila.get(COL_TEL, ""))
+        dias, txt = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin reporte")
+        if dias is None:
+            b_class = "badge-ok"; b_txt = "🟢 Sin reporte"; c_dias = "#166534"
+        elif dias <= 3:
+            b_class = "badge-warn"; b_txt = f"🟡 {dias} dias"; c_dias = "#854d0e"
+        elif dias <= 7:
+            b_class = "badge-orange"; b_txt = f"🟠 {dias} dias"; c_dias = "#9a3412"
         else:
-            cols_t = st.columns(2)
-            for i, t in enumerate(tels):
-                with cols_t[i % 2]:
-                    st.markdown(f'<div class="glass" style="padding:12px 16px; margin-bottom:10px">📞 {t}</div>', unsafe_allow_html=True)
-    with c_det2:
-        st.markdown(f'<div class="glass" style="text-align:center; padding:24px"><div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase">Dias con reporte</div><div style="font-size:3rem; font-weight:900; color:{c_dias}">{dias if dias is not None else "—"}</div><div style="color:#64748b">{txt}</div></div>', unsafe_allow_html=True)
+            b_class = "badge-red"; b_txt = f"🔴 {dias} dias"; c_dias = "#991b1b"
+        c_det1, c_det2 = st.columns([2.2, 1])
+        with c_det1:
+            rep_html = f'<span style="background:#fee2e2; color:#991b1b; padding:5px 12px; border-radius:20px; font-weight:800; font-size:0.95rem; border:1px solid #fecaca">REP: {rep}</span>' if tiene_reporte(rep) else '<span style="color:#16a34a; font-weight:700">🟢 Sin reporte</span>'
+            st.markdown('<div class="glass" style="padding:26px">'
+                f'<div style="display:flex; justify-content:space-between; align-items:center"><div class="badge {b_class}">{b_txt}</div><div style="font-size:0.85rem; color:#64748b; font-weight:600; display:flex; gap:8px; align-items:center"><span>{fila[COL_EST]}</span>•{rep_html}</div></div>'
+                f'<div style="font-size:1.9rem; font-weight:800; margin-top:14px">🏢 {fila[COL_SUC]}</div>'
+                f'<div style="display:flex; gap:28px; margin-top:18px"><div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Fecha reporte</div><div style="font-weight:700">{fec if str(fec)!="nan" else "N/A"}</div></div>'
+                f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Dias</div><div style="font-size:1.35rem; font-weight:900; color:{c_dias}">{txt}</div></div>'
+                f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Lineas</div><div style="font-weight:700">{len(tels)} numeros</div></div></div></div>', unsafe_allow_html=True)
+            if COL_OBS and COL_OBS in fila and str(fila.get(COL_OBS, "")).strip().lower() not in ["", "nan", "none"]:
+                obs_mostrar = fila.get(COL_OBS, "")
+                st.markdown(f'<div class="glass" style="padding:16px; margin-top:12px; border-left:4px solid #f59e0b"><div style="font-size:0.75rem; font-weight:700; color:#92400e; text-transform:uppercase; margin-bottom:6px">📝 Observaciones / Falla</div><div style="font-size:0.95rem; color:#0f172a">{obs_mostrar}</div></div>', unsafe_allow_html=True)
+            st.markdown("### 📞 Lineas Telefonicas")
+            if not tels:
+                st.markdown('<div class="glass" style="text-align:center; padding:20px; color:#64748b">Sin lineas</div>', unsafe_allow_html=True)
+            else:
+                cols_t = st.columns(2)
+                for i, t in enumerate(tels):
+                    with cols_t[i % 2]:
+                        st.markdown(f'<div class="glass" style="padding:12px 16px; margin-bottom:10px">📞 {t}</div>', unsafe_allow_html=True)
+        with c_det2:
+            st.markdown(f'<div class="glass" style="text-align:center; padding:24px"><div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase">Dias con reporte</div><div style="font-size:3rem; font-weight:900; color:{c_dias}">{dias if dias is not None else "—"}</div><div style="color:#64748b">{txt}</div></div>', unsafe_allow_html=True)

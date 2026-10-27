@@ -162,8 +162,10 @@ if "estado_sel" not in st.session_state:
 if "sucursal_sel" not in st.session_state:
     st.session_state.sucursal_sel = None
 
-# --- HEADER PREMIUM ---
-c_head1, c_head2 = st.columns([3,1])
+# --- HEADER PREMIUM + REPORTES ACTIVOS EN EL MISMO ESPACIO ---
+df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
+
+c_head1, c_head2 = st.columns([2.2, 1.3], gap="medium")
 with c_head1:
     st.markdown("""
     <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px">
@@ -174,13 +176,41 @@ with c_head1:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
 with c_head2:
+    # Ventana compacta de Reportes Activos que reemplaza a ULTIMA SYNC
+    if not df_reportes.empty:
+        lista_rep_str = [f"{r[COL_SUC]} ({r[COL_EST]})" for _, r in df_reportes.iterrows()]
+        # Mapeo para poder saltar
+        mapa_rep = {f"{r[COL_SUC]} ({r[COL_EST]})": (str(r[COL_EST]).strip(), str(r[COL_SUC]).strip()) for _, r in df_reportes.iterrows()}
+    else:
+        lista_rep_str = []
+        mapa_rep = {}
+
     st.markdown(f"""
-    <div class="glass" style="text-align:center; padding:12px">
-        <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; letter-spacing:1px; font-weight:700">Última sync</div>
-        <div style="font-size:1rem; font-weight:700; color:#0f172a">{datetime.now().strftime('%H:%M:%S')}</div>
+    <div class="glass-dark" style="padding:16px 18px; height:100%">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <div style="display:flex; align-items:center; gap:10px">
+                <div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px">🚨</div>
+                <div>
+                    <div style="font-size:0.95rem; font-weight:700; line-height:1">Reportes Activos</div>
+                    <div style="font-size:0.75rem; opacity:0.7; margin-top:2px">{len(df_reportes)} requieren atención</div>
+                </div>
+            </div>
+            <div style="font-size:1.6rem; font-weight:900; line-height:1">{len(df_reportes)}</div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    if lista_rep_str:
+        # Select compacto para saltar directo - entra perfecto en el espacio
+        sel_rep = st.selectbox("Ir a reporte:", options=["Seleccionar..."] + lista_rep_str, label_visibility="collapsed", key="jump_reporte_header")
+        if sel_rep != "Seleccionar...":
+            est_jump, suc_jump = mapa_rep[sel_rep]
+            if est_jump != st.session_state.estado_sel or suc_jump != st.session_state.sucursal_sel:
+                st.session_state.estado_sel = est_jump
+                st.session_state.sucursal_sel = suc_jump
+                st.rerun()
 
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
@@ -235,39 +265,6 @@ with f3:
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
-
-# --- REPORTES ABIERTOS PREMIUM ---
-df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
-
-st.markdown(f"""
-<div class="glass-dark" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
-    <div style="display:flex; align-items:center; gap:12px">
-        <div style="width:40px; height:40px; background:rgba(239,68,68,0.2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px">🚨</div>
-        <div>
-            <div style="font-size:1.15rem; font-weight:700">Reportes Activos</div>
-            <div style="font-size:0.85rem; opacity:0.7">{len(df_reportes)} sucursales requieren atención</div>
-        </div>
-    </div>
-    <div style="font-size:2rem; font-weight:800">{len(df_reportes)}</div>
-</div>
-""", unsafe_allow_html=True)
-
-if not df_reportes.empty:
-    cols = st.columns(4)
-    for i, (_, r) in enumerate(df_reportes.iterrows()):
-        with cols[i % 4]:
-            est = str(r[COL_EST]).strip()
-            suc = str(r[COL_SUC]).strip()
-            rep = str(r[COL_REP]).strip()
-            dias, _ = dias_desde(r[COL_FEC] if COL_FEC else "")
-            if st.button(f"🚨 {suc}\n{est} • {rep} • {dias}d" if dias else f"🚨 {suc} • {est}", key=f"rep_{i}_{suc}_{est}", use_container_width=True):
-                st.session_state.estado_sel = est
-                st.session_state.sucursal_sel = suc
-                st.rerun()
-else:
-    st.markdown('<div class="glass" style="text-align:center; padding:28px"><div style="font-size:2rem">✅</div><div style="font-weight:700; font-size:1.1rem; margin-top:6px">¡Todo en orden!</div><div style="color:#64748b">No hay reportes activos en el país</div></div>', unsafe_allow_html=True)
-
-st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 
 # --- DETALLE ---
 if st.session_state.sucursal_sel:

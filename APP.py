@@ -202,19 +202,28 @@ lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
 
 with f2:
     st.markdown('<div class="glass" style="padding:16px">', unsafe_allow_html=True)
-    st.markdown(f'<div style="font-size:0.8rem; font-weight:700; color:#64748b; letter-spacing:0.8px; margin-bottom:8px; text-transform:uppercase">🏬 Sucursales • {len(lista_suc)} en {st.session_state.estado_sel}</div>', unsafe_allow_html=True)
-    # Ahora dice solo "Sucursales" y se despliega automático
-    idx_suc = lista_suc.index(st.session_state.sucursal_sel)+1 if st.session_state.sucursal_sel in lista_suc else 0
-    suc_temp = st.selectbox("Sucursales", options=["-- Ver todas las sucursales --"] + lista_suc, index=idx_suc, label_visibility="collapsed", placeholder="Escribe para buscar...")
-    if suc_temp == "-- Ver todas las sucursales --":
-        if st.session_state.sucursal_sel is not None:
-            st.session_state.sucursal_sel = None
-            st.rerun()
-    else:
-        if suc_temp != st.session_state.sucursal_sel:
-            st.session_state.sucursal_sel = suc_temp
-            st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown(f'<div style="font-size:0.8rem; font-weight:700; color:#64748b; letter-spacing:0.8px; margin-bottom:8px; text-transform:uppercase">🏬 Sucursales • {len(lista_suc)} en {st.session_state.estado_sel}</div>', unsafe_allow_html=True)
+    
+# Si no hay sucursal seleccionada o la seleccionada no pertenece al estado, poner la primera por defecto
+if not st.session_state.sucursal_sel or st.session_state.sucursal_sel not in lista_suc:
+    if lista_suc:
+        st.session_state.sucursal_sel = lista_suc[0]
+
+idx_suc = lista_suc.index(st.session_state.sucursal_sel) if st.session_state.sucursal_sel in lista_suc else 0
+
+suc_temp = st.selectbox(
+    "Sucursales", 
+    options=lista_suc,  # Ya solo las sucursales, sin la opción de "ver todas"
+    index=idx_suc, 
+    label_visibility="collapsed", 
+    placeholder="Escribe para buscar..."
+)
+
+if suc_temp != st.session_state.sucursal_sel:
+    st.session_state.sucursal_sel = suc_temp
+    st.rerun()
+    
+st.markdown('</div>', unsafe_allow_html=True)
 
 with f3:
     st.markdown('<div class="glass" style="padding:16px; text-align:center">', unsafe_allow_html=True)

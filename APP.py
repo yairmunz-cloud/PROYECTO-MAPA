@@ -232,7 +232,7 @@ if 'visitas_demo' not in st.session_state: st.session_state['visitas_demo']=[]
 if 'batch_reportes' not in st.session_state: st.session_state['batch_reportes']=[]
 if 'filtro_activo_sel' not in st.session_state: st.session_state['filtro_activo_sel']="-- Ver todas las sucursales --"
 
-# HEADER - AHORA CON FILTRO COMPACTO DEL MISMO TAMAÑO QUE RECUADRO NEGRO
+# HEADER - CON FILTRO COMPACTO Y LOGICA CORREGIDA ANTI-TRABA
 # Variables globales para el filtro de reporte activo
 opciones_activas_global = []
 mapa_activos_global = {}
@@ -247,6 +247,34 @@ if not df_reportes.empty:
         opciones_activas_global.append(label)
         mapa_activos_global[label] = {"estado": estado, "sucursal": suc}
 
+# Inicializa variables de control ANTES de crear widgets
+if 'filtro_activo_prev' not in st.session_state:
+    st.session_state['filtro_activo_prev'] = "-- Sucursales con reporte --"
+if 'prev_estado_real' not in st.session_state:
+    st.session_state['prev_estado_real'] = None
+if 'prev_sucursal_real' not in st.session_state:
+    st.session_state['prev_sucursal_real'] = None
+if 'filtro_activo_sel' not in st.session_state:
+    st.session_state['filtro_activo_sel'] = "-- Sucursales con reporte --"
+
+# DETECCION PREVIA: Si el usuario cambio Estado/Sucursal abajo manualmente, liberar filtro ANTES de crearlo
+# Esto evita el error de modificar widget despues de creado
+current_estado = st.session_state.get('estado_real')
+current_sucursal = st.session_state.get('sucursal_real')
+prev_estado = st.session_state.get('prev_estado_real')
+prev_sucursal = st.session_state.get('prev_sucursal_real')
+filtro_sel_actual = st.session_state.get('filtro_activo_sel', "-- Sucursales con reporte --")
+
+if current_estado and prev_estado and filtro_sel_actual != "-- Sucursales con reporte --":
+    if current_estado != prev_estado or current_sucursal != prev_sucursal:
+        # Verificar si el cambio no coincide con el filtro activo
+        if filtro_sel_actual in mapa_activos_global:
+            info_f = mapa_activos_global[filtro_sel_actual]
+            if current_estado != info_f['estado'] or current_sucursal != info_f['sucursal']:
+                # Usuario quiere otra sucursal, liberamos filtro ANTES de crear widgets
+                st.session_state['filtro_activo_sel'] = "-- Sucursales con reporte --"
+                st.session_state['filtro_activo_prev'] = "-- Sucursales con reporte --"
+
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
     if b64_logo:
@@ -256,7 +284,6 @@ with c1:
 with c2:
     st.markdown(f"""<div class="glass-dark" style="padding:14px 16px;"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:32px; height:32px; background:rgba(239,68,68,0.25); border-radius:8px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700; font-size:0.9rem;">Reportes Activos</div><div style="font-size:0.72rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.4rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
     
-    # FILTRO COMPACTO - MISMO ANCHO QUE EL RECUADRO NEGRO, JUSTO DEBAJO
     if not df_reportes.empty:
         opciones_con_todos = ["-- Sucursales con reporte --"] + sorted(opciones_activas_global)
         default_idx_activo = 0
@@ -264,15 +291,19 @@ with c2:
             default_idx_activo = opciones_con_todos.index(st.session_state['filtro_activo_sel'])
         st.markdown('<div style="margin-top:8px;"></div>', unsafe_allow_html=True)
         sel_activo = st.selectbox("Filtro activo", opciones_con_todos, index=default_idx_activo, key="filtro_activo_sel", label_visibility="collapsed")
-        # Guardamos seleccion actual para usar abajo en logica de desbloqueo
-        st.session_state['filtro_activo_actual'] = sel_activo
+        # Si el filtro cambio, actualizamos estado/sucursal ANTES de crear los widgets de abajo
+        if sel_activo != st.session_state.get('filtro_activo_prev') and sel_activo != "-- Sucursales con reporte --":
+            if sel_activo in mapa_activos_global:
+                info_new = mapa_activos_global[sel_activo]
+                st.session_state['estado_real'] = info_new['estado']
+                st.session_state['sucursal_real'] = info_new['sucursal']
+                st.session_state['filtro_activo_prev'] = sel_activo
+                # Actualizar prev para que no lo libere inmediatamente
+                st.session_state['prev_estado_real'] = info_new['estado']
+                st.session_state['prev_sucursal_real'] = info_new['sucursal']
+                st.rerun()
     else:
         st.markdown('<div style="margin-top:8px; background:white; border:1px solid #bbf7d0; border-radius:12px; padding:8px 12px; text-align:center;"><b style="color:#166534; font-size:0.8rem;">✅ Sin reportes</b></div>', unsafe_allow_html=True)
-        st.session_state['filtro_activo_actual'] = "-- Sucursales con reporte --"
-
-# Inicializa prev para detectar cambio de filtro
-if 'filtro_activo_prev' not in st.session_state:
-    st.session_state['filtro_activo_prev'] = "-- Sucursales con reporte --"
 
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 
@@ -309,34 +340,9 @@ if not es_modo_agregar:
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- LOGICA PARA CORREGIR BUG DE FILTRO TRABADO ---
-    # Si el usuario cambia Estado/Sucursal manualmente abajo, y ese cambio no coincide con el filtro de reporte activo,
-    # entonces reseteamos el filtro de reporte activo para liberar la busqueda
-    filtro_actual = st.session_state.get('filtro_activo_actual', "-- Sucursales con reporte --")
-    filtro_prev = st.session_state.get('filtro_activo_prev', "-- Sucursales con reporte --")
-    
-    if filtro_actual != "-- Sucursales con reporte --" and filtro_actual in mapa_activos_global:
-        info_filtro = mapa_activos_global[filtro_actual]
-        # Si el filtro cambio (usuario selecciono nuevo en dropdown de reportes), aplicar ese filtro
-        if filtro_actual != filtro_prev:
-            st.session_state['estado_real'] = info_filtro['estado']
-            st.session_state['sucursal_real'] = info_filtro['sucursal']
-            st.session_state['filtro_activo_prev'] = filtro_actual
-            # Forzar estado_actual y sucursal_actual para esta corrida
-            estado_actual = info_filtro['estado']
-            sucursal_actual = info_filtro['sucursal']
-        else:
-            # Si el filtro es el mismo que antes, pero el usuario cambio Estado/Sucursal abajo manualmente
-            # Detectamos que Estado/Sucursal actuales no coinciden con el filtro activo
-            if estado_actual != info_filtro['estado'] or sucursal_actual != info_filtro['sucursal']:
-                # El usuario quiere ver otra sucursal, liberamos el filtro
-                st.session_state['filtro_activo_sel'] = "-- Sucursales con reporte --"
-                st.session_state['filtro_activo_actual'] = "-- Sucursales con reporte --"
-                st.session_state['filtro_activo_prev'] = "-- Sucursales con reporte --"
-    else:
-        # Si filtro esta en default, actualizar prev
-        if filtro_actual == "-- Sucursales con reporte --":
-            st.session_state['filtro_activo_prev'] = filtro_actual
+    # Guardar estado actual como prev para la proxima corrida (para detectar cambio manual)
+    st.session_state['prev_estado_real'] = st.session_state.get('estado_real')
+    st.session_state['prev_sucursal_real'] = st.session_state.get('sucursal_real')
 else:
     estado_actual = st.session_state.get('estado_real', lista_estados[0] if lista_estados else "")
     df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df

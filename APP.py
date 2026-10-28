@@ -38,34 +38,9 @@ st.markdown("""
 # CONFIG - CAMBIA ESTE ID POR EL DE TU HOJA NUEVA
 SHEET_ID_PRUEBAS = "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4"
 
-
-@st.cache_data(ttl=10, show_spinner=False)
-def cargar_historial_real():
-    try:
-        if "gcp_service_account" in st.secrets:
-            import gspread
-            from google.oauth2.service_account import Credentials
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
-            client = gspread.authorize(creds)
-            sid = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
-            sh = client.open_by_key(sid)
-            try:
-                ws = sh.worksheet("HISTORIAL_REPORTES")
-                data = ws.get_all_records()
-                if data:
-                    dfh = pd.DataFrame(data)
-                    return dfh
-            except:
-                pass
-    except:
-        pass
-    return None
-
-
-@st.cache_data(ttl=5, show_spinner=False)
+@st.cache_data(ttl=20, show_spinner=False)
 def cargar_datos(sheet_id_override=None):
-    # 1. Intenta cargar BDSUCURSALES2 privada para ver si tiene datos
-    df_privado = None
+    # Intenta cargar desde Google Sheets real si hay secrets, si no usa CSV publico
     try:
         if "gcp_service_account" in st.secrets:
             import gspread
@@ -73,49 +48,24 @@ def cargar_datos(sheet_id_override=None):
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
             client = gspread.authorize(creds)
             sid = sheet_id_override or st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
-            if sid and "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4" in sid:
+            if sid and "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4" not in sid:
                 sh = client.open_by_key(sid)
                 try:
                     ws = sh.worksheet("BDSUCURSALES")
                 except:
-                    try:
-                        ws = sh.worksheet("BDSUCURSALES2")
-                    except:
-                        ws = sh.sheet1
+                    ws = sh.sheet1
                 data = ws.get_all_records()
-                if data and len(data) > 2:
-                    df_tmp = pd.DataFrame(data)
-                    df_tmp.columns = df_tmp.columns.str.strip().str.upper()
-                    df_tmp = df_tmp.dropna(how='all')
-                    if len(df_tmp) > 2:
-                        df_privado = df_tmp
+                df = pd.DataFrame(data)
+                df.columns = df.columns.str.strip().str.upper()
+                return df.dropna(how='all')
     except Exception as e:
-        pass
-
-    # 2. Siempre carga el CSV publico original como base para mostrar
-    try:
-        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTySrWdMEtPBo7u4r6df8shaedXk8783RUOdOPsjLwIh1xz4nLHdAdaheYFMB1-CLI2XtzpzLa7SQXm/pub?output=csv"
-        url = f"{base_url}&cb={int(time.time())}"
-        df_publico = pd.read_csv(url, dtype=str)
-        df_publico.columns = df_publico.columns.str.strip().str.upper()
-        df_publico = df_publico.dropna(how='all')
-    except Exception as e:
-        df_publico = pd.DataFrame()
-        st.error(f"Error cargando CSV publico: {e}")
-
-    # 3. Si el privado tiene datos y es BDSUCURSALES2 de pruebas, usa el privado
-    # Si esta vacio (como en tu captura), usa el publico para mostrar
-    if df_privado is not None and not df_privado.empty and len(df_privado) > 5:
-        return df_privado
-    else:
-        # Si estamos en modo pruebas y el privado esta vacio, usa publico para visualizacion
-        # pero los guardados seguiran yendo al privado
-        if not df_publico.empty:
-            return df_publico
-        elif df_privado is not None:
-            return df_privado
-        else:
-            return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
+        st.warning(f"No se pudo cargar desde Sheets real, usando CSV publico: {e}")
+    # Fallback publico
+    base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTySrWdMEtPBo7u4r6df8shaedXk8783RUOdOPsjLwIh1xz4nLHdAdaheYFMB1-CLI2XtzpzLa7SQXm/pub?output=csv"
+    url = f"{base_url}&cb={int(time.time())}"
+    df = pd.read_csv(url, dtype=str)
+    df.columns = df.columns.str.strip().str.upper()
+    return df.dropna(how='all')
 
 df = cargar_datos(SHEET_ID_PRUEBAS if "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4" not in SHEET_ID_PRUEBAS else None)
 
@@ -601,68 +551,10 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                             ws_main = sh.worksheet("BDSUCURSALES")
                         except:
                             ws_main = sh.sheet1
-                        # --- CORRECCION FINAL SOLICITADA POR YAIR ---
-                        # Hoja 1 BDSUCURSALES2: BUSCAR por ESTADO + SUCURSAL y REEMPLAZAR solo NO_REPORTE, FECHA, FALLA
-                        # HISTORIAL_REPORTES: AGREGAR fila nueva siempre
-                        headers = ws_main.row_values(1)
-                        headers_upper = [h.strip().upper() for h in headers]
-                        def find_col_idx(keywords):
-                            for i, h in enumerate(headers_upper):
-                                for kw in keywords:
-                                    if kw in h:
-                                        return i+1
-                            return None
-                        
-                        col_est_idx = find_col_idx(['ESTADO','EDO'])
-                        col_suc_idx = find_col_idx(['SUCURSAL','SUC','SITIO'])
-                        col_tel_idx = find_col_idx(['TELMEX','TEL','LINEA'])
-                        col_rep_idx = find_col_idx(['NO. REPORTE','NO REPORTE','REPORTE'])
-                        col_fec_idx = find_col_idx(['FECHA DE REPORTE','FECHA REPORTE','FECHA','FEC'])
-                        col_falla_idx = find_col_idx(['FALLA','OBSERVACIONES','OBS','COMENTARIO'])
-                        
-                        all_values = ws_main.get_all_values()
-                        # Buscar fila que coincida ESTADO + SUCURSAL
-                        def normalize(s):
-                            return str(s).strip().upper().replace("  "," ")
-                        
-                        row_found = None
-                        for idx in range(1, len(all_values)):
-                            row = all_values[idx]
-                            try:
-                                est_cell = row[col_est_idx-1] if col_est_idx and col_est_idx-1 < len(row) else ""
-                                suc_cell = row[col_suc_idx-1] if col_suc_idx and col_suc_idx-1 < len(row) else ""
-                                if normalize(est_cell) == normalize(r['estado']) and normalize(suc_cell) == normalize(r['sucursal']):
-                                    row_found = idx+1
-                                    break
-                            except:
-                                continue
-                        
                         for r in st.session_state['batch_reportes']:
-                            # 1. Hoja1: BUSCAR y REEMPLAZAR (no append)
-                            if row_found:
-                                if col_rep_idx:
-                                    ws_main.update_cell(row_found, col_rep_idx, r['no_reporte'])
-                                if col_fec_idx:
-                                    ws_main.update_cell(row_found, col_fec_idx, r['fecha_reporte'])
-                                if col_falla_idx:
-                                    ws_main.update_cell(row_found, col_falla_idx, r['obs'])
-                                # Opcional: si quieres tambien actualizar TELMEX cuando se agrega reporte
-                                # if col_tel_idx: ws_main.update_cell(row_found, col_tel_idx, r['tel'])
-                            else:
-                                # Si no existe esa combinacion ESTADO+SUCURSAL, ahora si crea fila nueva con reemplazo inicial
-                                new_row = [""] * len(headers)
-                                if col_est_idx: new_row[col_est_idx-1] = r['estado']
-                                if col_suc_idx: new_row[col_suc_idx-1] = r['sucursal']
-                                if col_tel_idx: new_row[col_tel_idx-1] = r['tel']
-                                if col_rep_idx: new_row[col_rep_idx-1] = r['no_reporte']
-                                if col_fec_idx: new_row[col_fec_idx-1] = r['fecha_reporte']
-                                if col_falla_idx: new_row[col_falla_idx-1] = r['obs']
-                                ws_main.append_row(new_row)
-                            
-                            # 2. HISTORIAL_REPORTES: SIEMPRE AGREGAR NUEVO (para graficas)
+                            ws_main.append_row([r['estado'], r['sucursal'], r['tel'], r['no_reporte'], r['fecha_reporte'], r['obs']])
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
-
                         log_acceso(st.session_state['current_user'], f"Guardo lote PRUEBA {guardados} reportes")
                         st.success(f"✅ {guardados} reportes guardados en HOJA DE PRUEBAS - Cerrando sesion...")
                         st.session_state['batch_reportes'] = []

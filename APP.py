@@ -237,10 +237,18 @@ with c1:
 with c2:
     st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.6rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
 
-# --- DESPLEGABLE REPORTES ACTIVOS ---
+# --- DESPLEGABLE REPORTES ACTIVOS - REDISEÑADO 100% AUTOMATICO SIN BOTON ---
 if not df_reportes.empty:
-    st.markdown('<div class="glass" style="margin-top:14px; padding:14px 18px; border-left:4px solid #ef4444;">', unsafe_allow_html=True)
-    st.markdown(f'<div class="filter-label" style="margin-bottom:6px;">🚨 VER SOLO SUCURSALES CON REPORTE ACTIVO • {len(df_reportes)} encontradas</div>', unsafe_allow_html=True)
+    # Callback para auto-navegación inmediata sin botón
+    def auto_ir_sucursal():
+        sel = st.session_state.get('filtro_activo_sel')
+        if sel and sel != "-- Ver todas las sucursales --":
+            info = mapa_activos_global.get(sel)
+            if info:
+                st.session_state['estado_real'] = info['estado']
+                st.session_state['sucursal_real'] = info['sucursal']
+
+    # Preparar opciones
     opciones_activas = []
     mapa_activos = {}
     for _, row in df_reportes.iterrows():
@@ -254,27 +262,58 @@ if not df_reportes.empty:
         mapa_activos[label] = {"estado": estado, "sucursal": suc, "row": row}
     opciones_activas = sorted(opciones_activas)
     opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
+
+    # Guardar en global para callback
+    mapa_activos_global = mapa_activos
+
+    # Contenedor compacto
+    st.markdown(f"""
+    <div class="glass" style="margin-top:14px; padding:14px 18px; border-left:5px solid #ef4444; background:rgba(254,242,242,0.6) !important; margin-bottom:0px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:28px; height:28px; background:#ef4444; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">🚨</div>
+                <div style="font-weight:800; font-size:0.80rem; letter-spacing:0.5px; color:#991b1b;">VER SOLO SUCURSALES CON REPORTE ACTIVO</div>
+            </div>
+            <span class="badge badge-red">{len(df_reportes)} encontradas</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     default_idx_activo = 0
-    if st.session_state['filtro_activo_sel'] in opciones_con_todos:
+    if st.session_state.get('filtro_activo_sel') in opciones_con_todos:
         default_idx_activo = opciones_con_todos.index(st.session_state['filtro_activo_sel'])
-    sel_activo = st.selectbox("Filtro reporte activo", opciones_con_todos, index=default_idx_activo, key="filtro_activo_sel", label_visibility="collapsed")
+
+    # Selectbox 100% automático - sin botón Ver info, al seleccionar hace rerun solo
+    c_filtro1, c_filtro2 = st.columns([4, 1])
+    with c_filtro1:
+        sel_activo = st.selectbox(
+            "Filtro reporte activo",
+            opciones_con_todos,
+            index=default_idx_activo,
+            key="filtro_activo_sel",
+            label_visibility="collapsed",
+            placeholder="🔍 Selecciona sucursal con reporte activo..."
+        )
+    with c_filtro2:
+        if st.session_state.get('filtro_activo_sel') != "-- Ver todas las sucursales --":
+            if st.button("✖️ Limpiar", use_container_width=True, key="btn_limpiar_filtro_activo"):
+                st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                st.session_state.pop('estado_real', None)
+                st.session_state.pop('sucursal_real', None)
+                st.rerun()
+
+    # Auto-navegación inmediata - SIN BOTON, directo al seleccionar
     if sel_activo != "-- Ver todas las sucursales --":
         info_sel = mapa_activos.get(sel_activo)
         if info_sel:
-            col_ir, col_quitar = st.columns([1,1])
-            with col_ir:
-                if st.button(f"👁️ Ver info de {info_sel['sucursal']}", use_container_width=True, type="primary"):
-                    st.session_state['estado_real'] = info_sel['estado']
-                    st.session_state['sucursal_real'] = info_sel['sucursal']
-                    st.rerun()
-            with col_quitar:
-                if st.button("✖️ Quitar filtro", use_container_width=True):
-                    st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
-                    st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
+            if st.session_state.get('estado_real') != info_sel['estado'] or st.session_state.get('sucursal_real') != info_sel['sucursal']:
+                st.session_state['estado_real'] = info_sel['estado']
+                st.session_state['sucursal_real'] = info_sel['sucursal']
+                st.rerun()
+
+    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 else:
-    st.markdown('<div class="glass" style="margin-top:12px; padding:12px; border-left:4px solid #16a34a;"><b style="color:#166534;">✅ Sin reportes activos</b></div>', unsafe_allow_html=True)
+    st.markdown('<div class="glass" style="margin-top:12px; padding:12px 14px; border-left:4px solid #16a34a; background:rgba(240,253,244,0.7) !important;"><div style="display:flex; align-items:center; gap:8px;"><div style="width:26px; height:26px; background:#16a34a; border-radius:7px; display:flex; align-items:center; justify-content:center; color:white;">✅</div><b style="color:#166534; font-size:0.85rem;">Sin reportes activos - Todas las sucursales operativas</b></div></div>', unsafe_allow_html=True)
 
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 

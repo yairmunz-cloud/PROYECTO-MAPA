@@ -472,52 +472,49 @@ if st.session_state.get('show_case_pdf'):
     st.markdown("### 📞 Telefonos CASE NACIONAL - Soporte Empresarial 24H 365 días")
     c_pdf1, c_pdf2 = st.columns([4,1])
     with c_pdf2:
-        if st.button("✖️ Cerrar PDF", use_container_width=True):
+        if st.button("✖️ Cerrar", use_container_width=True):
             st.session_state['show_case_pdf'] = False
             st.rerun()
-    # Intentar mostrar PDF
+    # Intentar mostrar PDF si existe, si no, mostrar info directa sin mensajes de error
     pdf_path = None
+    pdf_bytes = None
     for p in ["CASE_a_donde_llamar.pdf", "CASE_Telefonos_NACIONAL.pdf", "/mnt/data/CASE_a_donde_llamar.pdf", "/mnt/data/CASE_Telefonos_NACIONAL.pdf"]:
         try:
             import os
             if os.path.exists(p):
                 pdf_path = p
+                with open(p, "rb") as f:
+                    pdf_bytes = f.read()
                 break
         except:
             continue
-    if pdf_path:
+    if pdf_path and pdf_bytes:
         try:
-            with open(pdf_path, "rb") as f:
-                pdf_bytes = f.read()
             b64_pdf = base64.b64encode(pdf_bytes).decode()
             pdf_display = f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="650" type="application/pdf"></iframe>'
             st.markdown(pdf_display, unsafe_allow_html=True)
             st.download_button("⬇️ Descargar PDF CASE", data=pdf_bytes, file_name="Telefonos_CASE_NACIONAL.pdf", mime="application/pdf", use_container_width=True)
-        except Exception as e:
-            st.error(f"No se pudo cargar PDF: {e}")
-            st.info("Sube el archivo CASE_a_donde_llamar.pdf al repo junto con APP.py")
-    else:
-        st.warning("PDF no encontrado. Sube CASE_a_donde_llamar.pdf junto con APP.py o coloca el archivo en /mnt/data/")
-        # Mostrar imagen de respaldo si existe
-        try:
-            import os
-            if os.path.exists("/mnt/data/CASE_a_donde_llamar.pdf"):
-                st.info("PDF detectado en servidor pero no local, recarga la app")
         except:
             pass
-        # Mostrar la imagen que subiste como referencia
-        st.markdown("**Referencia rápida - CASEs:**")
-        st.markdown("""
-        - **Red Noroeste (Telnor) - 800 025 9111** | Baja California - San Luis Rio Colorado
-        - **CASE Hermosillo - 800 627 3000** | Sonora - Sinaloa - Baja California Sur
-        - **CASE Chihuahua - 800 147 6500** | Chihuahua - Durango - Torreón
-        - **CASE Monterrey - 800 832 2600** | Nuevo León - Tamaulipas - Coahuila - SLP - Zacatecas
-        - **CASE Guadalajara - 800 364 0500** | Jalisco - Aguascalientes - Colima - Nayarit
-        - **CASE Querétaro - 800 404 0000** | Querétaro - Guanajuato - Michoacán
-        - **CASE San Juan - 800 905 2200** | CDMX y zona metropolitana - Edo. de México - Morelos - Guerrero
-        - **CASE Puebla - 800 226 1500** | Puebla - Tlaxcala - Veracruz - Hidalgo
-        - **CASE Mérida - 800 201 1100** | Yucatán - Quintana Roo - Campeche - Tabasco - Chiapas - Oaxaca
-        """)
+        st.markdown("---")
+    # Siempre mostrar la referencia de CASEs (esta es la info útil, sin error)
+    st.markdown("""
+    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px 20px;">
+        <div style="font-weight:900; color:#1e40af; margin-bottom:12px; font-size:1rem;">☎️ DIRECTORIO CASE NACIONAL - SOPORTE 24H 365 DÍAS</div>
+        <div style="display:grid; gap:10px;">
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>Red Noroeste (Telnor) - 800 025 9111</b><br><span style="font-size:0.85rem; color:#64748b;">Baja California - San Luis Rio Colorado, Son.</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Hermosillo - 800 627 3000</b><br><span style="font-size:0.85rem; color:#64748b;">Sonora - Sinaloa - Baja California Sur</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Chihuahua - 800 147 6500</b><br><span style="font-size:0.85rem; color:#64748b;">Chihuahua - Durango - Torreón, Coah.</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Monterrey - 800 832 2600</b><br><span style="font-size:0.85rem; color:#64748b;">Nuevo León - Tamaulipas - Coahuila - SLP - Zacatecas</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Guadalajara - 800 364 0500</b><br><span style="font-size:0.85rem; color:#64748b;">Jalisco - Aguascalientes - Colima - Nayarit - Zacatecas</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Querétaro - 800 404 0000</b><br><span style="font-size:0.85rem; color:#64748b;">Querétaro - Guanajuato - Michoacán - SLP</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #dc2626;"><b>CASE San Juan - 800 905 2200</b><br><span style="font-size:0.85rem; color:#64748b;">CDMX y zona metropolitana - Edo. de México - Morelos - Guerrero</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Puebla - 800 226 1500</b><br><span style="font-size:0.85rem; color:#64748b;">Puebla - Tlaxcala - Veracruz - Hidalgo - Edo. de México - Morelos - Guerrero</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Mérida - 800 201 1100</b><br><span style="font-size:0.85rem; color:#64748b;">Yucatán - Quintana Roo - Campeche - Tabasco - Chiapas - Oaxaca - Veracruz</span></div>
+        </div>
+        <div style="margin-top:14px; padding:10px; background:#1e40af; color:white; border-radius:8px; text-align:center; font-weight:800; font-size:0.85rem;">📧 SOPORTE EMPRESARIAL 24H LOS 365 DÍAS DEL AÑO</div>
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 

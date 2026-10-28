@@ -125,7 +125,24 @@ def deduplicar_df(df_in):
     except Exception as e:
         return df_in
 
-df = deduplicar_df(cargar_datos())
+df_raw = cargar_datos()
+
+def buscar_col_temp(kws, df_ref):
+    for c in df_ref.columns:
+        for kw in kws:
+            if kw in c: return c
+    return None
+
+COL_EST_TMP = buscar_col_temp(['ESTADO','EDO'], df_raw)
+COL_SUC_TMP = buscar_col_temp(['SUCURSAL','SUC','SITIO'], df_raw)
+
+# FILL ESTADO antes de deduplicar - crucial para que CDMX tenga todas sus sucursales
+if COL_EST_TMP and not df_raw.empty:
+    df_raw[COL_EST_TMP] = df_raw[COL_EST_TMP].astype(str).str.strip().replace({'nan':'', 'None':''}).replace('', pd.NA).ffill().str.strip()
+if COL_SUC_TMP and not df_raw.empty:
+    df_raw[COL_SUC_TMP] = df_raw[COL_SUC_TMP].astype(str).str.strip()
+
+df = deduplicar_df(df_raw)
 
 def buscar_col(kws):
     for c in df.columns:

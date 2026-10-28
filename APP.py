@@ -251,22 +251,36 @@ def log_eliminacion_historial(usuario, estado, sucursal, no_reporte, fecha_repor
     return True
 
 def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual):
-    # Limpia NO_REPORTE, FECHA_DE_REPORTE y FALLA en BDSUCURSALES, manteniendo historial
+    # Limpia NO_REPORTE, FECHA_DE_REPORTE y FALLA en BDSUCURSALES2, manteniendo historial
+    # Version robusta con busqueda flexible
     try:
         if "gcp_service_account" in st.secrets:
             import gspread
             from google.oauth2.service_account import Credentials
+            import unicodedata
+            def clean_norm(s):
+                # Elimina acentos, mayusculas, espacios dobles
+                s = str(s).strip()
+                if not s:
+                    return ""
+                s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+                s = s.upper()
+                s = re.sub(r'\s+', ' ', s)
+                return s.strip()
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
             client = gspread.authorize(creds)
             sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
             sh = client.open_by_key(sheet_id)
-            try:
-                ws_main = sh.worksheet("BDSUCURSALES")
-            except:
+            # Priorizar BDSUCURSALES2 como pediste
+            ws_main = None
+            for name_try in ["BDSUCURSALES2", "BDSUCURSALES", "Hoja 1", "BDSUCURSALES2 "]:
                 try:
-                    ws_main = sh.worksheet("BDSUCURSALES2")
+                    ws_main = sh.worksheet(name_try)
+                    break
                 except:
-                    ws_main = sh.sheet1
+                    continue
+            if not ws_main:
+                ws_main = sh.sheet1
             headers = ws_main.row_values(1)
             headers_upper = [h.strip().upper() for h in headers]
             def find_idx(kws):
@@ -280,29 +294,68 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual):
             col_rep_idx = find_idx(['NO. REPORTE','NO REPORTE','REPORTE'])
             col_fec_idx = find_idx(['FECHA DE REPORTE','FECHA REPORTE','FECHA','FEC'])
             col_falla_idx = find_idx(['FALLA','OBSERVACIONES','OBS','COMENTARIO'])
+            # Fallback si no encuentra columnas
+            if not col_est_idx:
+                col_est_idx = 1
+            if not col_suc_idx:
+                col_suc_idx = 2
             all_vals = ws_main.get_all_values()
             row_found = None
+            estado_clean = clean_norm(estado)
+            sucursal_clean = clean_norm(sucursal)
+            # Primera pasada: match exacto normalizado
             for idx_row in range(1, len(all_vals)):
                 row = all_vals[idx_row]
+                if len(row) < max(col_est_idx, col_suc_idx):
+                    continue
                 try:
-                    est_cell = row[col_est_idx-1] if col_est_idx and col_est_idx-1 < len(row) else ""
-                    suc_cell = row[col_suc_idx-1] if col_suc_idx and col_suc_idx-1 < len(row) else ""
-                    if norm(est_cell) == norm(estado) and norm(suc_cell) == norm(sucursal):
+                    est_cell = row[col_est_idx-1] if col_est_idx-1 < len(row) else ""
+                    suc_cell = row[col_suc_idx-1] if col_suc_idx-1 < len(row) else ""
+                    if clean_norm(est_cell) == estado_clean and clean_norm(suc_cell) == sucursal_clean:
                         row_found = idx_row+1
                         break
                 except:
                     continue
+            # Segunda pasada: solo por sucursal si no encontro por estado+sucursal
+            if not row_found:
+                for idx_row in range(1, len(all_vals)):
+                    row = all_vals[idx_row]
+                    if len(row) < col_suc_idx:
+                        continue
+                    try:
+                        suc_cell = row[col_suc_idx-1] if col_suc_idx-1 < len(row) else ""
+                        if clean_norm(suc_cell) == sucursal_clean:
+                            row_found = idx_row+1
+                            break
+                    except:
+                        continue
+            # Tercera pasada: contiene
+            if not row_found:
+                for idx_row in range(1, len(all_vals)):
+                    row = all_vals[idx_row]
+                    if len(row) < col_suc_idx:
+                        continue
+                    try:
+                        suc_cell = row[col_suc_idx-1] if col_suc_idx-1 < len(row) else ""
+                        if sucursal_clean in clean_norm(suc_cell) or clean_norm(suc_cell) in sucursal_clean:
+                            row_found = idx_row+1
+                            break
+                    except:
+                        continue
             if row_found:
+                # Limpiar exactamente las 3 casillas que pediste
                 if col_rep_idx: ws_main.update_cell(row_found, col_rep_idx, "")
                 if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, "")
                 if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, "")
                 return True, row_found
             else:
-                return False, "No se encontro la sucursal en Hoja 1"
+                # Mensaje mas detallado para debug
+                return False, f"No se encontro la sucursal en {ws_main.title} - Buscado: ESTADO='{estado}' SUCURSAL='{sucursal}' | Headers: {headers[:6]}"
         else:
             return True, "Modo demo - simulado"
     except Exception as e:
-        return False, str(e)
+        import traceback
+        return False, f"{str(e)} | {traceback.format_exc()[:500]}"
 
 lista_estados = sorted(df[COL_EST].dropna().unique()) if COL_EST in df.columns else []
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP and COL_REP in df.columns else pd.DataFrame()

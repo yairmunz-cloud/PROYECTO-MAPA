@@ -116,14 +116,6 @@ def cargar_datos(sheet_id_override=None):
             return df_privado
         else:
             return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
-    except Exception as e:
-        st.warning(f"No se pudo cargar desde Sheets real, usando CSV publico: {e}")
-    # Fallback publico
-    base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTySrWdMEtPBo7u4r6df8shaedXk8783RUOdOPsjLwIh1xz4nLHdAdaheYFMB1-CLI2XtzpzLa7SQXm/pub?output=csv"
-    url = f"{base_url}&cb={int(time.time())}"
-    df = pd.read_csv(url, dtype=str)
-    df.columns = df.columns.str.strip().str.upper()
-    return df.dropna(how='all')
 
 df = cargar_datos(SHEET_ID_PRUEBAS if "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4" not in SHEET_ID_PRUEBAS else None)
 

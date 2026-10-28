@@ -714,31 +714,87 @@ if not st.session_state.get('show_add_form', False):
                         border_color = "#16a34a"  # Verde si no hay reporte
                         border_bg = "rgba(240,253,244,0.5)"
 
-                    # Tarjeta principal con formato de captura y borde dinamico
-                    st.markdown(f"""
-                    <div class="glass" style="padding:20px; border-left:5px solid {border_color}; background: {border_bg} !important;">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
-                            <div style="display:flex; gap:14px; align-items:flex-start;">
-                                <div style="width:42px; height:42px; background:#0f172a; color:white; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px;">🏢</div>
-                                <div>
-                                    <div style="font-size:1.2rem; font-weight:900; color:#0f172a; letter-spacing:-0.5px;">{suc_sel}</div>
-                                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
-                                        {estado_display}
-                                        {rep_display}
-                                        {fecha_display}
+                    # Tarjeta principal con formato de captura y borde dinamico - CON BOTON CERRAR REPORTE ARRIBA
+                    # Si hay reporte activo, agregamos boton en el espacio vacio de la derecha
+                    if tiene_reporte(rep):
+                        # Con reporte activo: layout con falla a la izquierda y boton cerrar a la derecha
+                        st.markdown(f"""
+                        <div class="glass" style="padding:20px; border-left:5px solid {border_color}; background: {border_bg} !important;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+                                <div style="display:flex; gap:14px; align-items:flex-start;">
+                                    <div style="width:42px; height:42px; background:#0f172a; color:white; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px;">🏢</div>
+                                    <div>
+                                        <div style="font-size:1.2rem; font-weight:900; color:#0f172a; letter-spacing:-0.5px;">{suc_sel}</div>
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                                            {estado_display}
+                                            {rep_display}
+                                            {fecha_display}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    {badge_html}
+                                </div>
+                            </div>
+                            <div style="margin-top:14px; display:flex; gap:12px; align-items:stretch;">
+                                <div style="flex:2; padding:12px 14px; background:#f8fafc; border:1px solid #f1f5f9; border-radius:10px;">
+                                    <div style="font-size:0.70rem; font-weight:800; color:#64748b; letter-spacing:0.6px; margin-bottom:4px;">📝 FALLA REPORTADA</div>
+                                    <div style="color:#1e293b; font-size:0.92rem;">{obs if obs and obs.lower()!='nan' else 'Sin observaciones'}</div>
+                                </div>
+                                <div style="flex:1; min-width:200px;">
+                                    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:10px 12px; height:100%; display:flex; flex-direction:column; justify-content:center;">
+                                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                                            <div style="width:22px; height:22px; background:#ef4444; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">⚠️</div>
+                                            <div style="font-weight:800; font-size:0.75rem; color:#b91c1c;">REPORTE ACTIVO</div>
+                                        </div>
+                                        <div style="font-size:0.65rem; color:#7f1d1d; line-height:1.2;">REP: {rep} | {txt_dias}</div>
+                                        <div style="font-size:0.60rem; color:#991b1b; margin-top:4px;">Acción requerida para cierre</div>
                                     </div>
                                 </div>
                             </div>
-                            <div style="text-align:right;">
-                                {badge_html}
+                        </div>
+                        """, unsafe_allow_html=True)
+                        # Boton CERRAR REPORTE justo debajo del recuadro, alineado a la derecha donde marcaste
+                        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+                        c_btn1, c_btn2 = st.columns([2.2, 0.8])
+                        with c_btn1:
+                            st.markdown("<div style='font-size:0.70rem; color:#64748b; padding-top:8px;'>💡 Al cerrar se limpiará en BDSUCURSALES2: No. REPORTE, FECHA, FALLA → vacías. Se guardará log en HISTORIAL_REPORTES.</div>", unsafe_allow_html=True)
+                        with c_btn2:
+                            if st.button(f"✅ CERRAR REPORTE", key=f"btn_cerrar_{estado_sel}_{suc_sel}_{rep}", type="primary", use_container_width=True):
+                                st.session_state['delete_target'] = {"estado": estado_sel, "sucursal": suc_sel, "rep": rep, "fec": fec, "obs": obs, "tel": tel_raw}
+                                if not st.session_state.get('admin_auth'):
+                                    st.session_state['show_delete_login'] = True
+                                    st.session_state['show_delete_confirm'] = False
+                                else:
+                                    st.session_state['show_delete_confirm'] = True
+                                    st.session_state['show_delete_login'] = False
+                                st.rerun()
+                    else:
+                        # Sin reporte activo: layout normal sin boton
+                        st.markdown(f"""
+                        <div class="glass" style="padding:20px; border-left:5px solid {border_color}; background: {border_bg} !important;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+                                <div style="display:flex; gap:14px; align-items:flex-start;">
+                                    <div style="width:42px; height:42px; background:#0f172a; color:white; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px;">🏢</div>
+                                    <div>
+                                        <div style="font-size:1.2rem; font-weight:900; color:#0f172a; letter-spacing:-0.5px;">{suc_sel}</div>
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                                            {estado_display}
+                                            {rep_display}
+                                            {fecha_display}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    {badge_html}
+                                </div>
+                            </div>
+                            <div style="margin-top:14px; padding:12px 14px; background:#f8fafc; border:1px solid #f1f5f9; border-radius:10px;">
+                                <div style="font-size:0.70rem; font-weight:800; color:#64748b; letter-spacing:0.6px; margin-bottom:4px;">📝 FALLA REPORTADA</div>
+                                <div style="color:#1e293b; font-size:0.92rem;">{obs if obs and obs.lower()!='nan' else 'Sin observaciones'}</div>
                             </div>
                         </div>
-                        <div style="margin-top:14px; padding:12px 14px; background:#f8fafc; border:1px solid #f1f5f9; border-radius:10px;">
-                            <div style="font-size:0.70rem; font-weight:800; color:#64748b; letter-spacing:0.6px; margin-bottom:4px;">📝 FALLA REPORTADA</div>
-                            <div style="color:#1e293b; font-size:0.92rem;">{obs if obs and obs.lower()!='nan' else 'Sin observaciones'}</div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        """, unsafe_allow_html=True)
 
                     # Lineas telefonicas con icono
                     st.markdown(f"<div style='margin-top:14px; margin-bottom:8px; font-weight:800; font-size:0.85rem;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros</div>", unsafe_allow_html=True)
@@ -758,43 +814,6 @@ if not st.session_state.get('show_add_form', False):
                     else:
                         st.info(f"Sin lineas registradas - {tel_raw}")
 
-                    # --- BOTON CERRAR REPORTE (solo si hay reporte activo) - CORREGIDO ---
-                    if tiene_reporte(rep):
-                        st.markdown("---")
-                        st.markdown(f"""
-                        <div style='display:flex; justify-content:space-between; align-items:center; margin-top:10px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:10px 14px;'>
-                            <div style='display:flex; align-items:center; gap:8px;'>
-                                <div style='width:28px; height:28px; background:#ef4444; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white;'>⚠️</div>
-                                <div>
-                                    <div style='font-weight:800; font-size:0.85rem; color:#b91c1c;'>REPORTE ACTIVO - ACCION REQUERIDA</div>
-                                    <div style='font-size:0.70rem; color:#7f1d1d;'>REP: {rep} | {txt_dias} | Sucursal con falla reportada</div>
-                                </div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
-                        col_close1, col_close2 = st.columns([1.2, 1.8])
-                        with col_close1:
-                            if st.button(f"✅ CERRAR REPORTE", key=f"btn_cerrar_{estado_sel}_{suc_sel}_{rep}", type="primary", use_container_width=True):
-                                # Guardar objetivo y pedir login para cerrar reporte
-                                st.session_state['delete_target'] = {"estado": estado_sel, "sucursal": suc_sel, "rep": rep, "fec": fec, "obs": obs, "tel": tel_raw}
-                                if not st.session_state.get('admin_auth'):
-                                    st.session_state['show_delete_login'] = True
-                                    st.session_state['show_delete_confirm'] = False
-                                else:
-                                    st.session_state['show_delete_confirm'] = True
-                                    st.session_state['show_delete_login'] = False
-                                st.rerun()
-                        with col_close2:
-                            st.markdown("""
-                            <div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px;'>
-                                <div style='font-size:0.72rem; font-weight:700; color:#334155;'>¿Qué hace CERRAR REPORTE?</div>
-                                <div style='font-size:0.70rem; color:#64748b; line-height:1.3; margin-top:2px;'>
-                                • Limpia en <b>BDSUCURSALES2</b>: No. REPORTE, FECHA DE REPORTE, FALLA → vacías<br>
-                                • Agrega registro en <b>HISTORIAL_REPORTES</b> como CIERRE/ELIMINACIÓN
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
             else:
                 st.info("Selecciona sucursal para ver detalle")
 

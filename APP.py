@@ -227,7 +227,7 @@ if 'visitas_demo' not in st.session_state: st.session_state['visitas_demo']=[]
 if 'batch_reportes' not in st.session_state: st.session_state['batch_reportes']=[]
 if 'filtro_activo_sel' not in st.session_state: st.session_state['filtro_activo_sel']="-- Ver todas las sucursales --"
 
-# HEADER
+# HEADER - AHORA CON FILTRO COMPACTO DEL MISMO TAMAÑO QUE RECUADRO NEGRO
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
     if b64_logo:
@@ -235,45 +235,40 @@ with c1:
     else:
         st.markdown(f"""<div style="font-size:2rem; font-weight:900;">SUCURSALES - PRUEBAS</div>""", unsafe_allow_html=True)
 with c2:
-    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.6rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
-
-# --- DESPLEGABLE REPORTES ACTIVOS - COMPACTO IGUAL QUE RECUADRO NEGRO ---
-if not df_reportes.empty:
-    # Construir lista
-    opciones_activas = []
-    mapa_activos = {}
-    for _, row in df_reportes.iterrows():
-        estado = str(row.get(COL_EST, "")).strip()
-        suc = str(row.get(COL_SUC, "")).strip()
-        rep = str(row.get(COL_REP, "")).strip()
-        fec = str(row.get(COL_FEC, "")).strip()
-        dias, txt_dias = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin fecha")
-        label = f"{suc} - {estado} | REP: {rep} | {txt_dias}"
-        opciones_activas.append(label)
-        mapa_activos[label] = {"estado": estado, "sucursal": suc, "row": row}
-    opciones_activas = sorted(opciones_activas)
-    opciones_con_todos = ["-- Ver solo sucursales con reporte activo --"] + opciones_activas
-
-    default_idx_activo = 0
-    if st.session_state['filtro_activo_sel'] in opciones_con_todos:
-        default_idx_activo = opciones_con_todos.index(st.session_state['filtro_activo_sel'])
-
-    # Recuadro compacto igual altura que el negro de Reportes Activos (filter-pill style)
-    st.markdown(f'<div class="filter-pill" style="margin-top:10px; padding:10px 18px; border-left:4px solid #ef4444; display:flex; align-items:center; justify-content:space-between;"><div class="filter-label" style="margin:0;">🚨 SUCURSALES CON REPORTE • {len(df_reportes)} encontradas</div></div>', unsafe_allow_html=True)
-    # El selectbox justo debajo pero compacto
-    sel_activo = st.selectbox("Filtro reporte activo compacto", opciones_con_todos, index=default_idx_activo, key="filtro_activo_sel", label_visibility="collapsed")
+    st.markdown(f"""<div class="glass-dark" style="padding:14px 16px;"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:32px; height:32px; background:rgba(239,68,68,0.25); border-radius:8px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700; font-size:0.9rem;">Reportes Activos</div><div style="font-size:0.72rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.4rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
     
-    # AUTO-MOSTRAR INFO AL SELECCIONAR - SIN BOTONES
-    if sel_activo != "-- Ver solo sucursales con reporte activo --":
-        info_sel = mapa_activos.get(sel_activo)
-        if info_sel:
-            # Actualiza automaticamente los filtros principales para mostrar su info
-            if st.session_state.get('estado_real') != info_sel['estado'] or st.session_state.get('sucursal_real') != info_sel['sucursal']:
-                st.session_state['estado_real'] = info_sel['estado']
-                st.session_state['sucursal_real'] = info_sel['sucursal']
-                # No hacemos rerun extra, dejamos que el flujo continue y muestre la info abajo
-else:
-    st.markdown('<div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #16a34a; border-radius:50px;"><b style="color:#166534; font-size:0.85rem;">✅ Sin reportes activos</b></div>', unsafe_allow_html=True)
+    # FILTRO COMPACTO - MISMO ANCHO QUE EL RECUADRO NEGRO, JUSTO DEBAJO
+    if not df_reportes.empty:
+        opciones_activas = []
+        mapa_activos = {}
+        for _, row in df_reportes.iterrows():
+            estado = str(row.get(COL_EST, "")).strip()
+            suc = str(row.get(COL_SUC, "")).strip()
+            rep = str(row.get(COL_REP, "")).strip()
+            fec = str(row.get(COL_FEC, "")).strip()
+            dias, txt_dias = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin fecha")
+            label = f"{suc} - {estado} | REP: {rep} | {txt_dias}"
+            opciones_activas.append(label)
+            mapa_activos[label] = {"estado": estado, "sucursal": suc, "row": row}
+        opciones_activas = sorted(opciones_activas)
+        opciones_con_todos = ["-- Sucursales con reporte --"] + opciones_activas
+
+        default_idx_activo = 0
+        if st.session_state['filtro_activo_sel'] in opciones_con_todos:
+            default_idx_activo = opciones_con_todos.index(st.session_state['filtro_activo_sel'])
+
+        # Selectbox compacto del mismo ancho que el recuadro negro
+        st.markdown('<div style="margin-top:8px;"></div>', unsafe_allow_html=True)
+        sel_activo = st.selectbox("Filtro activo", opciones_con_todos, index=default_idx_activo, key="filtro_activo_sel", label_visibility="collapsed", placeholder="Filtrar reporte activo")
+        
+        if sel_activo != "-- Sucursales con reporte --":
+            info_sel = mapa_activos.get(sel_activo)
+            if info_sel:
+                if st.session_state.get('estado_real') != info_sel['estado'] or st.session_state.get('sucursal_real') != info_sel['sucursal']:
+                    st.session_state['estado_real'] = info_sel['estado']
+                    st.session_state['sucursal_real'] = info_sel['sucursal']
+    else:
+        st.markdown('<div style="margin-top:8px; background:white; border:1px solid #bbf7d0; border-radius:12px; padding:8px 12px; text-align:center;"><b style="color:#166534; font-size:0.8rem;">✅ Sin reportes</b></div>', unsafe_allow_html=True)
 
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 
@@ -590,9 +585,17 @@ if not st.session_state.get('show_add_form', False):
                     fecha_display = f'<span class="rep-box">📅 Fecha: {fec}</span>' if fec and fec.lower() not in ['nan','none',''] else '<span class="rep-box">📅 Fecha: N/A</span>'
                     estado_display = f'<span class="rep-box" style="background:#0f172a; color:white; border-color:#0f172a;">📍 {estado_sel}</span>'
 
-                    # Tarjeta principal con formato de captura
+                    # Color del borde del box segun reporte activo
+                    if tiene_reporte(rep):
+                        border_color = "#ef4444"  # Rojo si hay reporte activo
+                        border_bg = "rgba(254,242,242,0.5)"
+                    else:
+                        border_color = "#16a34a"  # Verde si no hay reporte
+                        border_bg = "rgba(240,253,244,0.5)"
+
+                    # Tarjeta principal con formato de captura y borde dinamico
                     st.markdown(f"""
-                    <div class="glass" style="padding:20px;">
+                    <div class="glass" style="padding:20px; border-left:5px solid {border_color}; background: {border_bg} !important;">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
                             <div style="display:flex; gap:14px; align-items:flex-start;">
                                 <div style="width:42px; height:42px; background:#0f172a; color:white; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px;">🏢</div>

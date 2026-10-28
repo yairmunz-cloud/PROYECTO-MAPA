@@ -5,18 +5,23 @@ import re
 import time
 import base64
 
-# LOGO
+# LOGO ATLAS
 try:
-    with open("image_af8068.png", "rb") as f:
+    # Tu logo Atlas nuevo que subiste
+    with open("/mnt/data/image_d83e7a.png", "rb") as f:
         b64_logo = base64.b64encode(f.read()).decode()
 except:
     try:
-        with open("/mnt/data/image_af8068.png", "rb") as f:
+        with open("image_af8068.png", "rb") as f:
             b64_logo = base64.b64encode(f.read()).decode()
     except:
-        b64_logo = ""
+        try:
+            with open("/mnt/data/image_af8068.png", "rb") as f:
+                b64_logo = base64.b64encode(f.read()).decode()
+        except:
+            b64_logo = ""
 
-st.set_page_config(page_title="SUCURSALES - PRUEBAS REALES", layout="wide", page_icon="🏢")
+st.set_page_config(page_title="SUCURSALES", layout="wide", page_icon="🏢")
 
 st.markdown("""
 <style>
@@ -228,47 +233,46 @@ if 'batch_reportes' not in st.session_state: st.session_state['batch_reportes']=
 if 'filtro_activo_sel' not in st.session_state: st.session_state['filtro_activo_sel']="-- Ver todas las sucursales --"
 
 # HEADER - AHORA CON FILTRO COMPACTO DEL MISMO TAMAÑO QUE RECUADRO NEGRO
+# Variables globales para el filtro de reporte activo
+opciones_activas_global = []
+mapa_activos_global = {}
+if not df_reportes.empty:
+    for _, row in df_reportes.iterrows():
+        estado = str(row.get(COL_EST, "")).strip()
+        suc = str(row.get(COL_SUC, "")).strip()
+        rep = str(row.get(COL_REP, "")).strip()
+        fec = str(row.get(COL_FEC, "")).strip()
+        dias, txt_dias = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin fecha")
+        label = f"{suc} - {estado} | REP: {rep} | {txt_dias}"
+        opciones_activas_global.append(label)
+        mapa_activos_global[label] = {"estado": estado, "sucursal": suc}
+
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
     if b64_logo:
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:16px"><div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:2rem; font-weight:900; letter-spacing:-0.8px">SUCURSALES - PRUEBAS</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:14px"><div style="width:48px; height:48px; border-radius:12px; overflow:hidden; background:white; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.08);"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:contain"></div><div style="font-size:2rem; font-weight:900; letter-spacing:-0.8px; color:#0f172a;">SUCURSALES</div></div>""", unsafe_allow_html=True)
     else:
-        st.markdown(f"""<div style="font-size:2rem; font-weight:900;">SUCURSALES - PRUEBAS</div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="font-size:2rem; font-weight:900;">SUCURSALES</div>""", unsafe_allow_html=True)
 with c2:
     st.markdown(f"""<div class="glass-dark" style="padding:14px 16px;"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:32px; height:32px; background:rgba(239,68,68,0.25); border-radius:8px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700; font-size:0.9rem;">Reportes Activos</div><div style="font-size:0.72rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.4rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
     
     # FILTRO COMPACTO - MISMO ANCHO QUE EL RECUADRO NEGRO, JUSTO DEBAJO
     if not df_reportes.empty:
-        opciones_activas = []
-        mapa_activos = {}
-        for _, row in df_reportes.iterrows():
-            estado = str(row.get(COL_EST, "")).strip()
-            suc = str(row.get(COL_SUC, "")).strip()
-            rep = str(row.get(COL_REP, "")).strip()
-            fec = str(row.get(COL_FEC, "")).strip()
-            dias, txt_dias = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin fecha")
-            label = f"{suc} - {estado} | REP: {rep} | {txt_dias}"
-            opciones_activas.append(label)
-            mapa_activos[label] = {"estado": estado, "sucursal": suc, "row": row}
-        opciones_activas = sorted(opciones_activas)
-        opciones_con_todos = ["-- Sucursales con reporte --"] + opciones_activas
-
+        opciones_con_todos = ["-- Sucursales con reporte --"] + sorted(opciones_activas_global)
         default_idx_activo = 0
-        if st.session_state['filtro_activo_sel'] in opciones_con_todos:
+        if st.session_state.get('filtro_activo_sel') in opciones_con_todos:
             default_idx_activo = opciones_con_todos.index(st.session_state['filtro_activo_sel'])
-
-        # Selectbox compacto del mismo ancho que el recuadro negro
         st.markdown('<div style="margin-top:8px;"></div>', unsafe_allow_html=True)
-        sel_activo = st.selectbox("Filtro activo", opciones_con_todos, index=default_idx_activo, key="filtro_activo_sel", label_visibility="collapsed", placeholder="Filtrar reporte activo")
-        
-        if sel_activo != "-- Sucursales con reporte --":
-            info_sel = mapa_activos.get(sel_activo)
-            if info_sel:
-                if st.session_state.get('estado_real') != info_sel['estado'] or st.session_state.get('sucursal_real') != info_sel['sucursal']:
-                    st.session_state['estado_real'] = info_sel['estado']
-                    st.session_state['sucursal_real'] = info_sel['sucursal']
+        sel_activo = st.selectbox("Filtro activo", opciones_con_todos, index=default_idx_activo, key="filtro_activo_sel", label_visibility="collapsed")
+        # Guardamos seleccion actual para usar abajo en logica de desbloqueo
+        st.session_state['filtro_activo_actual'] = sel_activo
     else:
         st.markdown('<div style="margin-top:8px; background:white; border:1px solid #bbf7d0; border-radius:12px; padding:8px 12px; text-align:center;"><b style="color:#166534; font-size:0.8rem;">✅ Sin reportes</b></div>', unsafe_allow_html=True)
+        st.session_state['filtro_activo_actual'] = "-- Sucursales con reporte --"
+
+# Inicializa prev para detectar cambio de filtro
+if 'filtro_activo_prev' not in st.session_state:
+    st.session_state['filtro_activo_prev'] = "-- Sucursales con reporte --"
 
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 
@@ -304,6 +308,35 @@ if not es_modo_agregar:
                 st.session_state['show_add_form'] = False
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+
+    # --- LOGICA PARA CORREGIR BUG DE FILTRO TRABADO ---
+    # Si el usuario cambia Estado/Sucursal manualmente abajo, y ese cambio no coincide con el filtro de reporte activo,
+    # entonces reseteamos el filtro de reporte activo para liberar la busqueda
+    filtro_actual = st.session_state.get('filtro_activo_actual', "-- Sucursales con reporte --")
+    filtro_prev = st.session_state.get('filtro_activo_prev', "-- Sucursales con reporte --")
+    
+    if filtro_actual != "-- Sucursales con reporte --" and filtro_actual in mapa_activos_global:
+        info_filtro = mapa_activos_global[filtro_actual]
+        # Si el filtro cambio (usuario selecciono nuevo en dropdown de reportes), aplicar ese filtro
+        if filtro_actual != filtro_prev:
+            st.session_state['estado_real'] = info_filtro['estado']
+            st.session_state['sucursal_real'] = info_filtro['sucursal']
+            st.session_state['filtro_activo_prev'] = filtro_actual
+            # Forzar estado_actual y sucursal_actual para esta corrida
+            estado_actual = info_filtro['estado']
+            sucursal_actual = info_filtro['sucursal']
+        else:
+            # Si el filtro es el mismo que antes, pero el usuario cambio Estado/Sucursal abajo manualmente
+            # Detectamos que Estado/Sucursal actuales no coinciden con el filtro activo
+            if estado_actual != info_filtro['estado'] or sucursal_actual != info_filtro['sucursal']:
+                # El usuario quiere ver otra sucursal, liberamos el filtro
+                st.session_state['filtro_activo_sel'] = "-- Sucursales con reporte --"
+                st.session_state['filtro_activo_actual'] = "-- Sucursales con reporte --"
+                st.session_state['filtro_activo_prev'] = "-- Sucursales con reporte --"
+    else:
+        # Si filtro esta en default, actualizar prev
+        if filtro_actual == "-- Sucursales con reporte --":
+            st.session_state['filtro_activo_prev'] = filtro_actual
 else:
     estado_actual = st.session_state.get('estado_real', lista_estados[0] if lista_estados else "")
     df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df

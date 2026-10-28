@@ -748,7 +748,6 @@ if not st.session_state.get('show_add_form', False):
                                             <div style="font-weight:800; font-size:0.75rem; color:#b91c1c;">REPORTE ACTIVO</div>
                                         </div>
                                         <div style="font-size:0.65rem; color:#7f1d1d; line-height:1.2;">REP: {rep} | {txt_dias}</div>
-                                        <div style="font-size:0.60rem; color:#991b1b; margin-top:4px;">Acción requerida para cierre</div>
                                     </div>
                                 </div>
                             </div>
@@ -758,7 +757,7 @@ if not st.session_state.get('show_add_form', False):
                         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
                         c_btn1, c_btn2 = st.columns([2.2, 0.8])
                         with c_btn1:
-                            st.markdown("<div style='font-size:0.70rem; color:#64748b; padding-top:8px;'>💡 Al cerrar se limpiará en BDSUCURSALES2: No. REPORTE, FECHA, FALLA → vacías. Se guardará log en HISTORIAL_REPORTES.</div>", unsafe_allow_html=True)
+                            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
                         with c_btn2:
                             if st.button(f"✅ CERRAR REPORTE", key=f"btn_cerrar_{estado_sel}_{suc_sel}_{rep}", type="primary", use_container_width=True):
                                 st.session_state['delete_target'] = {"estado": estado_sel, "sucursal": suc_sel, "rep": rep, "fec": fec, "obs": obs, "tel": tel_raw}

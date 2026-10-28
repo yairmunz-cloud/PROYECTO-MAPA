@@ -237,10 +237,9 @@ with c1:
 with c2:
     st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.6rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
 
-# --- DESPLEGABLE REPORTES ACTIVOS ---
+# --- DESPLEGABLE REPORTES ACTIVOS - COMPACTO IGUAL QUE RECUADRO NEGRO ---
 if not df_reportes.empty:
-    st.markdown('<div class="glass" style="margin-top:14px; padding:14px 18px; border-left:4px solid #ef4444;">', unsafe_allow_html=True)
-    st.markdown(f'<div class="filter-label" style="margin-bottom:6px;">🚨 VER SOLO SUCURSALES CON REPORTE ACTIVO • {len(df_reportes)} encontradas</div>', unsafe_allow_html=True)
+    # Construir lista
     opciones_activas = []
     mapa_activos = {}
     for _, row in df_reportes.iterrows():
@@ -253,28 +252,28 @@ if not df_reportes.empty:
         opciones_activas.append(label)
         mapa_activos[label] = {"estado": estado, "sucursal": suc, "row": row}
     opciones_activas = sorted(opciones_activas)
-    opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
+    opciones_con_todos = ["-- Ver solo sucursales con reporte activo --"] + opciones_activas
+
     default_idx_activo = 0
     if st.session_state['filtro_activo_sel'] in opciones_con_todos:
         default_idx_activo = opciones_con_todos.index(st.session_state['filtro_activo_sel'])
-    sel_activo = st.selectbox("Filtro reporte activo", opciones_con_todos, index=default_idx_activo, key="filtro_activo_sel", label_visibility="collapsed")
-    if sel_activo != "-- Ver todas las sucursales --":
+
+    # Recuadro compacto igual altura que el negro de Reportes Activos (filter-pill style)
+    st.markdown(f'<div class="filter-pill" style="margin-top:10px; padding:10px 18px; border-left:4px solid #ef4444; display:flex; align-items:center; justify-content:space-between;"><div class="filter-label" style="margin:0;">🚨 SUCURSALES CON REPORTE • {len(df_reportes)} encontradas</div></div>', unsafe_allow_html=True)
+    # El selectbox justo debajo pero compacto
+    sel_activo = st.selectbox("Filtro reporte activo compacto", opciones_con_todos, index=default_idx_activo, key="filtro_activo_sel", label_visibility="collapsed")
+    
+    # AUTO-MOSTRAR INFO AL SELECCIONAR - SIN BOTONES
+    if sel_activo != "-- Ver solo sucursales con reporte activo --":
         info_sel = mapa_activos.get(sel_activo)
         if info_sel:
-            col_ir, col_quitar = st.columns([1,1])
-            with col_ir:
-                if st.button(f"👁️ Ver info de {info_sel['sucursal']}", use_container_width=True, type="primary"):
-                    st.session_state['estado_real'] = info_sel['estado']
-                    st.session_state['sucursal_real'] = info_sel['sucursal']
-                    st.rerun()
-            with col_quitar:
-                if st.button("✖️ Quitar filtro", use_container_width=True):
-                    st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
-                    st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
+            # Actualiza automaticamente los filtros principales para mostrar su info
+            if st.session_state.get('estado_real') != info_sel['estado'] or st.session_state.get('sucursal_real') != info_sel['sucursal']:
+                st.session_state['estado_real'] = info_sel['estado']
+                st.session_state['sucursal_real'] = info_sel['sucursal']
+                # No hacemos rerun extra, dejamos que el flujo continue y muestre la info abajo
 else:
-    st.markdown('<div class="glass" style="margin-top:12px; padding:12px; border-left:4px solid #16a34a;"><b style="color:#166534;">✅ Sin reportes activos</b></div>', unsafe_allow_html=True)
+    st.markdown('<div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #16a34a; border-radius:50px;"><b style="color:#166534; font-size:0.85rem;">✅ Sin reportes activos</b></div>', unsafe_allow_html=True)
 
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 

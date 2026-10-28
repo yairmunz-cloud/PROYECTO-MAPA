@@ -698,45 +698,40 @@ if not st.session_state.get('show_add_form', False):
                         else:
                             badge = f'<span class="badge badge-red">{txt_dias} - Critico</span>'
                     
-                    # Construir tarjetas de telefonos con icono
-                    tels_html = ""
-                    if tels:
-                        for t in tels:
-                            tels_html += f"""
-                            <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-                                <div style="width:36px; height:36px; background:#eff6ff; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px;">📞</div>
-                                <div>
-                                    <div style="font-size:0.72rem; color:#64748b; font-weight:700; letter-spacing:0.5px;">LINEA TELEFONICA</div>
-                                    <div style="font-weight:800; color:#0f172a; font-size:0.95rem;">{t}</div>
-                                </div>
-                            </div>
-                            """
-                    else:
-                        tels_html = f"""<div style="background:white; border:1px dashed #cbd5e1; border-radius:12px; padding:12px; color:#94a3b8;">Sin lineas registradas - {tel_raw}</div>"""
-
+                    # Cabecera sucursal
                     st.markdown(f"""
-                    <div class="glass" style="padding:22px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <div style="width:44px; height:44px; background:#0f172a; color:white; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px;">🏢</div>
+                    <div class="glass" style="padding:18px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div style="width:40px; height:40px; background:#0f172a; color:white; border-radius:10px; display:flex; align-items:center; justify-content:center;">🏢</div>
                                 <div>
-                                    <div style="font-size:1.15rem; font-weight:900; color:#0f172a;">{suc_sel}</div>
+                                    <div style="font-size:1.1rem; font-weight:900;">{suc_sel}</div>
                                     <div style="font-size:0.8rem; color:#64748b;">{estado_sel} • REP: {rep if tiene_reporte(rep) else 'N/A'} • Fecha: {fec if fec else 'N/A'}</div>
                                 </div>
                             </div>
                             <div>{badge}</div>
                         </div>
-                        <div style="margin-top:14px; padding:12px; background:#f8fafc; border-radius:10px; border:1px solid #f1f5f9;">
-                            <div style="font-size:0.72rem; font-weight:800; color:#64748b; letter-spacing:0.6px; margin-bottom:4px;">📝 FALLA REPORTADA</div>
-                            <div style="color:#334155;">{obs if obs and str(obs).lower()!='nan' else 'Sin observaciones'}</div>
-                        </div>
-                        <div style="margin-top:16px;">
-                            <div style="font-size:0.78rem; font-weight:800; color:#0f172a; margin-bottom:10px; letter-spacing:0.6px;">☎️ LINEAS TELEFONICAS • {len(tels)} numeros</div>
-                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
-                                {tels_html}
-                            </div>
+                        <div style="margin-top:12px; padding:10px; background:#f8fafc; border-radius:8px;">
+                            <b style="font-size:0.75rem; color:#64748b;">📝 FALLA:</b> {obs if obs and str(obs).lower()!='nan' else 'Sin observaciones'}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
+
+                    st.markdown(f"**☎️ LINEAS TELEFONICAS • {len(tels)} numeros**")
+                    if tels:
+                        cols = st.columns(2)
+                        for i, t in enumerate(tels):
+                            with cols[i % 2]:
+                                st.markdown(f"""
+                                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                    <div style="width:32px; height:32px; background:#eff6ff; border-radius:8px; display:flex; align-items:center; justify-content:center;">📞</div>
+                                    <div>
+                                        <div style="font-size:0.65rem; color:#64748b; font-weight:700;">LINEA TELEFONICA</div>
+                                        <div style="font-weight:800; font-size:0.9rem;">{t}</div>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                    else:
+                        st.info(f"Sin lineas registradas - {tel_raw}")
             else:
                 st.info("Selecciona sucursal para ver detalle")

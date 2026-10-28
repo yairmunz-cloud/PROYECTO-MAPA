@@ -223,10 +223,91 @@ def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, 
         return False
     return True
 
+def log_eliminacion_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, observaciones=""):
+    # Registra la eliminacion en HISTORIAL_REPORTES como evento ELIMINADO, pero mantiene historial
+    now = datetime.now()
+    fecha_reg = now.strftime("%d/%m/%Y")
+    hora_reg = now.strftime("%H:%M:%S")
+    mes = now.strftime("%m")
+    anio = now.strftime("%Y")
+    dia = now.strftime("%d")
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            client = gspread.authorize(creds)
+            sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+            sh = client.open_by_key(sheet_id)
+            try:
+                ws = sh.worksheet("HISTORIAL_REPORTES")
+            except:
+                ws = sh.add_worksheet(title="HISTORIAL_REPORTES", rows=5000, cols=15)
+                ws.append_row(["FECHA_REGISTRO", "HORA_REGISTRO", "DIA", "MES", "ANIO", "USUARIO", "ESTADO", "SUCURSAL", "NO_REPORTE", "FECHA_REPORTE", "TEL", "OBSERVACIONES"])
+            ws.append_row([fecha_reg, hora_reg, dia, mes, anio, usuario, estado, sucursal, f"ELIMINADO-{no_reporte}", fecha_reporte, "", f"ELIMINACION: {observaciones}"])
+            return True
+    except Exception as e:
+        return False
+    return True
+
+def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual):
+    # Limpia NO_REPORTE, FECHA_DE_REPORTE y FALLA en BDSUCURSALES, manteniendo historial
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
+            client = gspread.authorize(creds)
+            sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+            sh = client.open_by_key(sheet_id)
+            try:
+                ws_main = sh.worksheet("BDSUCURSALES")
+            except:
+                try:
+                    ws_main = sh.worksheet("BDSUCURSALES2")
+                except:
+                    ws_main = sh.sheet1
+            headers = ws_main.row_values(1)
+            headers_upper = [h.strip().upper() for h in headers]
+            def find_idx(kws):
+                for i, h in enumerate(headers_upper):
+                    for kw in kws:
+                        if kw in h:
+                            return i+1
+                return None
+            col_est_idx = find_idx(['ESTADO','EDO'])
+            col_suc_idx = find_idx(['SUCURSAL','SUC','SITIO'])
+            col_rep_idx = find_idx(['NO. REPORTE','NO REPORTE','REPORTE'])
+            col_fec_idx = find_idx(['FECHA DE REPORTE','FECHA REPORTE','FECHA','FEC'])
+            col_falla_idx = find_idx(['FALLA','OBSERVACIONES','OBS','COMENTARIO'])
+            all_vals = ws_main.get_all_values()
+            row_found = None
+            for idx_row in range(1, len(all_vals)):
+                row = all_vals[idx_row]
+                try:
+                    est_cell = row[col_est_idx-1] if col_est_idx and col_est_idx-1 < len(row) else ""
+                    suc_cell = row[col_suc_idx-1] if col_suc_idx and col_suc_idx-1 < len(row) else ""
+                    if norm(est_cell) == norm(estado) and norm(suc_cell) == norm(sucursal):
+                        row_found = idx_row+1
+                        break
+                except:
+                    continue
+            if row_found:
+                if col_rep_idx: ws_main.update_cell(row_found, col_rep_idx, "")
+                if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, "")
+                if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, "")
+                return True, row_found
+            else:
+                return False, "No se encontro la sucursal en Hoja 1"
+        else:
+            return True, "Modo demo - simulado"
+    except Exception as e:
+        return False, str(e)
+
 lista_estados = sorted(df[COL_EST].dropna().unique()) if COL_EST in df.columns else []
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP and COL_REP in df.columns else pd.DataFrame()
 
-for k in ['admin_auth','show_login','show_add_form','current_user','batch_reportes','show_close_login','show_close_confirm','close_target','close_auth','close_user','last_logged_suc','last_visita_log','visitas_demo','filtro_activo_sel']:
+for k in ['admin_auth','show_login','show_add_form','current_user','batch_reportes','show_close_login','show_close_confirm','close_target','close_auth','close_user','last_logged_suc','last_visita_log','visitas_demo','filtro_activo_sel','show_delete_login','show_delete_confirm','delete_target','delete_auth']:
     if k not in st.session_state:
         st.session_state[k] = False if 'auth' in k or 'show' in k else ([] if 'batch' in k or 'visitas' in k or 'demo' in k else None)
 if 'visitas_demo' not in st.session_state: st.session_state['visitas_demo']=[]
@@ -676,5 +757,142 @@ if not st.session_state.get('show_add_form', False):
                                 """, unsafe_allow_html=True)
                     else:
                         st.info(f"Sin lineas registradas - {tel_raw}")
+
+                    # --- BOTON CERRAR REPORTE (solo si hay reporte activo) - CORREGIDO ---
+                    if tiene_reporte(rep):
+                        st.markdown("---")
+                        st.markdown(f"""
+                        <div style='display:flex; justify-content:space-between; align-items:center; margin-top:10px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:10px 14px;'>
+                            <div style='display:flex; align-items:center; gap:8px;'>
+                                <div style='width:28px; height:28px; background:#ef4444; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white;'>⚠️</div>
+                                <div>
+                                    <div style='font-weight:800; font-size:0.85rem; color:#b91c1c;'>REPORTE ACTIVO - ACCION REQUERIDA</div>
+                                    <div style='font-size:0.70rem; color:#7f1d1d;'>REP: {rep} | {txt_dias} | Sucursal con falla reportada</div>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+                        col_close1, col_close2 = st.columns([1.2, 1.8])
+                        with col_close1:
+                            if st.button(f"✅ CERRAR REPORTE", key=f"btn_cerrar_{estado_sel}_{suc_sel}_{rep}", type="primary", use_container_width=True):
+                                # Guardar objetivo y pedir login para cerrar reporte
+                                st.session_state['delete_target'] = {"estado": estado_sel, "sucursal": suc_sel, "rep": rep, "fec": fec, "obs": obs, "tel": tel_raw}
+                                if not st.session_state.get('admin_auth'):
+                                    st.session_state['show_delete_login'] = True
+                                    st.session_state['show_delete_confirm'] = False
+                                else:
+                                    st.session_state['show_delete_confirm'] = True
+                                    st.session_state['show_delete_login'] = False
+                                st.rerun()
+                        with col_close2:
+                            st.markdown("""
+                            <div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px;'>
+                                <div style='font-size:0.72rem; font-weight:700; color:#334155;'>¿Qué hace CERRAR REPORTE?</div>
+                                <div style='font-size:0.70rem; color:#64748b; line-height:1.3; margin-top:2px;'>
+                                • Limpia en <b>BDSUCURSALES2</b>: No. REPORTE, FECHA DE REPORTE, FALLA → vacías<br>
+                                • Agrega registro en <b>HISTORIAL_REPORTES</b> como CIERRE/ELIMINACIÓN
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
             else:
                 st.info("Selecciona sucursal para ver detalle")
+
+# --- MODAL LOGIN CERRAR REPORTE ---
+if st.session_state.get('show_delete_login') and not st.session_state.get('admin_auth'):
+    st.markdown('<div class="glass" style="border:2px solid #dc2626; padding:24px; margin-top:16px; background:rgba(254,242,242,0.95) !important;">', unsafe_allow_html=True)
+    st.markdown("### 🔒 Login para CERRAR REPORTE")
+    target = st.session_state.get('delete_target', {})
+    st.markdown(f"""
+    <div style="background:#fef2f2; border:1px solid #fecaca; border-left:5px solid #dc2626; padding:12px 16px; border-radius:8px; margin:10px 0;">
+        <b style="color:#991b1b;">⚠️ ADVERTENCIA: Vas a CERRAR un reporte activo</b><br>
+        <b>Sucursal:</b> {target.get('sucursal','')} - {target.get('estado','')}<br>
+        <b>No. REPORTE:</b> {target.get('rep','')}<br>
+        <b>Fecha reporte:</b> {target.get('fec','')}<br>
+        <b>Falla:</b> {target.get('obs','Sin observaciones')[:200]}<br><br>
+        <span style="font-size:0.85rem; color:#7f1d1d;">Se requiere autenticación de administrador para cerrar este reporte.</span>
+    </div>
+    """, unsafe_allow_html=True)
+    u_del = st.text_input("Usuario Administrador", key="delete_login_user", placeholder="Ingresa tu usuario")
+    p_del = st.text_input("Contraseña", type="password", key="delete_login_pwd", placeholder="Ingresa tu contraseña")
+    cd1, cd2 = st.columns(2)
+    with cd1:
+        if st.button("❌ Cancelar", key="cancel_delete_login", use_container_width=True):
+            st.session_state['show_delete_login'] = False
+            st.session_state['delete_target'] = None
+            st.rerun()
+    with cd2:
+        if st.button("🔐 Ingresar y Continuar", key="confirm_delete_login", type="primary", use_container_width=True):
+            if check_login(u_del, p_del):
+                st.session_state['admin_auth'] = True
+                st.session_state['current_user'] = u_del
+                st.session_state['show_delete_login'] = False
+                st.session_state['show_delete_confirm'] = True
+                log_acceso(u_del, f"Login para CERRAR REPORTE {target.get('rep','')} {target.get('sucursal','')}")
+                st.rerun()
+            else:
+                st.error("Usuario o contraseña incorrectos")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- MODAL CONFIRMAR CIERRE DE REPORTE ---
+if st.session_state.get('show_delete_confirm'):
+    target = st.session_state.get('delete_target', {})
+    if target:
+        st.markdown('<div class="glass" style="border:2px solid #ef4444; background:rgba(254,242,242,0.8) !important; padding:24px; margin-top:16px;">', unsafe_allow_html=True)
+        st.markdown(f"### ✅ Confirmar Cierre de Reporte")
+        st.markdown(f"""
+        <div style="background:white; border:1px solid #fecaca; border-left:5px solid #ef4444; padding:16px; border-radius:10px; margin:12px 0;">
+            <b>Estado:</b> {target.get('estado')}<br>
+            <b>Sucursal:</b> {target.get('sucursal')}<br>
+            <b>No. REPORTE:</b> {target.get('rep')}<br>
+            <b>Fecha Reporte:</b> {target.get('fec')}<br>
+            <b>Falla:</b> {target.get('obs','Sin observaciones')[:250]}<br><br>
+            <div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">
+                <b style="color:#b91c1c; font-size:0.90rem;">⚠️ ADVERTENCIA - ACCIÓN IRREVERSIBLE EN BDSUCURSALES2</b><br>
+                <div style="font-size:0.85rem; color:#7f1d1d; margin-top:6px;">
+                Esta acción <b>CERRARÁ el reporte</b> y hará lo siguiente:<br><br>
+                <b>En Google Sheets - Hoja BDSUCURSALES2:</b><br>
+                • Buscará ESTADO = {target.get('estado')} y SUCURSAL = {target.get('sucursal')}<br>
+                • Limpiará las casillas:<br>
+                &nbsp;&nbsp;→ <b>NO. REPORTE</b> = vacía<br>
+                &nbsp;&nbsp;→ <b>FECHA DE REPORTE</b> = vacía<br>
+                &nbsp;&nbsp;→ <b>FALLA</b> = vacía<br><br>
+                <b>En Google Sheets - Hoja HISTORIAL_REPORTES:</b><br>
+                • <b>MANTENDRÁ</b> todos los eventos históricos<br>
+                • Agregará un nuevo registro de cierre: <b>CERRADO-{target.get('rep')}</b><br>
+                • Con log de usuario, fecha y hora del cierre
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        cc1, cc2 = st.columns(2)
+        with cc1:
+            if st.button("❌ No, Cancelar", key="cancel_delete_final", use_container_width=True):
+                st.session_state['show_delete_confirm'] = False
+                st.session_state['delete_target'] = None
+                st.session_state['show_delete_login'] = False
+                st.rerun()
+        with cc2:
+            if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", use_container_width=True):
+                try:
+                    with st.spinner("Cerrando reporte en BDSUCURSALES2..."):
+                        ok, msg = eliminar_reporte_hoja1(target['estado'], target['sucursal'], target['rep'])
+                        if ok:
+                            # Log en historial como cierre
+                            log_eliminacion_historial(st.session_state.get('current_user','sistema'), target['estado'], target['sucursal'], target['rep'], target['fec'], target['obs'])
+                            log_acceso(st.session_state.get('current_user','sistema'), f"CERRO REPORTE {target['rep']} {target['sucursal']} - {target['estado']} | Limpiado BDSUCURSALES2")
+                            st.success(f"✅ Reporte {target['rep']} CERRADO correctamente. Campos limpiados en BDSUCURSALES2. Historial mantenido en HISTORIAL_REPORTES.")
+                            st.balloons()
+                            time.sleep(2)
+                            st.session_state['show_delete_confirm'] = False
+                            st.session_state['delete_target'] = None
+                            st.session_state['show_delete_login'] = False
+                            st.cache_data.clear()
+                            st.rerun()
+                        else:
+                            st.error(f"Error al cerrar: {msg}")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
+        st.markdown('</div>', unsafe_allow_html=True)

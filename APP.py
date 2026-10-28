@@ -53,13 +53,15 @@ def cargar_datos(sheet_id_override=None):
             sid = sheet_id_override or st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
             if sid:
                 sh = client.open_by_key(sid)
-                try:
-                    ws = sh.worksheet("BDSUCURSALES")
-                except:
+                ws = None
+                for name_try in ["BDSUCURSALES2", "BDSUCURSALES"]:
                     try:
-                        ws = sh.worksheet("BDSUCURSALES2")
+                        ws = sh.worksheet(name_try)
+                        break
                     except:
-                        ws = sh.sheet1
+                        continue
+                if not ws:
+                    ws = sh.sheet1
                 data = ws.get_all_records()
                 if data and len(data) > 0:
                     df_tmp = pd.DataFrame(data)
@@ -82,7 +84,48 @@ def cargar_datos(sheet_id_override=None):
             return df_privado
         return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
 
-df = cargar_datos()
+def deduplicar_df(df_in):
+    # Elimina duplicados por ESTADO+SUCURSAL - conserva el ultimo (con reporte)
+    try:
+        import unicodedata
+        def clean_norm(s):
+            s = str(s).strip()
+            if not s:
+                return ""
+            s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+            s = s.upper()
+            s = re.sub(r'\s+', ' ', s)
+            return s.strip()
+        if df_in is None or df_in.empty:
+            return df_in
+        # Identificar columnas
+        col_est = None
+        col_suc = None
+        for c in df_in.columns:
+            cu = str(c).upper()
+            if not col_est and ('ESTADO' in cu or cu == 'EDO'):
+                col_est = c
+            if not col_suc and 'SUCURSAL' in cu:
+                col_suc = c
+        if not col_est or not col_suc:
+            return df_in
+        df_in['_KEY_DEDUP'] = df_in[col_est].apply(clean_norm) + "||" + df_in[col_suc].apply(clean_norm)
+        # Ordenar para que el que tiene reporte quede al final
+        col_rep = None
+        for c in df_in.columns:
+            if 'REPORTE' in str(c).upper():
+                col_rep = c
+                break
+        if col_rep:
+            df_in['_HAS_REP'] = df_in[col_rep].apply(lambda x: 1 if str(x).strip().lower() not in ["", "0", "0.0", "sin reporte", "none", "nan", "vacio", "s/r"] else 0)
+            df_in = df_in.sort_values(by=['_KEY_DEDUP', '_HAS_REP'])
+        df_in = df_in.drop_duplicates(subset=['_KEY_DEDUP'], keep='last')
+        df_in = df_in.drop(columns=[c for c in ['_KEY_DEDUP', '_HAS_REP'] if c in df_in.columns])
+        return df_in
+    except Exception as e:
+        return df_in
+
+df = deduplicar_df(cargar_datos())
 
 def buscar_col(kws):
     for c in df.columns:

@@ -5,6 +5,7 @@ import re
 import time
 import base64
 
+# LOGO
 try:
     with open("image_af8068.png", "rb") as f:
         b64_logo = base64.b64encode(f.read()).decode()
@@ -13,9 +14,9 @@ except:
         with open("/mnt/data/image_af8068.png", "rb") as f:
             b64_logo = base64.b64encode(f.read()).decode()
     except:
-        b64_logo = "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"
+        b64_logo = ""
 
-st.set_page_config(page_title="SUCURSALES", layout="wide", page_icon="🏢")
+st.set_page_config(page_title="SUCURSALES - PRUEBAS REALES", layout="wide", page_icon="🏢")
 
 st.markdown("""
 <style>
@@ -34,15 +35,39 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=60, show_spinner=False)
-def cargar_datos():
+# CONFIG - CAMBIA ESTE ID POR EL DE TU HOJA NUEVA
+SHEET_ID_PRUEBAS = "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4"
+
+@st.cache_data(ttl=5, show_spinner=False)
+def cargar_datos(sheet_id_override=None):
+    # Intenta cargar desde Google Sheets real si hay secrets, si no usa CSV publico
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            client = gspread.authorize(creds)
+            sid = sheet_id_override or st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+            if sid and "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4" not in sid:
+                sh = client.open_by_key(sid)
+                try:
+                    ws = sh.worksheet("BDSUCURSALES")
+                except:
+                    ws = sh.sheet1
+                data = ws.get_all_records()
+                df = pd.DataFrame(data)
+                df.columns = df.columns.str.strip().str.upper()
+                return df.dropna(how='all')
+    except Exception as e:
+        st.warning(f"No se pudo cargar desde Sheets real, usando CSV publico: {e}")
+    # Fallback publico
     base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTySrWdMEtPBo7u4r6df8shaedXk8783RUOdOPsjLwIh1xz4nLHdAdaheYFMB1-CLI2XtzpzLa7SQXm/pub?output=csv"
     url = f"{base_url}&cb={int(time.time())}"
     df = pd.read_csv(url, dtype=str)
     df.columns = df.columns.str.strip().str.upper()
     return df.dropna(how='all')
 
-df = cargar_datos()
+df = cargar_datos(SHEET_ID_PRUEBAS if "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4" not in SHEET_ID_PRUEBAS else None)
 
 def buscar_col(kws):
     for c in df.columns:
@@ -126,7 +151,7 @@ def log_acceso(usuario, accion="Login"):
             from google.oauth2.service_account import Credentials
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
             client = gspread.authorize(creds)
-            sheet_id = st.secrets.get("sheet_id", "[STRIPPED 79 bytes]")
+            sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
             sh = client.open_by_key(sheet_id)
             try:
                 ws = sh.worksheet("LOG_ACCESOS")
@@ -147,7 +172,6 @@ def log_visita(estado_consultado, sucursal_consultada, usuario="anonimo"):
     mes = now.strftime("%m")
     anio = now.strftime("%Y")
     semana = now.strftime("%V")
-    # Evitar spam: no logear si es la misma consulta consecutiva en menos de 5 seg
     last = st.session_state.get('last_visita_log')
     key_now = f"{estado_consultado}|{sucursal_consultada}|{usuario}"
     if last and last.get('key') == key_now:
@@ -158,7 +182,6 @@ def log_visita(estado_consultado, sucursal_consultada, usuario="anonimo"):
         except:
             pass
     st.session_state['last_visita_log'] = {"key": key_now, "time": now}
-
     if "gcp_service_account" not in st.secrets:
         if 'visitas_demo' not in st.session_state:
             st.session_state['visitas_demo'] = []
@@ -172,7 +195,7 @@ def log_visita(estado_consultado, sucursal_consultada, usuario="anonimo"):
         from google.oauth2.service_account import Credentials
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
         client = gspread.authorize(creds)
-        sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
+        sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
         sh = client.open_by_key(sheet_id)
         try:
             ws = sh.worksheet("VISITAS")
@@ -195,7 +218,7 @@ def guardar_en_hoja_reportes(estado, sucursal, no_reporte, fecha_reporte_origina
     mes = now.strftime("%m")
     anio = now.strftime("%Y")
     dia = now.strftime("%d")
-    if "gcp_service_account" not in st.secrets:
+    if "gcp_service_account" not in st.secrets or "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4" in SHEET_ID_PRUEBAS:
         if 'reportes_demo' not in st.session_state:
             st.session_state['reportes_demo'] = []
         st.session_state['reportes_demo'].append({
@@ -210,7 +233,7 @@ def guardar_en_hoja_reportes(estado, sucursal, no_reporte, fecha_reporte_origina
         from google.oauth2.service_account import Credentials
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
         client = gspread.authorize(creds)
-        sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
+        sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
         sh = client.open_by_key(sheet_id)
         try:
             ws = sh.worksheet("reportes")
@@ -226,16 +249,7 @@ def guardar_en_hoja_reportes(estado, sucursal, no_reporte, fecha_reporte_origina
         return True
     except Exception as e:
         st.error(f"Error guardando en hoja reportes: {e}")
-        # Guardar en demo aunque falle
-        if 'reportes_demo' not in st.session_state:
-            st.session_state['reportes_demo'] = []
-        st.session_state['reportes_demo'].append({
-            "fecha_cierre": fecha_cierre, "hora_cierre": hora_cierre, "dia": dia, "mes": mes, "anio": anio,
-            "estado": estado, "sucursal": sucursal, "no_reporte": no_reporte,
-            "fecha_reporte_original": fecha_reporte_original, "dias_activo": dias_activo,
-            "tel": tel, "obs": observaciones_original, "usuario_cierre": usuario_cierre, "estatus": "SOLUCIONADO"
-        })
-        return True
+        return False
 
 def cerrar_reporte_en_hoja1(sucursal_nombre, estado_nombre):
     if "gcp_service_account" not in st.secrets:
@@ -245,12 +259,12 @@ def cerrar_reporte_en_hoja1(sucursal_nombre, estado_nombre):
         from google.oauth2.service_account import Credentials
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
         client = gspread.authorize(creds)
-        sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
+        sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
         sh = client.open_by_key(sheet_id)
         try:
             ws_main = sh.worksheet("BDSUCURSALES")
         except:
-            ws_main = sh.worksheet("Hoja1")
+            ws_main = sh.sheet1
         all_data = ws_main.get_all_records()
         for idx, row in enumerate(all_data):
             suc_in_sheet = str(row.get("SUCURSAL", row.get("Sucursal", ""))).strip()
@@ -271,7 +285,6 @@ def cerrar_reporte_en_hoja1(sucursal_nombre, estado_nombre):
                 if col_fec:
                     ws_main.update_cell(row_num, col_fec, "")
                 return True
-        st.warning(f"No se encontro {sucursal_nombre} en Hoja1")
         return False
     except Exception as e:
         st.error(f"Error cerrando en Hoja1: {e}")
@@ -279,7 +292,6 @@ def cerrar_reporte_en_hoja1(sucursal_nombre, estado_nombre):
 
 def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, tel="", observaciones=""):
     now = datetime.now()
-
     fecha_reg = now.strftime("%d/%m/%Y")
     hora_reg = now.strftime("%H:%M:%S")
     mes = now.strftime("%m")
@@ -291,7 +303,7 @@ def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, 
             from google.oauth2.service_account import Credentials
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
             client = gspread.authorize(creds)
-            sheet_id = st.secrets.get("sheet_id", "[STRIPPED 79 bytes]")
+            sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
             sh = client.open_by_key(sheet_id)
             try:
                 ws = sh.worksheet("HISTORIAL_REPORTES")
@@ -307,109 +319,41 @@ def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, 
 lista_estados = sorted(df[COL_EST].dropna().unique())
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP else pd.DataFrame()
 
-if 'admin_auth' not in st.session_state:
-    st.session_state['admin_auth'] = False
-if 'show_login' not in st.session_state:
-    st.session_state['show_login'] = False
-if 'show_add_form' not in st.session_state:
-    st.session_state['show_add_form'] = False
-if 'current_user' not in st.session_state:
-    st.session_state['current_user'] = None
-if 'batch_reportes' not in st.session_state:
-    st.session_state['batch_reportes'] = []
-if 'show_close_login' not in st.session_state:
-    st.session_state['show_close_login'] = False
-if 'show_close_confirm' not in st.session_state:
-    st.session_state['show_close_confirm'] = False
-if 'close_target' not in st.session_state:
-    st.session_state['close_target'] = None
-if 'close_auth' not in st.session_state:
-    st.session_state['close_auth'] = False
-if 'close_user' not in st.session_state:
-    st.session_state['close_user'] = None
-if 'last_logged_suc' not in st.session_state:
-    st.session_state['last_logged_suc'] = None
-if 'last_visita_log' not in st.session_state:
-    st.session_state['last_visita_log'] = None
-if 'visitas_demo' not in st.session_state:
-    st.session_state['visitas_demo'] = []
+for k in ['admin_auth','show_login','show_add_form','current_user','batch_reportes','show_close_login','show_close_confirm','close_target','close_auth','close_user','last_logged_suc','last_visita_log','visitas_demo']:
+    if k not in st.session_state:
+        st.session_state[k] = False if 'auth' in k or 'show' in k else ([] if 'batch' in k or 'visitas' in k or 'demo' in k else None)
+if 'visitas_demo' not in st.session_state: st.session_state['visitas_demo']=[]
+if 'batch_reportes' not in st.session_state: st.session_state['batch_reportes']=[]
 
 # HEADER
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
-    st.markdown(f"""
-    <div style="display:flex; align-items:center; gap:16px">
-        <div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white">
-            <img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover">
-        </div>
-        <div style="font-size:2rem; font-weight:900; letter-spacing:-0.8px">SUCURSALES</div>
-    </div>
-    """, unsafe_allow_html=True)
-
+    if b64_logo:
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:16px"><div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:2rem; font-weight:900; letter-spacing:-0.8px">SUCURSALES - PRUEBAS</div></div>""", unsafe_allow_html=True)
+    else:
+        st.markdown(f"""<div style="font-size:2rem; font-weight:900;">SUCURSALES - PRUEBAS</div>""", unsafe_allow_html=True)
 with c2:
-    st.markdown(f"""
-    <div class="glass-dark">
-        <div style="display:flex; justify-content:space-between; align-items:center">
-            <div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div>
-            <div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div>
-            <div style="font-size:1.6rem; font-weight:900">{len(df_reportes)}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    if not df_reportes.empty and not st.session_state.get('show_add_form'):
-        opciones = {f"{r[COL_SUC]} ({r[COL_EST]})": (str(r[COL_EST]), str(r[COL_SUC])) for _, r in df_reportes.iterrows()}
-        sel = st.selectbox("jump", ["Seleccionar reporte..."] + list(opciones.keys()), label_visibility="collapsed", key="jump_rep_final")
-        if sel != "Seleccionar reporte...":
-            if st.session_state.get('last_jump') != sel:
-                est_jump, suc_jump = opciones[sel]
-                st.session_state['estado_real'] = est_jump
-                st.session_state['sucursal_real'] = suc_jump
-                st.session_state['jump_est'] = est_jump
-                st.session_state['jump_suc'] = suc_jump
-                st.session_state['last_jump'] = sel
-                st.rerun()
+    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.6rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
 
-# Contador discreto opcion 3 - arriba donde no estorbe
-try:
-    visitas_list = st.session_state.get('visitas_demo', [])
-    total_vis = len(visitas_list)
-    hoy_str = datetime.now().strftime("%d/%m/%Y")
-    hoy_vis = len([v for v in visitas_list if v.get('fecha') == hoy_str])
-    st.markdown(f"<div style='text-align:right; margin-top:8px; font-size:0.75rem; color:#94a3b8; font-weight:600'>👁️ {total_vis} consultas totales | {hoy_vis} hoy | 📊 {len(df_reportes)} reportes activos</div>", unsafe_allow_html=True)
-except:
-    pass
+es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 
 default_est_idx = 0
 default_suc = None
 if 'estado_real' in st.session_state and st.session_state['estado_real'] in lista_estados:
     default_est_idx = lista_estados.index(st.session_state['estado_real'])
     default_suc = st.session_state.get('sucursal_real')
-elif 'jump_est' in st.session_state and st.session_state['jump_est'] in lista_estados:
-    default_est_idx = lista_estados.index(st.session_state['jump_est'])
-    default_suc = st.session_state.get('jump_suc')
-
-es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 
 if not es_modo_agregar:
     f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
     with f1:
         st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
         estado_actual = st.selectbox("Estado", lista_estados, index=default_est_idx, key="estado_real", label_visibility="collapsed")
-        if 'jump_est' in st.session_state and estado_actual != st.session_state['jump_est']:
-            if 'jump_est' in st.session_state:
-                del st.session_state['jump_est']
-            if 'jump_suc' in st.session_state:
-                del st.session_state['jump_suc']
-            default_suc = None
         st.markdown('</div>', unsafe_allow_html=True)
     df_estado = df[df[COL_EST] == estado_actual]
     lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
     with f2:
         st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {estado_actual}</div>', unsafe_allow_html=True)
-        if default_suc and default_suc in lista_suc:
-            idx_suc = lista_suc.index(default_suc)
-        else:
-            idx_suc = 0
+        idx_suc = lista_suc.index(default_suc) if default_suc and default_suc in lista_suc else 0
         sucursal_actual = st.selectbox("Sucursales", lista_suc, index=idx_suc, key="sucursal_real", label_visibility="collapsed")
         st.markdown('</div>', unsafe_allow_html=True)
     with f3:
@@ -420,32 +364,21 @@ if not es_modo_agregar:
                 st.cache_data.clear()
                 st.rerun()
         with ca2:
-            if st.button("➕", use_container_width=True, help="Agregar reporte - solo admin"):
+            if st.button("➕", use_container_width=True, help="Agregar reporte"):
                 st.session_state['show_login'] = True
                 st.session_state['show_add_form'] = False
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 else:
-    if 'estado_real' in st.session_state and st.session_state['estado_real'] in lista_estados:
-        estado_actual = st.session_state['estado_real']
-    elif 'jump_est' in st.session_state and st.session_state['jump_est'] in lista_estados:
-        estado_actual = st.session_state['jump_est']
-    else:
-        estado_actual = lista_estados[default_est_idx] if lista_estados else ""
+    estado_actual = st.session_state.get('estado_real', lista_estados[0] if lista_estados else "")
     df_estado = df[df[COL_EST] == estado_actual]
     lista_suc = sorted(df_estado[COL_SUC].dropna().unique())
-    if 'sucursal_real' in st.session_state and st.session_state['sucursal_real'] in lista_suc:
-        sucursal_actual = st.session_state['sucursal_real']
-    elif 'jump_suc' in st.session_state and st.session_state['jump_suc'] in lista_suc:
-        sucursal_actual = st.session_state['jump_suc']
-    else:
-        sucursal_actual = lista_suc[0] if lista_suc else ""
+    sucursal_actual = st.session_state.get('sucursal_real', lista_suc[0] if lista_suc else "")
 
 # LOGIN
 if st.session_state['show_login'] and not st.session_state['admin_auth']:
     st.markdown('<div class="glass" style="border:2px solid #0f172a; padding:24px">', unsafe_allow_html=True)
     st.markdown("### 🔐 Login Administrador")
-    st.caption("Acceso restringido - Solo personal autorizado")
     u = st.text_input("Usuario", placeholder="Ingresa tu usuario", key="login_user")
     p = st.text_input("Contraseña", type="password", key="login_pwd")
     cl1, cl2 = st.columns(2)
@@ -469,10 +402,10 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
 # FORMULARIO MODO LIMPIO
 if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px">', unsafe_allow_html=True)
-    st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}**")
-    st.info(f"Modo lote: agrega N reportes y al final guarda todo en Google Sheets")
+    st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}** - PRUEBAS REALES")
+    st.info(f"Hoja pruebas ID: {SHEET_ID_PRUEBAS[:20]}... | Modo lote: agrega N reportes y al final guarda todo")
     
-    st.markdown("#### 1️⃣ Selecciona Estado y Sucursal (se filtra automaticamente)")
+    st.markdown("#### 1⃣ Selecciona Estado y Sucursal")
     fc_sel1, fc_sel2 = st.columns(2)
     with fc_sel1:
         est_new = st.selectbox("Estado del reporte", lista_estados, index=lista_estados.index(estado_actual) if estado_actual in lista_estados else 0, key="form_est_outside")
@@ -481,17 +414,12 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     lista_suc_filtro = sorted(df_suc_filtro[COL_SUC].dropna().unique())
     with fc_sel2:
         opciones_suc = lista_suc_filtro + ["➕ Otra / Nueva sucursal..."]
-        if sucursal_actual in lista_suc_filtro:
-            idx_def = lista_suc_filtro.index(sucursal_actual)
-        else:
-            idx_def = 0
+        idx_def = lista_suc_filtro.index(sucursal_actual) if sucursal_actual in lista_suc_filtro else 0
         suc_sel = st.selectbox(f"Sucursal - {len(lista_suc_filtro)} en {est_new_clean}", opciones_suc, index=idx_def, key=f"form_suc_outside_{est_new_clean}")
     
     if suc_sel == "➕ Otra / Nueva sucursal...":
         suc_new = st.text_input("Escribe nueva sucursal *", placeholder="Ej: CORDOBA", key="form_suc_new_text")
         lineas_sucursal = []
-        if suc_new:
-            st.warning(f"Se creara nueva: {suc_new} en {est_new}")
     else:
         suc_new = suc_sel
         fila_suc = df_suc_filtro[df_suc_filtro[COL_SUC] == suc_new]
@@ -499,13 +427,10 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             lineas_sucursal = split_tels(fila_suc.iloc[0].get(COL_TEL, ""))
         else:
             lineas_sucursal = []
-        st.success(f"Sucursal: {suc_new} - {len(lineas_sucursal)} lineas")
     
     st.markdown("---")
-    st.markdown("#### 2️⃣ Lineas con falla y datos")
-    st.markdown("**📞 Lineas telefonicas de la sucursal - Selecciona cual tiene falla**")
+    st.markdown("#### 2⃣ Lineas con falla")
     if lineas_sucursal:
-        st.caption(f"{len(lineas_sucursal)} lineas en {suc_new}")
         cols_lineas = st.columns(2)
         seleccionadas = []
         for i, linea in enumerate(lineas_sucursal):
@@ -524,15 +449,15 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
         seleccionadas = [tel_final] if tel_final else []
     
     st.markdown("---")
-    st.markdown("#### 3️⃣ Datos del reporte")
-    st.markdown(f"**Resumen:** Estado: {est_new} | Sucursal: {suc_new} | Lineas: {tel_final if tel_final else 'Ninguna seleccionada'}")
+    st.markdown("#### 3⃣ Datos del reporte")
+    st.markdown(f"**Resumen:** Estado: {est_new} | Sucursal: {suc_new} | Lineas: {tel_final if tel_final else 'Ninguna'}")
     
     with st.form("form_reporte_final", clear_on_submit=True):
         fc1, fc2 = st.columns(2)
         with fc1:
-            rep_new = st.text_input("No. Reporte *", placeholder="45163", key="form_rep_final", help="Solo numeros, sin letras ni guiones")
+            rep_new = st.text_input("No. Reporte *", placeholder="45163", key="form_rep_final")
         with fc2:
-            fec_new = st.date_input("Fecha Reporte", value=datetime.now().date(), max_value=datetime.now().date(), key="form_fec_final", help="No se permite fecha futura")
+            fec_new = st.date_input("Fecha Reporte", value=datetime.now().date(), max_value=datetime.now().date(), key="form_fec_final")
         obs_new = st.text_area("📝 Observaciones / Falla reportada *", placeholder="Ej: falla, sin linea, ruido...", height=90, key="form_obs_final")
         st.markdown("---")
         c1f, c2f = st.columns([0.7, 1.3])
@@ -541,7 +466,6 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
         with c2f:
             btn_add = st.form_submit_button("➕ AGREGAR REPORTE A LA LISTA", type="primary", use_container_width=True)
         if btn_close:
-            # Cerrar formulario y cerrar sesion automaticamente como pides
             log_acceso(st.session_state['current_user'], "Cerro formulario y logout")
             st.session_state['admin_auth'] = False
             st.session_state['show_add_form'] = False
@@ -550,9 +474,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             st.session_state['batch_reportes'] = []
             st.rerun()
         if btn_add:
-            # Validacion: solo numeros en No. Reporte + duplicados
             rep_new_clean = str(rep_new).strip()
-            # Listas de reportes existentes
             try:
                 reportes_activos_existentes = [str(r).strip() for r in df[COL_REP].dropna().tolist() if tiene_reporte(r)] if COL_REP in df.columns else []
             except:
@@ -561,90 +483,49 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                 reportes_en_cola = [str(r['no_reporte']).strip() for r in st.session_state.get('batch_reportes', [])]
             except:
                 reportes_en_cola = []
-            try:
-                hist_existentes = [str(r.get('no_reporte','')).strip() for r in st.session_state.get('historial_demo', [])]
-            except:
-                hist_existentes = []
-            try:
-                cerrados_existentes = [str(r.get('no_reporte','')).strip() for r in st.session_state.get('reportes_demo', [])]
-            except:
-                cerrados_existentes = []
-
             if not rep_new_clean:
                 st.error("No. Reporte obligatorio")
             elif not rep_new_clean.isdigit():
-                st.error("❌ No. Reporte solo debe contener numeros (0-9), sin letras ni simbolos")
+                st.error("❌ Solo numeros")
             elif rep_new_clean in reportes_activos_existentes:
-                # Buscar en que sucursal esta ese reporte activo
-                try:
-                    fila_dup = df[df[COL_REP].astype(str).str.strip() == rep_new_clean]
-                    if not fila_dup.empty:
-                        suc_dup = fila_dup.iloc[0][COL_SUC]
-                        est_dup = fila_dup.iloc[0][COL_EST]
-                        st.error(f"❌ El reporte {rep_new_clean} ya existe como reporte ACTIVO en {suc_dup} ({est_dup}) - No se puede duplicar")
-                    else:
-                        st.error(f"❌ El reporte {rep_new_clean} ya existe como reporte activo")
-                except:
-                    st.error(f"❌ El reporte {rep_new_clean} ya existe como reporte activo")
+                st.error(f"❌ El reporte {rep_new_clean} ya existe como ACTIVO")
             elif rep_new_clean in reportes_en_cola:
-                st.error(f"❌ El reporte {rep_new_clean} ya esta en la cola para guardar - Revisa la lista debajo")
-            elif rep_new_clean in hist_existentes or rep_new_clean in cerrados_existentes:
-                st.warning(f"⚠️ El reporte {rep_new_clean} ya fue usado antes (historial). ¿Seguro que no es duplicado? Si es una reincidencia, puedes continuar, pero verifica.")
-                # Permitir continuar pero con confirmacion visual - no bloqueamos, solo advertimos
-                # Para bloquear totalmente, cambia a st.error y return
-                if not suc_new:
-                    st.error("Sucursal obligatoria")
-                elif not tel_final:
-                    st.error("Selecciona al menos una linea con falla")
-                elif not obs_new:
-                    st.error("Observaciones obligatoria")
-                elif fec_new > datetime.now().date():
-                    st.error("❌ La fecha no puede ser futura")
-                else:
-                    rep_new = rep_new_clean
+                st.error(f"❌ Ya esta en la cola")
             elif not suc_new:
                 st.error("Sucursal obligatoria")
             elif not tel_final:
-                st.error("Selecciona al menos una linea con falla")
+                st.error("Selecciona al menos una linea")
             elif not obs_new:
                 st.error("Observaciones obligatoria")
             elif fec_new > datetime.now().date():
-                st.error("❌ La fecha no puede ser futura")
+                st.error("❌ Fecha futura no permitida")
             else:
-                # Usar el valor limpio numerico
-                rep_new = rep_new_clean
-                nuevo = {"estado": est_new, "sucursal": suc_new, "tel": tel_final, "no_reporte": rep_new, "fecha_reporte": fec_new.strftime("%d/%m/%Y"), "obs": obs_new}
+                nuevo = {"estado": est_new, "sucursal": suc_new, "tel": tel_final, "no_reporte": rep_new_clean, "fecha_reporte": fec_new.strftime("%d/%m/%Y"), "obs": obs_new}
                 st.session_state['batch_reportes'].append(nuevo)
-                st.success(f"✅ Reporte {rep_new} agregado - Total: {len(st.session_state['batch_reportes'])}")
+                st.success(f"✅ Reporte {rep_new_clean} agregado - Total: {len(st.session_state['batch_reportes'])}")
                 st.session_state['clear_after_add'] = True
                 st.rerun()
     
     if st.session_state.get('clear_after_add'):
-        # Limpiar TODAS las cajas de seleccion de lineas telefonicas
         for k in list(st.session_state.keys()):
             if k.startswith("chk_linea_"):
                 del st.session_state[k]
-        # Limpiar todos los campos de texto del reporte
-        for k in ["form_rep_final", "form_obs_final", "tel_extra_outside", "tel_new_suc_outside", "tel_final", "seleccionadas", "form_fec_final"]:
+        for k in ["form_rep_final", "form_obs_final", "tel_extra_outside", "tel_new_suc_outside"]:
             if k in st.session_state:
                 try:
                     del st.session_state[k]
                 except:
                     pass
         st.session_state['clear_after_add'] = False
-        # Forzar rerun para que se vean limpias las cajas
         st.rerun()
 
-    # LISTA DE REPORTES EN COLA - DEBAJO DEL BOTON AGREGAR (como en tu 2da imagen)
     if st.session_state['batch_reportes']:
         st.markdown("---")
         st.markdown(f"#### 📋 Reportes en cola ({len(st.session_state['batch_reportes'])}) - Aun no guardados")
         for idx, r in enumerate(st.session_state['batch_reportes']):
             col_r1, col_r2 = st.columns([5,1])
             with col_r1:
-                st.markdown(f"<div style='background:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #16a34a; padding:10px 14px; border-radius:10px; margin-bottom:8px'>"
-                            f"<b>{idx+1}. {r['sucursal']} ({r['estado']})</b> - REP: {r['no_reporte']} - Lineas: {r['tel']}<br><small>{r['obs'][:100]}</small>"
-                            f"</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #16a34a; padding:10px 14px; border-radius:10px; margin-bottom:8px'><b>{idx+1}. {r['sucursal']} ({r['estado']})</b> - REP: {r['no_reporte']} - Lineas: {r['tel']}<br><small>{r['obs'][:100]}</small></div>", unsafe_allow_html=True)
             with col_r2:
                 if st.button("❌", key=f"del_batch_{idx}_{r['no_reporte']}"):
                     st.session_state['batch_reportes'].pop(idx)
@@ -652,30 +533,80 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
         st.markdown("---")
         c_save1, c_save2 = st.columns([0.5, 1.5])
         with c_save1:
-            if st.button("🗑️ Limpiar lista", use_container_width=True):
+            if st.button("🗑 Limpiar lista", use_container_width=True):
                 st.session_state['batch_reportes'] = []
                 st.rerun()
         with c_save2:
-            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS", type="primary", use_container_width=True):
+            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS (PRUEBA REAL)", type="primary", use_container_width=True):
                 try:
                     guardados = 0
-                    if "gcp_service_account" in st.secrets:
+                    if "gcp_service_account" in st.secrets and "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4" not in SHEET_ID_PRUEBAS:
                         import gspread
                         from google.oauth2.service_account import Credentials
                         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
                         client = gspread.authorize(creds)
-                        sheet_id = st.secrets.get("sheet_id", "1B0pB5yR2VqY7Jz8KxL9MnOpQrStUvWxYz1234567890")
+                        sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
                         sh = client.open_by_key(sheet_id)
                         try:
                             ws_main = sh.worksheet("BDSUCURSALES")
                         except:
                             ws_main = sh.sheet1
+                        # Obtener encabezados para mapear columnas correctamente
+                        headers = ws_main.row_values(1)
+                        headers_upper = [h.strip().upper() for h in headers]
+                        def find_col_idx(keywords):
+                            for i, h in enumerate(headers_upper):
+                                for kw in keywords:
+                                    if kw in h:
+                                        return i+1
+                            return None
+                        col_est_idx = find_col_idx(['ESTADO','EDO'])
+                        col_suc_idx = find_col_idx(['SUCURSAL','SUC','SITIO'])
+                        col_tel_idx = find_col_idx(['TELMEX','TEL','LINEA'])
+                        col_rep_idx = find_col_idx(['NO. REPORTE','NO REPORTE','REPORTE'])
+                        col_fec_idx = find_col_idx(['FECHA','FEC'])
+                        col_obs_idx = find_col_idx(['OBSERVACIONES','OBS','FALLA'])
+                        
+                        all_records = ws_main.get_all_values()
+                        # Crear mapa sucursal -> row_num
+                        suc_to_row = {}
+                        if col_suc_idx:
+                            for r_idx in range(1, len(all_records)):
+                                try:
+                                    suc_val = all_records[r_idx][col_suc_idx-1].strip().upper() if col_suc_idx-1 < len(all_records[r_idx]) else ""
+                                    if suc_val:
+                                        suc_to_row[suc_val] = r_idx+1
+                                except:
+                                    continue
+
                         for r in st.session_state['batch_reportes']:
-                            ws_main.append_row([r['estado'], r['sucursal'], r['tel'], r['no_reporte'], r['fecha_reporte'], r['obs']])
+                            suc_key = str(r['sucursal']).strip().upper()
+                            row_num = suc_to_row.get(suc_key)
+                            if row_num:
+                                # ACTUALIZA fila existente - es lo que hace que aparezca en Reportes Activos
+                                if col_rep_idx:
+                                    ws_main.update_cell(row_num, col_rep_idx, r['no_reporte'])
+                                if col_fec_idx:
+                                    ws_main.update_cell(row_num, col_fec_idx, r['fecha_reporte'])
+                                if col_obs_idx:
+                                    ws_main.update_cell(row_num, col_obs_idx, r['obs'])
+                                if col_tel_idx and r['tel']:
+                                    # Actualiza tel solo si viene con datos
+                                    ws_main.update_cell(row_num, col_tel_idx, r['tel'])
+                            else:
+                                # No existe la sucursal, la crea nueva al final
+                                new_row = [""] * len(headers)
+                                if col_est_idx: new_row[col_est_idx-1] = r['estado']
+                                if col_suc_idx: new_row[col_suc_idx-1] = r['sucursal']
+                                if col_tel_idx: new_row[col_tel_idx-1] = r['tel']
+                                if col_rep_idx: new_row[col_rep_idx-1] = r['no_reporte']
+                                if col_fec_idx: new_row[col_fec_idx-1] = r['fecha_reporte']
+                                if col_obs_idx: new_row[col_obs_idx-1] = r['obs']
+                                ws_main.append_row(new_row)
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
-                        log_acceso(st.session_state['current_user'], f"Guardo lote de {guardados} reportes")
-                        st.success(f"✅ {guardados} reportes guardados - Cerrando sesion...")
+                        log_acceso(st.session_state['current_user'], f"Guardo lote PRUEBA {guardados} reportes")
+                        st.success(f"✅ {guardados} reportes guardados en HOJA DE PRUEBAS - Cerrando sesion...")
                         st.session_state['batch_reportes'] = []
                         st.cache_data.clear()
                         st.balloons()
@@ -689,7 +620,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         for r in st.session_state['batch_reportes']:
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
-                        st.success(f"✅ DEMO: {guardados} reportes guardados en memoria - Ver grafica en sidebar → Total reportes generados")
+                        st.success(f"✅ DEMO: {guardados} reportes guardados en memoria (configura sheet_id para prueba real)")
                         st.balloons()
                         time.sleep(1)
                         st.session_state['batch_reportes'] = []
@@ -697,317 +628,4 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                 except Exception as e:
                     st.error(f"Error: {e}")
     
-    st.markdown('</div>', unsafe_allow_html=True)
-
-if st.session_state['admin_auth']:
-    with st.sidebar:
-        st.success(f"👤 {st.session_state['current_user']} conectado")
-        if st.button("🔓 Cerrar sesion"):
-            log_acceso(st.session_state['current_user'], "Logout")
-            st.session_state['admin_auth'] = False
-            st.session_state['show_add_form'] = False
-            st.session_state['show_login'] = False
-            st.session_state['current_user'] = None
-            st.session_state['batch_reportes'] = []
-            st.rerun()
-        st.markdown("---")
-        # Preparar listas de estados y sucursales para filtros desplegables
-        try:
-            lista_est_filtro = sorted(df[COL_EST].dropna().unique().tolist())
-        except:
-            lista_est_filtro = []
-        try:
-            dict_est_suc = {est: sorted(df[df[COL_EST]==est][COL_SUC].dropna().unique().tolist()) for est in lista_est_filtro}
-        except:
-            dict_est_suc = {}
-
-        st.markdown("### 📊 Consultas Reportes")
-        tipo_consulta = st.selectbox("Tipo de reporte", ["Total reportes generados", "Reportes cerrados / solucionados"], key="tipo_consulta_rep")
-
-        if tipo_consulta == "Total reportes generados":
-            # Combinar historial guardado + cola actual para ver grafica inmediata
-            hist_list = st.session_state.get('historial_demo', [])
-            batch_list = st.session_state.get('batch_reportes', [])
-            # Convertir batch a formato similar a historial para visualizacion
-            batch_as_hist = []
-            for b in batch_list:
-                now = datetime.now()
-                batch_as_hist.append({
-                    "fecha_reg": now.strftime("%d/%m/%Y"),
-                    "hora_reg": now.strftime("%H:%M:%S"),
-                    "dia": now.strftime("%d"),
-                    "mes": now.strftime("%m"),
-                    "anio": now.strftime("%Y"),
-                    "usuario": st.session_state.get('current_user', 'demo'),
-                    "estado": b.get('estado', ''),
-                    "sucursal": b.get('sucursal', ''),
-                    "no_reporte": b.get('no_reporte', ''),
-                    "fecha_reporte": b.get('fecha_reporte', ''),
-                    "tel": b.get('tel', ''),
-                    "observaciones": b.get('obs', ''),
-                    "origen": "En cola"
-                })
-            combined = hist_list + batch_as_hist
-            df_hist = pd.DataFrame(combined)
-            if not df_hist.empty:
-                # Calcular semana si no existe
-                if 'semana' not in df_hist.columns:
-                    try:
-                        df_hist['fecha_dt'] = pd.to_datetime(df_hist['fecha_reg'], dayfirst=True, errors='coerce')
-                        df_hist['semana'] = df_hist['fecha_dt'].dt.isocalendar().week.astype(str).fillna("N/A")
-                    except:
-                        df_hist['semana'] = "N/A"
-                # Mostrar aviso si hay en cola
-                if batch_list:
-                    st.info(f"ℹ️ {len(batch_list)} en cola + {len(hist_list)} guardados = {len(combined)} total para grafica")
-                
-                f_anio = st.selectbox("Año", ["Todos"] + sorted(df_hist['anio'].unique().tolist()), key="f_anio_total")
-                f_mes = st.selectbox("Mes", ["Todos"] + sorted(df_hist['mes'].unique().tolist()), key="f_mes_total")
-                semanas_unicas = sorted(df_hist['semana'].dropna().unique().tolist()) if 'semana' in df_hist.columns else []
-                f_sem = st.selectbox("Semana", ["Todos"] + semanas_unicas, key="f_sem_total")
-                # Estado y sucursal desplegables
-                f_est = st.selectbox("Estado", ["Todos"] + lista_est_filtro, key="f_est_total")
-                if f_est != "Todos" and f_est in dict_est_suc:
-                    suc_opts = ["Todas"] + dict_est_suc[f_est]
-                else:
-                    suc_opts = ["Todas"] + sorted(df_hist['sucursal'].dropna().unique().tolist())
-                f_suc = st.selectbox("Sucursal", suc_opts, key="f_suc_total")
-                f_user = st.selectbox("Usuario", ["Todos"] + sorted(df_hist['usuario'].dropna().unique().tolist()), key="f_user_total")
-                f_rep = st.text_input("No. Reporte", placeholder="51564186", key="f_rep_total")
-
-                df_f = df_hist.copy()
-                if f_anio != "Todos":
-                    df_f = df_f[df_f['anio'] == f_anio]
-                if f_mes != "Todos":
-                    df_f = df_f[df_f['mes'] == f_mes]
-                if f_sem != "Todos":
-                    df_f = df_f[df_f['semana'] == f_sem]
-                if f_est != "Todos":
-                    df_f = df_f[df_f['estado'] == f_est]
-                if f_suc != "Todas":
-                    df_f = df_f[df_f['sucursal'] == f_suc]
-                if f_user != "Todos":
-                    df_f = df_f[df_f['usuario'] == f_user]
-                if f_rep:
-                    df_f = df_f[df_f['no_reporte'].str.contains(f_rep, case=False, na=False)]
-
-                st.write(f"**{len(df_f)} reportes generados**")
-                if not df_f.empty:
-                    # Metricas por sucursal
-                    incid = df_f.groupby('sucursal').size().reset_index(name='total_reportes')
-                    st.markdown("**Incidencias por sucursal**")
-                    st.dataframe(incid.sort_values('total_reportes', ascending=False), use_container_width=True)
-                    st.bar_chart(df_f.groupby('sucursal').size())
-                    # Por mes
-                    if 'mes' in df_f.columns:
-                        st.markdown("**Por mes**")
-                        st.bar_chart(df_f.groupby('mes').size())
-                    st.dataframe(df_f, use_container_width=True)
-                    csv = df_f.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 CSV Total generados", csv, "total_reportes_generados.csv", "text/csv", use_container_width=True)
-            else:
-                # Si no hay nada, mostrar ayuda
-                if st.session_state.get('batch_reportes'):
-                    st.caption(f"Tienes {len(st.session_state.get('batch_reportes', []))} reportes en cola - Dale Guardar para verlos en historial")
-                else:
-                    st.caption("Aun no hay reportes generados en demo - Agrega reportes con el boton + Reporte y luego Guarda")
-
-        else:
-            df_rep_cerrados = pd.DataFrame(st.session_state.get('reportes_demo', []))
-            if not df_rep_cerrados.empty:
-                if 'semana' not in df_rep_cerrados.columns:
-                    try:
-                        df_rep_cerrados['fecha_dt'] = pd.to_datetime(df_rep_cerrados['fecha_cierre'], dayfirst=True, errors='coerce')
-                        df_rep_cerrados['semana'] = df_rep_cerrados['fecha_dt'].dt.isocalendar().week.astype(str).fillna("N/A")
-                    except:
-                        df_rep_cerrados['semana'] = "N/A"
-                f_anio_c = st.selectbox("Año cierre", ["Todos"] + sorted(df_rep_cerrados['anio'].unique().tolist()), key="f_anio_cierre")
-                f_mes_c = st.selectbox("Mes cierre", ["Todos"] + sorted(df_rep_cerrados['mes'].unique().tolist()), key="f_mes_cierre2")
-                semanas_c = sorted(df_rep_cerrados['semana'].dropna().unique().tolist()) if 'semana' in df_rep_cerrados.columns else []
-                f_sem_c = st.selectbox("Semana cierre", ["Todos"] + semanas_c, key="f_sem_cierre")
-                f_est_c = st.selectbox("Estado cierre", ["Todos"] + lista_est_filtro, key="f_est_cierre")
-                if f_est_c != "Todos" and f_est_c in dict_est_suc:
-                    suc_opts_c = ["Todas"] + dict_est_suc[f_est_c]
-                else:
-                    suc_opts_c = ["Todas"] + sorted(df_rep_cerrados['sucursal'].dropna().unique().tolist())
-                f_suc_c = st.selectbox("Sucursal cerrada", suc_opts_c, key="f_suc_cierre2")
-                f_user_c = st.selectbox("Usuario cierre", ["Todos"] + sorted(df_rep_cerrados['usuario_cierre'].dropna().unique().tolist()) if 'usuario_cierre' in df_rep_cerrados.columns else ["Todos"], key="f_user_cierre")
-
-                df_c = df_rep_cerrados.copy()
-                if f_anio_c != "Todos":
-                    df_c = df_c[df_c['anio'] == f_anio_c]
-                if f_mes_c != "Todos":
-                    df_c = df_c[df_c['mes'] == f_mes_c]
-                if f_sem_c != "Todos":
-                    df_c = df_c[df_c['semana'] == f_sem_c]
-                if f_est_c != "Todos":
-                    df_c = df_c[df_c['estado'] == f_est_c]
-                if f_suc_c != "Todas":
-                    df_c = df_c[df_c['sucursal'] == f_suc_c]
-                if f_user_c != "Todos":
-                    df_c = df_c[df_c['usuario_cierre'] == f_user_c]
-
-                st.write(f"**{len(df_c)} reportes cerrados**")
-                if not df_c.empty:
-                    incidencias = df_c.groupby('sucursal').size().reset_index(name='incidencias_cerradas')
-                    st.markdown("**Incidencias cerradas por sucursal**")
-                    st.dataframe(incidencias.sort_values('incidencias_cerradas', ascending=False), use_container_width=True)
-                    st.bar_chart(df_c.groupby('sucursal').size())
-                    st.dataframe(df_c, use_container_width=True)
-                    csv_c = df_c.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 CSV Reportes cerrados", csv_c, "reportes_cerrados.csv", "text/csv", use_container_width=True)
-            else:
-                st.caption("Aun no hay reportes cerrados - Se guardaran en hoja 'reportes'")
-
-        # Dashboard de visitas solo con login - opcion 1
-        st.markdown("---")
-        st.markdown("### 👁️ Visitas / Consultas (solo admin)")
-        visitas_df = pd.DataFrame(st.session_state.get('visitas_demo', []))
-        if not visitas_df.empty:
-            hoy_str = datetime.now().strftime("%d/%m/%Y")
-            mes_actual = datetime.now().strftime("%m")
-            anio_actual = datetime.now().strftime("%Y")
-            total = len(visitas_df)
-            hoy_total = len(visitas_df[visitas_df['fecha'] == hoy_str])
-            mes_total = len(visitas_df[visitas_df['mes'] == mes_actual])
-            st.metric("Total consultas", total)
-            c_v1, c_v2 = st.columns(2)
-            with c_v1:
-                st.metric("Hoy", hoy_total)
-            with c_v2:
-                st.metric("Este mes", mes_total)
-            st.markdown("**Top sucursales más consultadas**")
-            top_suc = visitas_df.groupby('sucursal').size().reset_index(name='consultas').sort_values('consultas', ascending=False).head(10)
-            st.dataframe(top_suc, use_container_width=True)
-            st.bar_chart(visitas_df.groupby('sucursal').size().head(10))
-            st.markdown("**Top estados más consultados**")
-            top_est = visitas_df.groupby('estado').size().reset_index(name='consultas').sort_values('consultas', ascending=False)
-            st.dataframe(top_est, use_container_width=True)
-            st.markdown("**Consultas por día**")
-            try:
-                por_dia = visitas_df.groupby('fecha').size()
-                st.bar_chart(por_dia)
-            except:
-                pass
-            st.dataframe(visitas_df.tail(20), use_container_width=True)
-            csv_v = visitas_df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 CSV Visitas", csv_v, "visitas.csv", "text/csv", use_container_width=True)
-        else:
-            st.caption("Aún no hay visitas registradas - Se guardarán en hoja VISITAS cuando compartas el link")
-
-
-# DETALLE PRINCIPAL - OCULTO EN MODO AGREGAR
-if not st.session_state.get('show_add_form', False):
-    st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
-    if lista_suc and sucursal_actual:
-        fila_df = df_estado[df_estado[COL_SUC] == sucursal_actual]
-        if fila_df.empty:
-            fila_df = df[df[COL_SUC] == sucursal_actual]
-        fila = fila_df.iloc[0]
-        rep = fila.get(COL_REP, "")
-        fec = fila.get(COL_FEC, "")
-        tels = split_tels(fila.get(COL_TEL, ""))
-        dias, txt = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin reporte")
-        if dias is None:
-            b_class = "badge-ok"; b_txt = "🟢 Sin reporte"; c_dias = "#166534"
-        elif dias <= 3:
-            b_class = "badge-warn"; b_txt = f"🟡 {dias} dias"; c_dias = "#854d0e"
-        elif dias <= 7:
-            b_class = "badge-orange"; b_txt = f"🟠 {dias} dias"; c_dias = "#9a3412"
-        else:
-            b_class = "badge-red"; b_txt = f"🔴 {dias} dias"; c_dias = "#991b1b"
-        c_det1, c_det2 = st.columns([2.2, 1])
-        with c_det1:
-            rep_html = f'<span style="background:#fee2e2; color:#991b1b; padding:5px 12px; border-radius:20px; font-weight:800; font-size:0.95rem; border:1px solid #fecaca">REP: {rep}</span>' if tiene_reporte(rep) else '<span style="color:#16a34a; font-weight:700">🟢 Sin reporte</span>'
-            st.markdown('<div class="glass" style="padding:26px">'
-                f'<div style="display:flex; justify-content:space-between; align-items:center"><div class="badge {b_class}">{b_txt}</div><div style="font-size:0.85rem; color:#64748b; font-weight:600; display:flex; gap:8px; align-items:center"><span>{fila[COL_EST]}</span>•{rep_html}</div></div>'
-                f'<div style="font-size:1.9rem; font-weight:800; margin-top:14px">🏢 {fila[COL_SUC]}</div>'
-                f'<div style="display:flex; gap:28px; margin-top:18px"><div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Fecha reporte</div><div style="font-weight:700">{fec if str(fec)!="nan" else "N/A"}</div></div>'
-                f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Dias</div><div style="font-size:1.35rem; font-weight:900; color:{c_dias}">{txt}</div></div>'
-                f'<div><div style="font-size:0.72rem; color:#64748b; font-weight:700; text-transform:uppercase">Lineas</div><div style="font-weight:700">{len(tels)} numeros</div></div></div></div>', unsafe_allow_html=True)
-            if COL_OBS and COL_OBS in fila and str(fila.get(COL_OBS, "")).strip().lower() not in ["", "nan", "none"]:
-                obs_mostrar = fila.get(COL_OBS, "")
-                st.markdown(f'<div class="glass" style="padding:16px; margin-top:12px; border-left:4px solid #f59e0b"><div style="font-size:0.75rem; font-weight:700; color:#92400e; text-transform:uppercase; margin-bottom:6px">📝 Observaciones / Falla</div><div style="font-size:0.95rem; color:#0f172a">{obs_mostrar}</div></div>', unsafe_allow_html=True)
-            st.markdown("### 📞 Lineas Telefonicas")
-            if not tels:
-                st.markdown('<div class="glass" style="text-align:center; padding:20px; color:#64748b">Sin lineas</div>', unsafe_allow_html=True)
-            else:
-                cols_t = st.columns(2)
-                for i, t in enumerate(tels):
-                    with cols_t[i % 2]:
-                        st.markdown(f'<div class="glass" style="padding:12px 16px; margin-bottom:10px">📞 {t}</div>', unsafe_allow_html=True)
-        with c_det2:
-            st.markdown(f'<div class="glass" style="text-align:center; padding:24px"><div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase">Dias con reporte</div><div style="font-size:3rem; font-weight:900; color:{c_dias}">{dias if dias is not None else "—"}</div><div style="color:#64748b">{txt}</div></div>', unsafe_allow_html=True)
-            if tiene_reporte(rep):
-                st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-                if st.button("✅ Cerrar reporte - Solucionado", type="primary", use_container_width=True, key=f"btn_cerrar_{fila[COL_SUC]}"):
-                    st.session_state['close_target'] = {"estado": str(fila[COL_EST]), "sucursal": str(fila[COL_SUC]), "no_reporte": str(rep), "fecha_reporte": str(fec), "tel": ", ".join(tels), "obs": str(fila.get(COL_OBS, "")), "dias": dias if dias is not None else 0}
-                    st.session_state['show_close_login'] = True
-                    st.session_state['show_close_confirm'] = False
-                    st.session_state['close_auth'] = False
-                    st.rerun()
-
-# MODAL LOGIN PARA CERRAR REPORTE
-if st.session_state.get('show_close_login') and not st.session_state.get('close_auth'):
-    st.markdown('<div class="glass" style="border:2px solid #dc2626; padding:24px; margin-top:16px">', unsafe_allow_html=True)
-    st.markdown("### 🔒 Login para cerrar reporte")
-    if st.session_state.get('close_target'):
-        ct = st.session_state['close_target']
-        st.warning(f"Esta por cerrar reporte de {ct['sucursal']} ({ct['estado']}) - REP: {ct['no_reporte']} - Se tomara como reporte solucionado")
-    u_close = st.text_input("Usuario cierre", key="close_user_input")
-    p_close = st.text_input("Contraseña cierre", type="password", key="close_pwd_input")
-    ccl1, ccl2 = st.columns(2)
-    with ccl1:
-        if st.button("Ingresar para cerrar", type="primary", use_container_width=True):
-            if check_login(u_close.lower().strip(), p_close):
-                st.session_state['close_auth'] = True
-                st.session_state['close_user'] = u_close.lower().strip()
-                st.session_state['show_close_login'] = False
-                st.session_state['show_close_confirm'] = True
-                log_acceso(u_close.lower().strip(), f"Login para cerrar reporte {st.session_state['close_target']['no_reporte'] if st.session_state.get('close_target') else ''}")
-                st.rerun()
-            else:
-                st.error("Usuario o contraseña incorrectos")
-    with ccl2:
-        if st.button("Cancelar cierre", use_container_width=True):
-            st.session_state['show_close_login'] = False
-            st.session_state['close_target'] = None
-            st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# CONFIRMACION DE CIERRE
-if st.session_state.get('show_close_confirm') and st.session_state.get('close_auth'):
-    st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px; margin-top:16px">', unsafe_allow_html=True)
-    ct = st.session_state.get('close_target')
-    if ct:
-        st.markdown("### ✅ Confirmar cierre de reporte")
-        st.markdown("**Esta por cerrar reporte de esta sucursal y se tomara como reporte solucionado**")
-        st.markdown(f"Estado: {ct['estado']} | Sucursal: {ct['sucursal']} | REP: {ct['no_reporte']} | Fecha: {ct['fecha_reporte']} | Dias: {ct['dias']} | Lineas: {ct['tel']} | Usuario: {st.session_state.get('close_user')}")
-        obs_cierre = st.text_area("Observaciones de cierre (opcional)", placeholder="Ej: Linea restablecida, servicio ok...", key="obs_cierre_input")
-        cc1, cc2 = st.columns(2)
-        with cc1:
-            if st.button("✅ Confirmar - Cerrar como solucionado", type="primary", use_container_width=True):
-                ok_reportes = guardar_en_hoja_reportes(ct['estado'], ct['sucursal'], ct['no_reporte'], ct['fecha_reporte'], ct['tel'], ct['obs'], ct['dias'], st.session_state.get('close_user'))
-                ok_hoja1 = cerrar_reporte_en_hoja1(ct['sucursal'], ct['estado'])
-                if ok_reportes and ok_hoja1:
-                    log_acceso(st.session_state.get('close_user'), f"Cerro reporte {ct['no_reporte']} en {ct['sucursal']} como solucionado")
-                    log_reporte_historial(st.session_state.get('close_user'), ct['estado'], ct['sucursal'], ct['no_reporte'], ct['fecha_reporte'], ct['tel'], f"CERRADO - {obs_cierre} - {ct['obs']}")
-                    st.success(f"Reporte {ct['no_reporte']} de {ct['sucursal']} cerrado como solucionado")
-                    st.balloons()
-                    st.session_state['show_close_confirm'] = False
-                    st.session_state['show_close_login'] = False
-                    st.session_state['close_auth'] = False
-                    st.session_state['close_target'] = None
-                    st.cache_data.clear()
-                    time.sleep(1.5)
-                    st.rerun()
-                else:
-                    st.error("Error al cerrar, revisa logs")
-        with cc2:
-            if st.button("Cancelar cierre confirm", use_container_width=True):
-                st.session_state['show_close_confirm'] = False
-                st.session_state['show_close_login'] = False
-                st.session_state['close_auth'] = False
-                st.session_state['close_target'] = None
-                st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)

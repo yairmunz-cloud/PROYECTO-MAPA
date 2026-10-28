@@ -308,22 +308,33 @@ def log_eliminacion_historial(usuario, estado, sucursal, no_reporte, fecha_repor
     return True
 
 def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual):
-    # Limpia NO_REPORTE, FECHA_DE_REPORTE y FALLA en BDSUCURSALES, manteniendo historial
+    # Limpia NO_REPORTE, FECHA_DE_REPORTE y FALLA en BDSUCURSALES2, con ffill de ESTADO para celdas combinadas
     try:
         if "gcp_service_account" in st.secrets:
             import gspread
             from google.oauth2.service_account import Credentials
+            import unicodedata
+            def clean_norm(s):
+                s = str(s).strip()
+                if not s:
+                    return ""
+                s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+                s = s.upper()
+                s = re.sub(r'\s+', ' ', s)
+                return s.strip()
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
             client = gspread.authorize(creds)
             sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
             sh = client.open_by_key(sheet_id)
-            try:
-                ws_main = sh.worksheet("BDSUCURSALES")
-            except:
+            ws_main = None
+            for name_try in ["BDSUCURSALES2", "BDSUCURSALES"]:
                 try:
-                    ws_main = sh.worksheet("BDSUCURSALES2")
+                    ws_main = sh.worksheet(name_try)
+                    break
                 except:
-                    ws_main = sh.sheet1
+                    continue
+            if not ws_main:
+                ws_main = sh.sheet1
             headers = ws_main.row_values(1)
             headers_upper = [h.strip().upper() for h in headers]
             def find_idx(kws):
@@ -339,12 +350,19 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual):
             col_falla_idx = find_idx(['FALLA','OBSERVACIONES','OBS','COMENTARIO'])
             all_vals = ws_main.get_all_values()
             row_found = None
+            last_estado = ""
             for idx_row in range(1, len(all_vals)):
                 row = all_vals[idx_row]
                 try:
-                    est_cell = row[col_est_idx-1] if col_est_idx and col_est_idx-1 < len(row) else ""
-                    suc_cell = row[col_suc_idx-1] if col_suc_idx and col_suc_idx-1 < len(row) else ""
-                    if norm(est_cell) == norm(estado) and norm(suc_cell) == norm(sucursal):
+                    est_cell_raw = row[col_est_idx-1] if col_est_idx and col_est_idx-1 < len(row) else ""
+                    suc_cell_raw = row[col_suc_idx-1] if col_suc_idx and col_suc_idx-1 < len(row) else ""
+                    # ffill ESTADO: si esta vacio, usa el ultimo estado no vacio
+                    if est_cell_raw and str(est_cell_raw).strip():
+                        last_estado = est_cell_raw
+                    est_cell = last_estado if last_estado else est_cell_raw
+                    if not est_cell or not suc_cell_raw:
+                        continue
+                    if clean_norm(est_cell) == clean_norm(estado) and clean_norm(suc_cell_raw) == clean_norm(sucursal):
                         row_found = idx_row+1
                         break
                 except:
@@ -355,7 +373,7 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual):
                 if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, "")
                 return True, row_found
             else:
-                return False, "No se encontro la sucursal en Hoja 1"
+                return False, f"No se encontro: {estado} / {sucursal} en {ws_main.title} (buscadas {len(all_vals)} filas, ffill aplicado)"
         else:
             return True, "Modo demo - simulado"
     except Exception as e:
@@ -664,12 +682,25 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         all_vals = ws_main.get_all_values()
                         for r in st.session_state['batch_reportes']:
                             row_found = None
+                            last_estado_g = ""
+                            import unicodedata
+                            def clean_norm_g(s):
+                                s = str(s).strip()
+                                if not s:
+                                    return ""
+                                s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+                                s = s.upper()
+                                s = re.sub(r'\s+', ' ', s)
+                                return s.strip()
                             for idx_row in range(1, len(all_vals)):
                                 row = all_vals[idx_row]
                                 try:
-                                    est_cell = row[col_est_idx-1] if col_est_idx and col_est_idx-1 < len(row) else ""
-                                    suc_cell = row[col_suc_idx-1] if col_suc_idx and col_suc_idx-1 < len(row) else ""
-                                    if norm(est_cell) == norm(r['estado']) and norm(suc_cell) == norm(r['sucursal']):
+                                    est_raw = row[col_est_idx-1] if col_est_idx and col_est_idx-1 < len(row) else ""
+                                    suc_raw = row[col_suc_idx-1] if col_suc_idx and col_suc_idx-1 < len(row) else ""
+                                    if est_raw and str(est_raw).strip():
+                                        last_estado_g = est_raw
+                                    est_cell = last_estado_g if last_estado_g else est_raw
+                                    if clean_norm_g(est_cell) == clean_norm_g(r['estado']) and clean_norm_g(suc_raw) == clean_norm_g(r['sucursal']):
                                         row_found = idx_row+1
                                         break
                                 except:

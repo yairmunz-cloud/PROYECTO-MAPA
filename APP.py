@@ -36,7 +36,7 @@ st.markdown("""
 
 @st.cache_data(ttl=60, show_spinner=False)
 def cargar_datos():
-    base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbPB21bbVtlV6t7MzhSr9C_n7Ma_JC5STnHvToJJ0Bgfw379Vq2ehw5YppKXL-cegurpbGGn-8hB90/pub?output=csv"
+    base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTySrWdMEtPBo7u4r6df8shaedXk8783RUOdOPsjLwIh1xz4nLHdAdaheYFMB1-CLI2XtzpzLa7SQXm/pub?output=csv"
     url = f"{base_url}&cb={int(time.time())}"
     df = pd.read_csv(url, dtype=str)
     df.columns = df.columns.str.strip().str.upper()

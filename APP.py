@@ -227,30 +227,11 @@ if 'visitas_demo' not in st.session_state: st.session_state['visitas_demo']=[]
 if 'batch_reportes' not in st.session_state: st.session_state['batch_reportes']=[]
 if 'filtro_activo_sel' not in st.session_state: st.session_state['filtro_activo_sel']="-- Ver todas las sucursales --"
 
-# HEADER
-c1, c2 = st.columns([2.2, 1.3])
-with c1:
-    if b64_logo:
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:16px"><div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:2rem; font-weight:900; letter-spacing:-0.8px">SUCURSALES - PRUEBAS</div></div>""", unsafe_allow_html=True)
-    else:
-        st.markdown(f"""<div style="font-size:2rem; font-weight:900;">SUCURSALES - PRUEBAS</div>""", unsafe_allow_html=True)
-with c2:
-    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.6rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
-
-# --- DESPLEGABLE REPORTES ACTIVOS - REDISEÑADO 100% AUTOMATICO SIN BOTON ---
+# --- PREPARAR OPCIONES REPORTES ACTIVOS (para header) ---
+opciones_activas = []
+mapa_activos = {}
+mapa_activos_global = {}
 if not df_reportes.empty:
-    # Callback para auto-navegación inmediata sin botón
-    def auto_ir_sucursal():
-        sel = st.session_state.get('filtro_activo_sel')
-        if sel and sel != "-- Ver todas las sucursales --":
-            info = mapa_activos_global.get(sel)
-            if info:
-                st.session_state['estado_real'] = info['estado']
-                st.session_state['sucursal_real'] = info['sucursal']
-
-    # Preparar opciones
-    opciones_activas = []
-    mapa_activos = {}
     for _, row in df_reportes.iterrows():
         estado = str(row.get(COL_EST, "")).strip()
         suc = str(row.get(COL_SUC, "")).strip()
@@ -261,31 +242,38 @@ if not df_reportes.empty:
         opciones_activas.append(label)
         mapa_activos[label] = {"estado": estado, "sucursal": suc, "row": row}
     opciones_activas = sorted(opciones_activas)
-    opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
-
-    # Guardar en global para callback
     mapa_activos_global = mapa_activos
+opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 
-    # Contenedor compacto
-    st.markdown(f"""
-    <div class="glass" style="margin-top:14px; padding:14px 18px; border-left:5px solid #ef4444; background:rgba(254,242,242,0.6) !important; margin-bottom:0px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <div style="width:28px; height:28px; background:#ef4444; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">🚨</div>
-                <div style="font-weight:800; font-size:0.80rem; letter-spacing:0.5px; color:#991b1b;">VER SOLO SUCURSALES CON REPORTE ACTIVO</div>
+# HEADER - c1 titulo, c2 reportes + filtro del mismo tamaño
+c1, c2 = st.columns([2.2, 1.3])
+with c1:
+    if b64_logo:
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:16px"><div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:2rem; font-weight:900; letter-spacing:-0.8px">SUCURSALES - PRUEBAS</div></div>""", unsafe_allow_html=True)
+    else:
+        st.markdown(f"""<div style="font-size:2rem; font-weight:900;">SUCURSALES - PRUEBAS</div>""", unsafe_allow_html=True)
+with c2:
+    # Recuadro negro Reportes Activos
+    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.6rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
+
+    # FILTRO - mismo tamaño que recuadro negro, justo debajo, sin boton Limpiar
+    if not df_reportes.empty:
+        st.markdown(f"""
+        <div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #ef4444; background:white !important; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <div style="width:18px; height:18px; background:#ef4444; border-radius:5px; display:flex; align-items:center; justify-content:center; color:white; font-size:10px;">🚨</div>
+                    <div style="font-weight:800; font-size:0.68rem; letter-spacing:0.4px; color:#991b1b;">VER SOLO SUCURSALES CON REPORTE ACTIVO</div>
+                </div>
+                <span class="badge badge-red" style="font-size:0.65rem; padding:3px 8px;">{len(df_reportes)} encontradas</span>
             </div>
-            <span class="badge badge-red">{len(df_reportes)} encontradas</span>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        default_idx_activo = 0
+        if st.session_state.get('filtro_activo_sel') in opciones_con_todos:
+            default_idx_activo = opciones_con_todos.index(st.session_state['filtro_activo_sel'])
 
-    default_idx_activo = 0
-    if st.session_state.get('filtro_activo_sel') in opciones_con_todos:
-        default_idx_activo = opciones_con_todos.index(st.session_state['filtro_activo_sel'])
-
-    # Selectbox 100% automático - sin botón Ver info, al seleccionar hace rerun solo
-    c_filtro1, c_filtro2 = st.columns([4, 1])
-    with c_filtro1:
+        # Selectbox 100% automatico - mismo ancho que recuadro negro, sin boton Limpiar
         sel_activo = st.selectbox(
             "Filtro reporte activo",
             opciones_con_todos,
@@ -294,26 +282,17 @@ if not df_reportes.empty:
             label_visibility="collapsed",
             placeholder="🔍 Selecciona sucursal con reporte activo..."
         )
-    with c_filtro2:
-        if st.session_state.get('filtro_activo_sel') != "-- Ver todas las sucursales --":
-            if st.button("✖️ Limpiar", use_container_width=True, key="btn_limpiar_filtro_activo"):
-                st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
-                st.session_state.pop('estado_real', None)
-                st.session_state.pop('sucursal_real', None)
-                st.rerun()
 
-    # Auto-navegación inmediata - SIN BOTON, directo al seleccionar
-    if sel_activo != "-- Ver todas las sucursales --":
-        info_sel = mapa_activos.get(sel_activo)
-        if info_sel:
-            if st.session_state.get('estado_real') != info_sel['estado'] or st.session_state.get('sucursal_real') != info_sel['sucursal']:
-                st.session_state['estado_real'] = info_sel['estado']
-                st.session_state['sucursal_real'] = info_sel['sucursal']
-                st.rerun()
-
-    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-else:
-    st.markdown('<div class="glass" style="margin-top:12px; padding:12px 14px; border-left:4px solid #16a34a; background:rgba(240,253,244,0.7) !important;"><div style="display:flex; align-items:center; gap:8px;"><div style="width:26px; height:26px; background:#16a34a; border-radius:7px; display:flex; align-items:center; justify-content:center; color:white;">✅</div><b style="color:#166534; font-size:0.85rem;">Sin reportes activos - Todas las sucursales operativas</b></div></div>', unsafe_allow_html=True)
+        # Auto-navegación inmediata - SIN BOTON
+        if sel_activo != "-- Ver todas las sucursales --":
+            info_sel = mapa_activos.get(sel_activo)
+            if info_sel:
+                if st.session_state.get('estado_real') != info_sel['estado'] or st.session_state.get('sucursal_real') != info_sel['sucursal']:
+                    st.session_state['estado_real'] = info_sel['estado']
+                    st.session_state['sucursal_real'] = info_sel['sucursal']
+                    st.rerun()
+    else:
+        st.markdown('<div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #16a34a; background:white !important; border-radius:12px;"><div style="display:flex; align-items:center; gap:8px;"><div style="width:20px; height:20px; background:#16a34a; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">✅</div><b style="color:#166534; font-size:0.75rem;">Sin reportes activos</b></div></div>', unsafe_allow_html=True)
 
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 

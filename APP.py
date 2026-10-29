@@ -331,101 +331,68 @@ def log_eliminacion_historial(usuario, estado, sucursal, no_reporte, fecha_repor
         return False
     return True
 
-def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=None):
+def eliminar_reporte_hoja1(estado, sucursal, rep_a_borrar, indice_a_borrar=None):
     try:
-        if "gcp_service_account" in st.secrets:
-            import gspread
-            from google.oauth2.service_account import Credentials
-            import unicodedata
-            def clean_norm(s):
-                s = str(s).strip()
-                if not s:
-                    return ""
-                s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
-                s = s.upper()
-                s = re.sub(r'\s+', ' ', s)
-                return s.strip()
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
-            client = gspread.authorize(creds)
-            sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
-            sh = client.open_by_key(sheet_id)
-            ws_main = None
-            for name_try in ["BDSUCURSALES", "BDSUCURSALES2", "BDSUCURSALESPRO", "Hoja1"]:
-                try:
-                    ws_main = sh.worksheet(name_try)
+        if ws_main is None:
+            return True, 1
+        all_vals = ws_main.get_all_values()
+        if not all_vals:
+            return False, None
+        header = [h.strip() for h in all_vals[0]]
+        def bcol(nombres):
+            for n in nombres:
+                for i,h in enumerate(header):
+                    if n.upper() in h.strip().upper():
+                        return i+1
+            return None
+        col_est = bcol(['ESTADO','EDO'])
+        col_suc = bcol(['SUCURSAL','SUC','SITIO'])
+        col_rep = bcol(['NO. REPORTE','NO REPORTE','REPORTE'])
+        col_fec = bcol(['FECHA','FEC'])
+        col_falla = bcol(['OBSERVACIONES','OBS','FALLA','COMENTARIO'])
+        col_tel_falla = bcol(['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','LINEA FALLA','LINEA REPORTADA'])
+        if not col_suc or not col_rep:
+            return False, None
+        row_found = None
+        for idx in range(1, len(all_vals)):
+            try:
+                suc_v = all_vals[idx][col_suc-1].strip().upper() if col_suc-1 < len(all_vals[idx]) else ""
+                if suc_v == sucursal.strip().upper():
+                    row_found = idx+1
                     break
-                except:
-                    continue
-            if not ws_main:
-                ws_main = sh.sheet1
-            headers = ws_main.row_values(1)
-            headers_upper = [h.strip().upper() for h in headers]
-            def find_idx(kws):
-                for i, h in enumerate(headers_upper):
-                    for kw in kws:
-                        if kw in h:
-                            return i+1
-                return None
-            col_est_idx = find_idx(['ESTADO','EDO'])
-            col_suc_idx = find_idx(['SUCURSAL','SUC','SITIO'])
-            col_rep_idx = find_idx(['NO. REPORTE','NO REPORTE','REPORTE'])
-            col_fec_idx = find_idx(['FECHA DE REPORTE','FECHA REPORTE','FECHA','FEC'])
-            col_falla_idx = find_idx(['FALLA','OBSERVACIONES','OBS','COMENTARIO'])
-            all_vals = ws_main.get_all_values()
-            row_found = None
-            last_estado = ""
-            row_data = None
-            for idx_row in range(1, len(all_vals)):
-                row = all_vals[idx_row]
-                try:
-                    est_cell_raw = row[col_est_idx-1] if col_est_idx and col_est_idx-1 < len(row) else ""
-                    suc_cell_raw = row[col_suc_idx-1] if col_suc_idx and col_suc_idx-1 < len(row) else ""
-                    if est_cell_raw and str(est_cell_raw).strip():
-                        last_estado = est_cell_raw
-                    est_cell = last_estado if last_estado else est_cell_raw
-                    if not est_cell or not suc_cell_raw:
-                        continue
-                    if clean_norm(est_cell) == clean_norm(estado) and clean_norm(suc_cell_raw) == clean_norm(sucursal):
-                        row_found = idx_row+1
-                        row_data = row
-                        break
-                except:
-                    continue
-            if row_found:
-                cur_rep = row_data[col_rep_idx-1] if col_rep_idx and col_rep_idx-1 < len(row_data) else ""
-                cur_fec = row_data[col_fec_idx-1] if col_fec_idx and col_fec_idx-1 < len(row_data) else ""
-                cur_falla = row_data[col_falla_idx-1] if col_falla_idx and col_falla_idx-1 < len(row_data) else ""
-                reps = split_multi_val(cur_rep)
-                fecs = split_multi_val(cur_fec)
-                fallas = split_multi_val(cur_falla)
-                if indice_a_borrar is not None and 0 <= indice_a_borrar < len(reps):
-                    reps.pop(indice_a_borrar)
-                    if indice_a_borrar < len(fecs): fecs.pop(indice_a_borrar)
-                    if indice_a_borrar < len(fallas): fallas.pop(indice_a_borrar)
-                    if 'tel_fallas' in locals() and indice_a_borrar < len(tel_fallas): tel_fallas.pop(indice_a_borrar)
-                else:
-                    try:
-                        idx = [r.strip() for r in reps].index(str(no_reporte_actual).strip())
-                        reps.pop(idx)
-                        if idx < len(fecs): fecs.pop(idx)
-                        if idx < len(fallas): fallas.pop(idx)
-                    except ValueError:
-                        reps = []
-                        fecs = []
-                        fallas = []
-                if reps:
-                    if col_rep_idx: ws_main.update_cell(row_found, col_rep_idx, join_multi_val(reps))
-                    if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, join_multi_val(fecs))
-                    if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, join_multi_val(fallas))
-                else:
-                    if col_rep_idx: ws_main.update_cell(row_found, col_rep_idx, "")
-                    if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, "")
-                    if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, "")
-                return True, row_found
-            else:
-                return False, f"No se encontro: {estado} / {sucursal}"
+            except:
+                continue
+        if not row_found:
+            return False, f"No se encontro: {estado} / {sucursal}"
+        cur_rep = all_vals[row_found-1][col_rep-1] if col_rep-1 < len(all_vals[row_found-1]) else ""
+        cur_fec = all_vals[row_found-1][col_fec-1] if col_fec and col_fec-1 < len(all_vals[row_found-1]) else ""
+        cur_falla = all_vals[row_found-1][col_falla-1] if col_falla and col_falla-1 < len(all_vals[row_found-1]) else ""
+        cur_tel_falla = all_vals[row_found-1][col_tel_falla-1] if col_tel_falla and col_tel_falla-1 < len(all_vals[row_found-1]) else ""
+        reps = split_multi_val(cur_rep)
+        fecs = split_multi_val(cur_fec)
+        fallas = split_multi_val(cur_falla)
+        tel_fallas = split_multi_val(cur_tel_falla)
+        if indice_a_borrar is None:
+            try:
+                indice_a_borrar = next(i for i,r in enumerate(reps) if str(r).strip()==str(rep_a_borrar).strip())
+            except:
+                indice_a_borrar = 0 if reps else None
+        if indice_a_borrar is not None and 0 <= indice_a_borrar < len(reps):
+            reps.pop(indice_a_borrar)
+            if indice_a_borrar < len(fecs): fecs.pop(indice_a_borrar)
+            if indice_a_borrar < len(fallas): fallas.pop(indice_a_borrar)
+            if indice_a_borrar < len(tel_fallas): tel_fallas.pop(indice_a_borrar)
+            ws_main.update_cell(row_found, col_rep, join_multi_val(reps))
+            if col_fec: ws_main.update_cell(row_found, col_fec, join_multi_val(fecs))
+            if col_falla: ws_main.update_cell(row_found, col_falla, join_multi_val(fallas))
+            if col_tel_falla: ws_main.update_cell(row_found, col_tel_falla, join_multi_val(tel_fallas))
+            return True, row_found
         else:
-            return True, "Modo demo"
+            ws_main.update_cell(row_found, col_rep, "")
+            if col_fec: ws_main.update_cell(row_found, col_fec, "")
+            if col_falla: ws_main.update_cell(row_found, col_falla, "")
+            if col_tel_falla: ws_main.update_cell(row_found, col_tel_falla, "")
+            return True, row_found
     except Exception as e:
         return False, str(e)
 

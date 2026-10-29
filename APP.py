@@ -517,7 +517,7 @@ with c1:
     </style>
     """, unsafe_allow_html=True)
 with c2:
-    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.6rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
     if not df_reportes.empty:
         st.markdown(f"""
         <div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #ef4444; background:white !important; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">

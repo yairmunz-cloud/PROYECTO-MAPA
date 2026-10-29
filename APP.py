@@ -47,7 +47,7 @@ SHEET_ID_PRUEBAS = "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4"
 def norm(s):
     return str(s).strip().upper().replace("  "," ").replace("\n","").replace("\r","")
 
-@st.cache_data(ttl=0, show_spinner=False)
+@st.cache_data(ttl=30, show_spinner=False)
 def cargar_datos(sheet_id_override=None):
     df_privado = None
     try:
@@ -163,6 +163,7 @@ COL_TEL = buscar_col(['TELMEX','TEL','LINEA'])
 COL_REP = buscar_col(['NO. REPORTE','NO REPORTE','REPORTE'])
 COL_FEC = buscar_col(['FECHA','FEC'])
 COL_OBS = buscar_col(['OBSERVACIONES','OBS','FALLA','COMENTARIO'])
+COL_TEL_FALLA = buscar_col(['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','LINEA FALLA','FALLA LINEA','LINEAS FALLA','LINEA REPORTADA'])
 
 if COL_EST and not df.empty:
     df[COL_EST] = df[COL_EST].astype(str).str.strip().replace({'nan':'', 'None':''}).replace('', pd.NA).ffill().str.strip()
@@ -330,6 +331,7 @@ def log_eliminacion_historial(usuario, estado, sucursal, no_reporte, fecha_repor
         return False
     return True
 
+
 def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=None):
     try:
         if "gcp_service_account" in st.secrets:
@@ -370,10 +372,10 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=
             col_rep_idx = find_idx(['NO. REPORTE','NO REPORTE','REPORTE'])
             col_fec_idx = find_idx(['FECHA DE REPORTE','FECHA REPORTE','FECHA','FEC'])
             col_falla_idx = find_idx(['FALLA','OBSERVACIONES','OBS','COMENTARIO'])
+            col_tel_falla_idx = find_idx(['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','LINEA FALLA','LINEA REPORTADA'])
             all_vals = ws_main.get_all_values()
             row_found = None
             last_estado = ""
-            row_data = None
             for idx_row in range(1, len(all_vals)):
                 row = all_vals[idx_row]
                 try:
@@ -386,46 +388,47 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=
                         continue
                     if clean_norm(est_cell) == clean_norm(estado) and clean_norm(suc_cell_raw) == clean_norm(sucursal):
                         row_found = idx_row+1
-                        row_data = row
                         break
                 except:
                     continue
-            if row_found:
-                cur_rep = row_data[col_rep_idx-1] if col_rep_idx and col_rep_idx-1 < len(row_data) else ""
-                cur_fec = row_data[col_fec_idx-1] if col_fec_idx and col_fec_idx-1 < len(row_data) else ""
-                cur_falla = row_data[col_falla_idx-1] if col_falla_idx and col_falla_idx-1 < len(row_data) else ""
-                reps = split_multi_val(cur_rep)
-                fecs = split_multi_val(cur_fec)
-                fallas = split_multi_val(cur_falla)
-                if indice_a_borrar is not None and 0 <= indice_a_borrar < len(reps):
-                    reps.pop(indice_a_borrar)
-                    if indice_a_borrar < len(fecs): fecs.pop(indice_a_borrar)
-                    if indice_a_borrar < len(fallas): fallas.pop(indice_a_borrar)
-                else:
-                    try:
-                        idx = [r.strip() for r in reps].index(str(no_reporte_actual).strip())
-                        reps.pop(idx)
-                        if idx < len(fecs): fecs.pop(idx)
-                        if idx < len(fallas): fallas.pop(idx)
-                    except ValueError:
-                        reps = []
-                        fecs = []
-                        fallas = []
+            if not row_found:
+                return False, f"No se encontro: {estado} / {sucursal}"
+            cur_rep = all_vals[row_found-1][col_rep_idx-1] if col_rep_idx and col_rep_idx-1 < len(all_vals[row_found-1]) else ""
+            cur_fec = all_vals[row_found-1][col_fec_idx-1] if col_fec_idx and col_fec_idx-1 < len(all_vals[row_found-1]) else ""
+            cur_falla = all_vals[row_found-1][col_falla_idx-1] if col_falla_idx and col_falla_idx-1 < len(all_vals[row_found-1]) else ""
+            cur_tel_falla = all_vals[row_found-1][col_tel_falla_idx-1] if col_tel_falla_idx and col_tel_falla_idx-1 < len(all_vals[row_found-1]) else ""
+            reps = split_multi_val(cur_rep)
+            fecs = split_multi_val(cur_fec)
+            fallas = split_multi_val(cur_falla)
+            tel_fallas = split_multi_val(cur_tel_falla)
+            if indice_a_borrar is None:
+                try:
+                    indice_a_borrar = next(i for i,r in enumerate(reps) if str(r).strip()==str(no_reporte_actual).strip())
+                except:
+                    indice_a_borrar = 0 if reps else None
+            if indice_a_borrar is not None and 0 <= indice_a_borrar < len(reps):
+                reps.pop(indice_a_borrar)
+                if indice_a_borrar < len(fecs): fecs.pop(indice_a_borrar)
+                if indice_a_borrar < len(fallas): fallas.pop(indice_a_borrar)
+                if indice_a_borrar < len(tel_fallas): tel_fallas.pop(indice_a_borrar)
                 if reps:
-                    if col_rep_idx: ws_main.update_cell(row_found, col_rep_idx, join_multi_val(reps))
+                    ws_main.update_cell(row_found, col_rep_idx, join_multi_val(reps))
                     if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, join_multi_val(fecs))
                     if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, join_multi_val(fallas))
+                    if col_tel_falla_idx: ws_main.update_cell(row_found, col_tel_falla_idx, join_multi_val(tel_fallas))
                 else:
-                    if col_rep_idx: ws_main.update_cell(row_found, col_rep_idx, "")
+                    ws_main.update_cell(row_found, col_rep_idx, "")
                     if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, "")
                     if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, "")
+                    if col_tel_falla_idx: ws_main.update_cell(row_found, col_tel_falla_idx, "")
                 return True, row_found
             else:
-                return False, f"No se encontro: {estado} / {sucursal}"
+                return False, "Indice no encontrado"
         else:
             return True, "Modo demo"
     except Exception as e:
         return False, str(e)
+
 
 lista_estados = sorted(df[COL_EST].dropna().unique()) if COL_EST in df.columns else []
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP and COL_REP in df.columns else pd.DataFrame()
@@ -530,13 +533,11 @@ with c2:
             </div>
         </div>
         """, unsafe_allow_html=True)
-        default_idx_activo = 0
-        if st.session_state.get('filtro_activo_sel') in opciones_con_todos:
-            default_idx_activo = opciones_con_todos.index(st.session_state['filtro_activo_sel'])
+        if "filtro_activo_sel" not in st.session_state or st.session_state["filtro_activo_sel"] not in opciones_con_todos:
+            st.session_state["filtro_activo_sel"] = "-- Ver todas las sucursales --"
         sel_activo = st.selectbox(
             "Filtro reporte activo",
             opciones_con_todos,
-            index=default_idx_activo,
             key="filtro_activo_sel",
             label_visibility="collapsed",
             placeholder="🔍 Selecciona sucursal con reporte activo..."
@@ -892,19 +893,34 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                                 cur_rep = all_vals[row_found-1][col_rep_idx-1] if col_rep_idx and col_rep_idx-1 < len(all_vals[row_found-1]) else ""
                                 cur_fec = all_vals[row_found-1][col_fec_idx-1] if col_fec_idx and col_fec_idx-1 < len(all_vals[row_found-1]) else ""
                                 cur_falla = all_vals[row_found-1][col_falla_idx-1] if col_falla_idx and col_falla_idx-1 < len(all_vals[row_found-1]) else ""
+                                # Buscar columna LINEAS CON FALLA
+                                col_tel_falla_idx = None
+                                try:
+                                    header = [h.strip().upper() for h in all_vals[0]]
+                                    for idx_h, h in enumerate(header):
+                                        if any(k in h for k in ['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','LINEA FALLA','LINEA REPORTADA']):
+                                            col_tel_falla_idx = idx_h+1
+                                            break
+                                except:
+                                    pass
+                                cur_tel_falla = all_vals[row_found-1][col_tel_falla_idx-1] if col_tel_falla_idx and col_tel_falla_idx-1 < len(all_vals[row_found-1]) else ""
                                 ex_reps = split_multi_val(cur_rep)
                                 ex_fecs = split_multi_val(cur_fec)
                                 ex_fallas = split_multi_val(cur_falla)
+                                ex_tel_falla = split_multi_val(cur_tel_falla)
                                 ex_reps.append(r['no_reporte'])
                                 ex_fecs.append(r['fecha_reporte'])
                                 ex_fallas.append(r['obs'])
+                                ex_tel_falla.append(r.get('tel',''))
                                 if col_rep_idx: ws_main.update_cell(row_found, col_rep_idx, join_multi_val(ex_reps))
                                 if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, join_multi_val(ex_fecs))
                                 if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, join_multi_val(ex_fallas))
+                                if col_tel_falla_idx: ws_main.update_cell(row_found, col_tel_falla_idx, join_multi_val(ex_tel_falla))
                                 if row_found-1 < len(all_vals):
                                     if col_rep_idx and col_rep_idx-1 < len(all_vals[row_found-1]): all_vals[row_found-1][col_rep_idx-1] = join_multi_val(ex_reps)
                                     if col_fec_idx and col_fec_idx-1 < len(all_vals[row_found-1]): all_vals[row_found-1][col_fec_idx-1] = join_multi_val(ex_fecs)
                                     if col_falla_idx and col_falla_idx-1 < len(all_vals[row_found-1]): all_vals[row_found-1][col_falla_idx-1] = join_multi_val(ex_fallas)
+                                    if col_tel_falla_idx and col_tel_falla_idx-1 < len(all_vals[row_found-1]): all_vals[row_found-1][col_tel_falla_idx-1] = join_multi_val(ex_tel_falla)
                             else:
                                 new_row = [""] * len(headers)
                                 if col_est_idx: new_row[col_est_idx-1] = r['estado']
@@ -944,7 +960,8 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-# --- DETALLE CON FORMATO PRODUCCION + MULTI-REPORTE ---
+
+# --- DETALLE CON FORMATO PRODUCCION + MULTI-REPORTE + LINEAS CON FALLA ---
 if not st.session_state.get('show_add_form', False):
     if 'estado_real' in st.session_state and 'sucursal_real' in st.session_state and COL_EST and COL_SUC:
         estado_sel = st.session_state['estado_real']
@@ -957,10 +974,12 @@ if not st.session_state.get('show_add_form', False):
                     fec_raw = str(row.get(COL_FEC, "")).strip() if COL_FEC else ""
                     obs_raw = str(row.get(COL_OBS, "")).strip() if COL_OBS else ""
                     tel_raw = row.get(COL_TEL, "") if COL_TEL else ""
+                    tel_falla_raw = str(row.get(COL_TEL_FALLA, "")).strip() if 'COL_TEL_FALLA' in locals() and COL_TEL_FALLA and COL_TEL_FALLA in row else ""
                     tels = split_tels(tel_raw)
                     reps_list = split_multi_val(rep_raw)
                     fecs_list = split_multi_val(fec_raw)
                     obs_list = split_multi_val(obs_raw)
+                    tel_falla_list = split_multi_val(tel_falla_raw) if tel_falla_raw else []
                     if not reps_list or not any(tiene_reporte(r) for r in reps_list):
                         st.markdown(f"""
                         <div class="glass" style="padding:20px; border-left:5px solid #16a34a; background: rgba(240,253,244,0.5) !important;">
@@ -990,6 +1009,7 @@ if not st.session_state.get('show_add_form', False):
                         for idx_rep, rep in enumerate(reps_list):
                             fec = fecs_list[idx_rep] if idx_rep < len(fecs_list) else (fecs_list[0] if fecs_list else "")
                             obs = obs_list[idx_rep] if idx_rep < len(obs_list) else (obs_list[0] if obs_list else obs_raw)
+                            tel_falla_cur = tel_falla_list[idx_rep] if idx_rep < len(tel_falla_list) else (tel_falla_list[0] if tel_falla_list else "")
                             dias, txt_dias = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin reporte")
                             if not tiene_reporte(rep):
                                 badge_html = '<span class="badge badge-ok">Sin reporte</span>'
@@ -1015,6 +1035,7 @@ if not st.session_state.get('show_add_form', False):
                             rep_display = f'<span class="rep-box">🗂️ REP: {rep} ({idx_rep+1}/{len(reps_list)})</span>' if len(reps_list)>1 else f'<span class="rep-box">🗂️ REP: {rep}</span>'
                             fecha_display = f'<span class="rep-box">📅 Fecha: {fec}</span>' if fec and fec.lower() not in ['nan','none',''] else '<span class="rep-box">📅 Fecha: N/A</span>'
                             estado_display = f'<span class="rep-box" style="background:#0f172a; color:white; border-color:#0f172a;">📍 {estado_sel}</span>'
+                            tel_falla_display = f'<div style="margin-top:8px; padding:8px 10px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px;"><div style="font-size:0.68rem; font-weight:800; color:#b91c1c;">🚨 LINEAS CON FALLA REPORTADAS: {tel_falla_cur if tel_falla_cur else "No especificadas"}</div></div>' if tel_falla_cur else ""
                             st.markdown(f"""
                             <div class="glass" style="padding:20px; border-left:5px solid {border_color}; background: {border_bg} !important; margin-bottom:12px;">
                                 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
@@ -1027,6 +1048,7 @@ if not st.session_state.get('show_add_form', False):
                                                 {rep_display}
                                                 {fecha_display}
                                             </div>
+                                            {tel_falla_display}
                                         </div>
                                     </div>
                                     <div style="text-align:right;">
@@ -1064,23 +1086,39 @@ if not st.session_state.get('show_add_form', False):
                                         st.session_state['show_delete_confirm'] = True
                                         st.session_state['show_delete_login'] = False
                                     st.rerun()
-                    st.markdown(f"<div style='margin-top:14px; margin-bottom:8px; font-weight:800; font-size:0.85rem;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros</div>", unsafe_allow_html=True)
-                    if tels:
-                        cols = st.columns(2)
-                        for i, t in enumerate(tels):
-                            with cols[i % 2]:
-                                st.markdown(f"""
-                                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                    <div style="width:28px; height:28px; background:#fee2e2; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:14px;">📞</div>
-                                    <div>
-                                        <div style="font-size:0.65rem; font-weight:700; color:#64748b; letter-spacing:0.5px;">LINEA TELEFONICA</div>
-                                        <div style="font-weight:800; font-size:0.90rem; color:#0f172a;">{t}</div>
-                                    </div>
-                                </div>
-                                """, unsafe_allow_html=True)
+                            # Mostrar lineas telefonicas con highlight de falla para este reporte
+                            st.markdown(f"<div style='margin-top:10px; margin-bottom:8px; font-weight:800; font-size:0.85rem;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros | 🔴 En falla para este REP: {tel_falla_cur if tel_falla_cur else 'N/A'}</div>", unsafe_allow_html=True)
+                            if tels:
+                                cols = st.columns(2)
+                                for i, t in enumerate(tels):
+                                    is_falla = False
+                                    if tel_falla_cur and t.strip() in tel_falla_cur:
+                                        is_falla = True
+                                    with cols[i % 2]:
+                                        if is_falla:
+                                            st.markdown(f"""
+                                            <div style="background:#fef2f2; border:2px solid #ef4444; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 2px 6px rgba(239,68,68,0.15);">
+                                                <div style="width:28px; height:28px; background:#ef4444; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">🚨</div>
+                                                <div>
+                                                    <div style="font-size:0.65rem; font-weight:800; color:#b91c1c; letter-spacing:0.5px;">LINEA CON FALLA • REP {rep}</div>
+                                                    <div style="font-weight:900; font-size:0.95rem; color:#991b1b;">{t}</div>
+                                                </div>
+                                            </div>
+                                            """, unsafe_allow_html=True)
+                                        else:
+                                            st.markdown(f"""
+                                            <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                                <div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:14px;">📞</div>
+                                                <div>
+                                                    <div style="font-size:0.65rem; font-weight:700; color:#64748b; letter-spacing:0.5px;">LINEA TELEFONICA</div>
+                                                    <div style="font-weight:800; font-size:0.90rem; color:#0f172a;">{t}</div>
+                                                </div>
+                                            </div>
+                                            """, unsafe_allow_html=True)
 
 
 # --- MODAL LOGIN CERRAR REPORTE ---
+
 
 if st.session_state.get('show_delete_login') and not st.session_state.get('admin_auth'):
     st.markdown('<div class="glass" style="border:2px solid #dc2626; padding:24px; margin-top:16px; background:rgba(254,242,242,0.95) !important;">', unsafe_allow_html=True)

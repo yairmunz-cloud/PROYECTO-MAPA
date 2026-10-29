@@ -333,8 +333,51 @@ def log_eliminacion_historial(usuario, estado, sucursal, no_reporte, fecha_repor
 
 def eliminar_reporte_hoja1(estado, sucursal, rep_a_borrar, indice_a_borrar=None):
     try:
+        global ws_main
+        try:
+            ws_check = ws_main
+        except NameError:
+            ws_check = None
+        if ws_check is None:
+            # intentar obtener ws_main desde gspread si no existe
+            try:
+                from google.oauth2.service_account import Credentials
+                import gspread
+                import os
+                scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+                creds_info = {
+                    "type": os.getenv("GSPREAD_TYPE", "service_account"),
+                    "project_id": os.getenv("GSPREAD_PROJECT_ID"),
+                    "private_key_id": os.getenv("GSPREAD_PRIVATE_KEY_ID"),
+                    "private_key": os.getenv("GSPREAD_PRIVATE_KEY", "").replace("\\n","\n"),
+                    "client_email": os.getenv("GSPREAD_CLIENT_EMAIL"),
+                    "client_id": os.getenv("GSPREAD_CLIENT_ID"),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                    "client_x509_cert_url": os.getenv("GSPREAD_CLIENT_X509_CERT_URL")
+                }
+                # Si falla, usar streamlit secrets
+                if not creds_info["private_key"] or "BEGIN PRIVATE KEY" not in creds_info["private_key"]:
+                    import streamlit as st
+                    creds_info = dict(st.secrets["gcp_service_account"])
+                creds = Credentials.from_service_account_info(creds_info, scopes=scopes)
+                client = gspread.authorize(creds)
+                sheet_id = os.getenv("GOOGLE_SHEET_ID") or st.secrets.get("GOOGLE_SHEET_ID", "12uBzVEEf7xVqW6u3v7v5v7v5v7")
+                # intentar leer de secrets
+                try:
+                    sheet_id = st.secrets["GOOGLE_SHEET_ID"]
+                except:
+                    pass
+                sh = client.open_by_key(sheet_id)
+                try:
+                    ws_main = sh.worksheet("BDSUCURSALES")
+                except:
+                    ws_main = sh.worksheet("BDSUCURSALES2")
+            except Exception as e:
+                return False, f"ws_main no definido y no se pudo reconectar: {e}"
         if ws_main is None:
-            return True, 1
+            return False, "ws_main no disponible"
         all_vals = ws_main.get_all_values()
         if not all_vals:
             return False, None

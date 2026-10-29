@@ -6,7 +6,7 @@ import time
 import base64
 
 
-st.set_page_config(page_title="SUCURSALES", layout="wide", page_icon="")
+st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢")
 
 # LOGO ATLAS - Incrustado directo base64 para Cloud
 B64_ATLAS_LOGO = """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"""
@@ -84,7 +84,7 @@ def cargar_datos(sheet_id_override=None):
     if df_privado is not None and not df_privado.empty and len(df_privado) > 5:
         return df_privado
     try:
-        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
+        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTySrWdMEtPBo7u4r6df8shaedXk8783RUOdOPsjLwIh1xz4nLHdAdaheYFMB1-CLI2XtzpzLa7SQXm/pub?output=csv"
         url = f"{base_url}&cb={int(time.time())}"
         df = pd.read_csv(url, dtype=str)
         df.columns = df.columns.str.strip().str.upper()
@@ -93,7 +93,6 @@ def cargar_datos(sheet_id_override=None):
         if df_privado is not None:
             return df_privado
         return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
-
 
 def deduplicar_df(df_in):
     try:
@@ -134,7 +133,6 @@ def deduplicar_df(df_in):
         return df_in
 
 df_raw = cargar_datos()
-
 
 def buscar_col_temp(kws, df_ref):
     for c in df_ref.columns:
@@ -429,16 +427,16 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=
     except Exception as e:
         return False, str(e)
 
-
 lista_estados = sorted(df[COL_EST].dropna().unique()) if COL_EST in df.columns else []
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP and COL_REP in df.columns else pd.DataFrame()
 
-for k in ['admin_auth','show_login','show_add_form','current_user','batch_reportes','show_close_login','show_close_confirm','close_target','close_auth','close_user','last_logged_suc','last_visita_log','visitas_demo','filtro_activo_sel','show_delete_login','show_delete_confirm','delete_target','delete_auth']:
+for k in ['admin_auth','show_login','show_add_form','current_user','batch_reportes','show_close_login','show_close_confirm','close_target','close_auth','close_user','last_logged_suc','last_visita_log','visitas_demo','filtro_activo_sel','show_delete_login','show_delete_confirm','delete_target','delete_auth','show_case_pdf']:
     if k not in st.session_state:
         st.session_state[k] = False if 'auth' in k or 'show' in k else ([] if 'batch' in k or 'visitas' in k or 'demo' in k else None)
 if 'visitas_demo' not in st.session_state: st.session_state['visitas_demo']=[]
 if 'batch_reportes' not in st.session_state: st.session_state['batch_reportes']=[]
 if 'filtro_activo_sel' not in st.session_state: st.session_state['filtro_activo_sel']="-- Ver todas las sucursales --"
+if 'show_case_pdf' not in st.session_state: st.session_state['show_case_pdf']=False
 
 # --- PREPARAR OPCIONES REPORTES ACTIVOS ---
 opciones_activas = []
@@ -495,22 +493,37 @@ else:
     total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 
-
+# HEADER - c1 titulo, c2 reportes + filtro mismo tamaño que negro, sin boton Limpiar, automatico
 c1, c2 = st.columns([2.2, 1.3])
-
 with c1:
     if b64_logo:
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:16px"><div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:2rem; font-weight:900; letter-spacing:-0.8px">REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:16px"><div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     else:
-        st.markdown(f"""<div style="font-size:2rem; font-weight:900;">REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS</div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div>""", unsafe_allow_html=True)
+    # BOTON AZUL - TELEFONOS CASE NACIONAL (debajo del titulo)
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+    if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="primary", use_container_width=False):
+        st.session_state['show_case_pdf'] = True
+    st.markdown("""
+    <style>
+    div[data-testid="stButton"] button[kind="primary"][id="btn_case_nacional"] {
+        background: #1e40af !important;
+        border: 1px solid #1e40af !important;
+        color: white !important;
+        font-weight: 800 !important;
+        border-radius: 10px !important;
+        padding: 8px 18px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 with c2:
-    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">!</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{len(df_reportes)} requieren atencion</div></div></div><div style="font-size:1.6rem; font-weight:900">{len(df_reportes)}</div></div></div>""", unsafe_allow_html=True)
     if not df_reportes.empty:
         st.markdown(f"""
         <div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #ef4444; background:white !important; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:6px;">
-                    <div style="width:18px; height:18px; background:#ef4444; border-radius:5px; display:flex; align-items:center; justify-content:center; color:white; font-size:10px;">!</div>
+                    <div style="width:18px; height:18px; background:#ef4444; border-radius:5px; display:flex; align-items:center; justify-content:center; color:white; font-size:10px;">🚨</div>
                     <div style="font-weight:800; font-size:0.68rem; letter-spacing:0.4px; color:#991b1b;">VER SOLO SUCURSALES CON REPORTE ACTIVO</div>
                 </div>
                 <span class="badge badge-red" style="font-size:0.65rem; padding:3px 8px;">{len(df_reportes)} encontradas</span>
@@ -528,25 +541,67 @@ with c2:
             label_visibility="collapsed",
             placeholder="🔍 Selecciona sucursal con reporte activo..."
         )
-        # FIX: Solo aplicar el filtro de arriba cuando realmente cambio, no en cada rerun
-        last_filtro = st.session_state.get('last_filtro_activo_sel', '-- Ver todas las sucursales --')
-        if sel_activo != last_filtro:
-            st.session_state['last_filtro_activo_sel'] = sel_activo
-            if sel_activo != "-- Ver todas las sucursales --":
-                info_sel = mapa_activos.get(sel_activo)
-                if info_sel:
+        if sel_activo != "-- Ver todas las sucursales --":
+            info_sel = mapa_activos.get(sel_activo)
+            if info_sel:
+                if st.session_state.get('estado_real') != info_sel['estado'] or st.session_state.get('sucursal_real') != info_sel['sucursal']:
                     st.session_state['estado_real'] = info_sel['estado']
                     st.session_state['sucursal_real'] = info_sel['sucursal']
-                    # Limpiar keys dinamicas para forzar reseteo
-                    for k in list(st.session_state.keys()):
-                        if k.startswith('sucursal_real_'):
-                            del st.session_state[k]
                     st.rerun()
-            else:
-                # Usuario selecciono "Ver todas" -> no forzar nada
-                pass
     else:
-        st.markdown('<div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #16a34a; background:white !important; border-radius:12px;"><div style="display:flex; align-items:center; gap:8px;"><div style="width:20px; height:20px; background:#16a34a; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;"></div><b style="color:#166534; font-size:0.75rem;">Sin reportes activos</b></div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #16a34a; background:white !important; border-radius:12px;"><div style="display:flex; align-items:center; gap:8px;"><div style="width:20px; height:20px; background:#16a34a; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">✅</div><b style="color:#166534; font-size:0.75rem;">Sin reportes activos</b></div></div>', unsafe_allow_html=True)
+
+# --- MODAL PDF TELEFONOS CASE NACIONAL ---
+if st.session_state.get('show_case_pdf'):
+    st.markdown('<div class="glass" style="border:2px solid #1e40af; padding:18px; margin-top:12px; background:white;">', unsafe_allow_html=True)
+    st.markdown("### 📞 Telefonos CASE NACIONAL - Soporte Empresarial 24H 365 días")
+    c_pdf1, c_pdf2 = st.columns([4,1])
+    with c_pdf2:
+        if st.button("✖️ Cerrar", use_container_width=True):
+            st.session_state['show_case_pdf'] = False
+            st.rerun()
+    # Intentar mostrar PDF si existe, si no, mostrar info directa sin mensajes de error
+    pdf_path = None
+    pdf_bytes = None
+    for p in ["CASE_a_donde_llamar.pdf", "CASE_Telefonos_NACIONAL.pdf", "/mnt/data/CASE_a_donde_llamar.pdf", "/mnt/data/CASE_Telefonos_NACIONAL.pdf"]:
+        try:
+            import os
+            if os.path.exists(p):
+                pdf_path = p
+                with open(p, "rb") as f:
+                    pdf_bytes = f.read()
+                break
+        except:
+            continue
+    if pdf_path and pdf_bytes:
+        try:
+            b64_pdf = base64.b64encode(pdf_bytes).decode()
+            pdf_display = f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="650" type="application/pdf"></iframe>'
+            st.markdown(pdf_display, unsafe_allow_html=True)
+            st.download_button("⬇️ Descargar PDF CASE", data=pdf_bytes, file_name="Telefonos_CASE_NACIONAL.pdf", mime="application/pdf", use_container_width=True)
+        except:
+            pass
+        st.markdown("---")
+    # Siempre mostrar la referencia de CASEs (esta es la info útil, sin error)
+    st.markdown("""
+    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:16px 20px;">
+        <div style="font-weight:900; color:#1e40af; margin-bottom:12px; font-size:1rem;">☎️ DIRECTORIO CASE NACIONAL - SOPORTE 24H 365 DÍAS</div>
+        <div style="display:grid; gap:10px;">
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>Red Noroeste (Telnor) - 800 025 9111</b><br><span style="font-size:0.85rem; color:#64748b;">Baja California - San Luis Rio Colorado, Son.</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Hermosillo - 800 627 3000</b><br><span style="font-size:0.85rem; color:#64748b;">Sonora - Sinaloa - Baja California Sur</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Chihuahua - 800 147 6500</b><br><span style="font-size:0.85rem; color:#64748b;">Chihuahua - Durango - Torreón, Coah.</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Monterrey - 800 832 2600</b><br><span style="font-size:0.85rem; color:#64748b;">Nuevo León - Tamaulipas - Coahuila - SLP - Zacatecas</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Guadalajara - 800 364 0500</b><br><span style="font-size:0.85rem; color:#64748b;">Jalisco - Aguascalientes - Colima - Nayarit - Zacatecas</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Querétaro - 800 404 0000</b><br><span style="font-size:0.85rem; color:#64748b;">Querétaro - Guanajuato - Michoacán - SLP</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #dc2626;"><b>CASE San Juan - 800 905 2200</b><br><span style="font-size:0.85rem; color:#64748b;">CDMX y zona metropolitana - Edo. de México - Morelos - Guerrero</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Puebla - 800 226 1500</b><br><span style="font-size:0.85rem; color:#64748b;">Puebla - Tlaxcala - Veracruz - Hidalgo - Edo. de México - Morelos - Guerrero</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Mérida - 800 201 1100</b><br><span style="font-size:0.85rem; color:#64748b;">Yucatán - Quintana Roo - Campeche - Tabasco - Chiapas - Oaxaca - Veracruz</span></div>
+        </div>
+        <div style="margin-top:14px; padding:10px; background:#1e40af; color:white; border-radius:8px; text-align:center; font-weight:800; font-size:0.85rem;">📧 SOPORTE EMPRESARIAL 24H LOS 365 DÍAS DEL AÑO</div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 
@@ -559,19 +614,15 @@ if 'estado_real' in st.session_state and st.session_state['estado_real'] in list
 if not es_modo_agregar:
     f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
     with f1:
-        st.markdown('<div class="filter-pill"><div class="filter-label"> Estado</div>', unsafe_allow_html=True)
-        if "estado_real" not in st.session_state:
-            st.session_state["estado_real"] = lista_estados[default_est_idx] if lista_estados else ""
-        estado_actual = st.selectbox("Estado", lista_estados, key="estado_real", label_visibility="collapsed")
+        st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
+        estado_actual = st.selectbox("Estado", lista_estados, index=default_est_idx, key="estado_real", label_visibility="collapsed")
         st.markdown('</div>', unsafe_allow_html=True)
     df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df
     lista_suc = sorted(df_estado[COL_SUC].dropna().unique()) if COL_SUC else []
     with f2:
         st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {estado_actual}</div>', unsafe_allow_html=True)
         idx_suc = lista_suc.index(default_suc) if default_suc and default_suc in lista_suc else 0
-        if "sucursal_real" not in st.session_state:
-            st.session_state["sucursal_real"] = lista_suc[idx_suc] if lista_suc else ""
-        sucursal_actual = st.selectbox("Sucursales", lista_suc, key="sucursal_real", label_visibility="collapsed")
+        sucursal_actual = st.selectbox("Sucursales", lista_suc, index=idx_suc, key="sucursal_real", label_visibility="collapsed")
         st.markdown('</div>', unsafe_allow_html=True)
     with f3:
         st.markdown('<div class="filter-pill"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
@@ -674,7 +725,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             rep_new = st.text_input("No. Reporte *", placeholder="45163", key="form_rep_final")
         with fc2:
             fec_new = st.date_input("Fecha Reporte", value=datetime.now().date(), max_value=datetime.now().date(), key="form_fec_final")
-        obs_new = st.text_area(" Observaciones / Falla reportada *", placeholder="Ej: falla, sin linea, ruido...", height=90, key="form_obs_final")
+        obs_new = st.text_area("📝 Observaciones / Falla reportada *", placeholder="Ej: falla, sin linea, ruido...", height=90, key="form_obs_final")
         st.markdown("---")
         c1f, c2f = st.columns([0.7, 1.3])
         with c1f:
@@ -718,7 +769,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             else:
                 nuevo = {"estado": est_new, "sucursal": suc_new, "tel": tel_final, "no_reporte": rep_new_clean, "fecha_reporte": fec_new.strftime("%d/%m/%Y"), "obs": obs_new}
                 st.session_state['batch_reportes'].append(nuevo)
-                st.success(f" Reporte {rep_new_clean} agregado - Total: {len(st.session_state['batch_reportes'])}")
+                st.success(f"✅ Reporte {rep_new_clean} agregado - Total: {len(st.session_state['batch_reportes'])}")
                 st.session_state['clear_after_add'] = True
                 st.rerun()
     if st.session_state.get('clear_after_add'):
@@ -838,7 +889,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
                         log_acceso(st.session_state['current_user'], f"Guardo lote PRUEBA {guardados} reportes - Reemplazo Hoja1 + Append Historial")
-                        st.success(f" {guardados} reportes guardados: Hoja1 REEMPLAZADA y HISTORIAL agregado - Cerrando sesion...")
+                        st.success(f"✅ {guardados} reportes guardados: Hoja1 REEMPLAZADA y HISTORIAL agregado - Cerrando sesion...")
                         st.session_state['batch_reportes'] = []
                         st.cache_data.clear()
                         st.balloons()
@@ -852,7 +903,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         for r in st.session_state['batch_reportes']:
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
-                        st.success(f" DEMO: {guardados} reportes guardados en memoria")
+                        st.success(f"✅ DEMO: {guardados} reportes guardados en memoria")
                         st.balloons()
                         time.sleep(1)
                         st.session_state['batch_reportes'] = []
@@ -864,7 +915,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-# --- DETALLE MULTI-REPORTE V8 ---
+# --- DETALLE CON FORMATO PRODUCCION + MULTI-REPORTE ---
 if not st.session_state.get('show_add_form', False):
     if 'estado_real' in st.session_state and 'sucursal_real' in st.session_state and COL_EST and COL_SUC:
         estado_sel = st.session_state['estado_real']
@@ -881,35 +932,101 @@ if not st.session_state.get('show_add_form', False):
                     reps_list = split_multi_val(rep_raw)
                     fecs_list = split_multi_val(fec_raw)
                     obs_list = split_multi_val(obs_raw)
-                    # DEBUG para PUEBLA
                     if not reps_list or not any(tiene_reporte(r) for r in reps_list):
-                        badge_html = '<span class="badge badge-ok">Sin reporte</span>'
-                        st.markdown(f"<div class='glass' style='padding:16px; border-left:5px solid #16a34a;'><b>{suc_sel}</b> - {estado_sel} | Sin reporte activo</div>", unsafe_allow_html=True)
+                        st.markdown(f"""
+                        <div class="glass" style="padding:20px; border-left:5px solid #16a34a; background: rgba(240,253,244,0.5) !important;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+                                <div style="display:flex; gap:14px; align-items:flex-start;">
+                                    <div style="width:42px; height:42px; background:#0f172a; color:white; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px;">🏢</div>
+                                    <div>
+                                        <div style="font-size:1.2rem; font-weight:900; color:#0f172a; letter-spacing:-0.5px;">{suc_sel}</div>
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                                            <span class="rep-box" style="background:#0f172a; color:white; border-color:#0f172a;">📍 {estado_sel}</span>
+                                            <span class="rep-box" style="background:#f0fdf4; color:#166534;">✅ Sin REP</span>
+                                            <span class="rep-box">📅 Fecha: N/A</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <span class="badge badge-ok">Sin reporte</span>
+                                </div>
+                            </div>
+                            <div style="margin-top:14px; padding:12px 14px; background:#f8fafc; border:1px solid #f1f5f9; border-radius:10px;">
+                                <div style="font-size:0.70rem; font-weight:800; color:#64748b; letter-spacing:0.6px; margin-bottom:4px;">📝 FALLA REPORTADA</div>
+                                <div style="color:#1e293b; font-size:0.92rem;">Sin observaciones</div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
                     else:
                         for idx_rep, rep in enumerate(reps_list):
                             fec = fecs_list[idx_rep] if idx_rep < len(fecs_list) else (fecs_list[0] if fecs_list else "")
                             obs = obs_list[idx_rep] if idx_rep < len(obs_list) else (obs_list[0] if obs_list else obs_raw)
-                            dias, txt_dias = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin fecha")
-                            if dias is None:
-                                badge_html = f'<span class="badge badge-warn">{txt_dias}</span>'
-                                border_color = "#f59e0b"
-                                border_bg = "rgba(254,249,195,0.5)"
-                            elif dias <= 2:
-                                badge_html = f'<span class="badge badge-warn">{dias} dias</span>'
-                                border_color = "#f59e0b"
-                                border_bg = "rgba(254,249,195,0.5)"
-                            elif dias <= 5:
-                                badge_html = f'<span class="badge badge-orange">{dias} dias</span>'
-                                border_color = "#f97316"
-                                border_bg = "rgba(255,237,213,0.5)"
+                            dias, txt_dias = dias_desde(fec) if tiene_reporte(rep) else (None, "Sin reporte")
+                            if not tiene_reporte(rep):
+                                badge_html = '<span class="badge badge-ok">Sin reporte</span>'
+                                border_color = "#16a34a"
+                                border_bg = "rgba(240,253,244,0.5)"
                             else:
-                                badge_html = f'<span class="badge badge-red">{txt_dias}</span>'
-                                border_color = "#ef4444"
-                                border_bg = "rgba(254,242,242,0.5)"
-                            st.markdown(f"<div class='glass' style='padding:14px; border-left:5px solid {border_color}; background: {border_bg} !important; margin-bottom:8px;'><div style='display:flex; justify-content:space-between;'><div><b>{suc_sel} - REPORTE {idx_rep+1}/{len(reps_list)}</b> | REP: {rep} | Fecha: {fec}</div><div>{badge_html}</div></div><div style='margin-top:8px; background:white; padding:8px; border-radius:6px; font-size:0.85rem;'><b>FALLA:</b> {obs[:300]}</div></div>", unsafe_allow_html=True)
-                            c1b, c2b = st.columns([3,1])
-                            with c2b:
-                                if st.button(f"CERRAR REPORTE {rep}", key=f"cerrar_{estado_sel}_{suc_sel}_{idx_rep}_{rep}", type="primary", use_container_width=True):
+                                if dias is None:
+                                    badge_html = f'<span class="badge badge-warn">{txt_dias}</span>'
+                                    border_color = "#f59e0b"
+                                    border_bg = "rgba(254,249,195,0.5)"
+                                elif dias <= 2:
+                                    badge_html = f'<span class="badge badge-warn">{dias} dias</span>'
+                                    border_color = "#f59e0b"
+                                    border_bg = "rgba(254,249,195,0.5)"
+                                elif dias <= 5:
+                                    badge_html = f'<span class="badge badge-orange">{dias} dias</span>'
+                                    border_color = "#f97316"
+                                    border_bg = "rgba(255,237,213,0.5)"
+                                else:
+                                    badge_html = f'<span class="badge badge-red">{txt_dias}</span>'
+                                    border_color = "#ef4444"
+                                    border_bg = "rgba(254,242,242,0.5)"
+                            rep_display = f'<span class="rep-box">🗂️ REP: {rep} ({idx_rep+1}/{len(reps_list)})</span>' if len(reps_list)>1 else f'<span class="rep-box">🗂️ REP: {rep}</span>'
+                            fecha_display = f'<span class="rep-box">📅 Fecha: {fec}</span>' if fec and fec.lower() not in ['nan','none',''] else '<span class="rep-box">📅 Fecha: N/A</span>'
+                            estado_display = f'<span class="rep-box" style="background:#0f172a; color:white; border-color:#0f172a;">📍 {estado_sel}</span>'
+                            st.markdown(f"""
+                            <div class="glass" style="padding:20px; border-left:5px solid {border_color}; background: {border_bg} !important; margin-bottom:12px;">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+                                    <div style="display:flex; gap:14px; align-items:flex-start;">
+                                        <div style="width:42px; height:42px; background:#0f172a; color:white; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px;">🏢</div>
+                                        <div>
+                                            <div style="font-size:1.2rem; font-weight:900; color:#0f172a; letter-spacing:-0.5px;">{suc_sel} - REPORTE {idx_rep+1}/{len(reps_list)}</div>
+                                            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                                                {estado_display}
+                                                {rep_display}
+                                                {fecha_display}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        {badge_html}
+                                    </div>
+                                </div>
+                                <div style="margin-top:14px; display:flex; gap:12px; align-items:stretch;">
+                                    <div style="flex:2; padding:12px 14px; background:#f8fafc; border:1px solid #f1f5f9; border-radius:10px;">
+                                        <div style="font-size:0.70rem; font-weight:800; color:#64748b; letter-spacing:0.6px; margin-bottom:4px;">📝 FALLA REPORTADA</div>
+                                        <div style="color:#1e293b; font-size:0.92rem;">{obs if obs and obs.lower()!='nan' else 'Sin observaciones'}</div>
+                                    </div>
+                                    <div style="flex:1; min-width:200px;">
+                                        <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:10px 12px; height:100%; display:flex; flex-direction:column; justify-content:center;">
+                                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                                                <div style="width:22px; height:22px; background:#ef4444; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">⚠️</div>
+                                                <div style="font-weight:800; font-size:0.75rem; color:#b91c1c;">REPORTE ACTIVO</div>
+                                            </div>
+                                            <div style="font-size:0.65rem; color:#7f1d1d; line-height:1.2;">REP: {rep} | {txt_dias}</div>
+                                            <div style="font-size:0.60rem; color:#991b1b; margin-top:4px;">Acción requerida para cierre</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            c_btn1, c_btn2 = st.columns([2.2, 0.8])
+                            with c_btn1:
+                                st.markdown("<div style='font-size:0.70rem; color:#64748b; padding-top:8px;'>💡 Al cerrar se limpiará solo este REPORTE de BDSUCURSALES. Se guardará log en HISTORIAL_REPORTES.</div>", unsafe_allow_html=True)
+                            with c_btn2:
+                                if st.button(f"✅ CERRAR REPORTE {rep}", key=f"btn_cerrar_{estado_sel}_{suc_sel}_{idx_rep}_{rep}", type="primary", use_container_width=True):
                                     st.session_state['delete_target'] = {"estado": estado_sel, "sucursal": suc_sel, "rep": rep, "fec": fec, "obs": obs, "tel": tel_raw, "indice": idx_rep}
                                     if not st.session_state.get('admin_auth'):
                                         st.session_state['show_delete_login'] = True
@@ -918,22 +1035,31 @@ if not st.session_state.get('show_add_form', False):
                                         st.session_state['show_delete_confirm'] = True
                                         st.session_state['show_delete_login'] = False
                                     st.rerun()
+                    st.markdown(f"<div style='margin-top:14px; margin-bottom:8px; font-weight:800; font-size:0.85rem;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros</div>", unsafe_allow_html=True)
                     if tels:
-                        st.markdown(f'<div style="margin-top:10px; font-weight:700;">Lineas Telmex ({len(tels)}) - {suc_sel}</div>', unsafe_allow_html=True)
-                        cols = st.columns(3)
+                        cols = st.columns(2)
                         for i, t in enumerate(tels):
-                            with cols[i%3]:
-                                st.markdown(f'<div style="background:white; border:1px solid #e2e8f0; padding:8px 12px; border-radius:10px; margin:4px 0; font-size:0.85rem;">{t}</div>', unsafe_allow_html=True)
+                            with cols[i % 2]:
+                                st.markdown(f"""
+                                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                    <div style="width:28px; height:28px; background:#fee2e2; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:14px;">📞</div>
+                                    <div>
+                                        <div style="font-size:0.65rem; font-weight:700; color:#64748b; letter-spacing:0.5px;">LINEA TELEFONICA</div>
+                                        <div style="font-weight:800; font-size:0.90rem; color:#0f172a;">{t}</div>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
 
 
 # --- MODAL LOGIN CERRAR REPORTE ---
+
 if st.session_state.get('show_delete_login') and not st.session_state.get('admin_auth'):
     st.markdown('<div class="glass" style="border:2px solid #dc2626; padding:24px; margin-top:16px; background:rgba(254,242,242,0.95) !important;">', unsafe_allow_html=True)
     st.markdown("### 🔒 Login para CERRAR REPORTE")
     target = st.session_state.get('delete_target', {})
     st.markdown(f"""
     <div style="background:#fef2f2; border:1px solid #fecaca; border-left:5px solid #dc2626; padding:12px 16px; border-radius:8px; margin:10px 0;">
-        <b style="color:#991b1b;"> ADVERTENCIA: Vas a CERRAR un reporte activo</b><br>
+        <b style="color:#991b1b;">⚠️ ADVERTENCIA: Vas a CERRAR un reporte activo</b><br>
         <b>Sucursal:</b> {target.get('sucursal','')} - {target.get('estado','')}<br>
         <b>No. REPORTE:</b> {target.get('rep','')}<br>
         <b>Fecha reporte:</b> {target.get('fec','')}<br>
@@ -967,7 +1093,7 @@ if st.session_state.get('show_delete_confirm'):
     target = st.session_state.get('delete_target', {})
     if target:
         st.markdown('<div class="glass" style="border:2px solid #ef4444; background:rgba(254,242,242,0.8) !important; padding:24px; margin-top:16px;">', unsafe_allow_html=True)
-        st.markdown(f"###  Confirmar Cierre de Reporte")
+        st.markdown(f"### ✅ Confirmar Cierre de Reporte")
         st.markdown(f"""
         <div style="background:white; border:1px solid #fecaca; border-left:5px solid #ef4444; padding:16px; border-radius:10px; margin:12px 0;">
             <b>Estado:</b> {target.get('estado')}<br>
@@ -976,7 +1102,7 @@ if st.session_state.get('show_delete_confirm'):
             <b>Fecha Reporte:</b> {target.get('fec')}<br>
             <b>Falla:</b> {target.get('obs','Sin observaciones')[:250]}<br><br>
             <div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;">
-                <b style="color:#b91c1c; font-size:0.90rem;"> ADVERTENCIA - ACCIÓN IRREVERSIBLE EN BDSUCURSALES2</b><br>
+                <b style="color:#b91c1c; font-size:0.90rem;">⚠️ ADVERTENCIA - ACCIÓN IRREVERSIBLE EN BDSUCURSALES2</b><br>
                 <div style="font-size:0.85rem; color:#7f1d1d; margin-top:6px;">
                 Esta acción <b>CERRARÁ el reporte</b> y hará lo siguiente:<br><br>
                 <b>En Google Sheets - Hoja BDSUCURSALES2:</b><br>
@@ -1001,7 +1127,7 @@ if st.session_state.get('show_delete_confirm'):
                 st.session_state['show_delete_login'] = False
                 st.rerun()
         with cc2:
-            if st.button(" Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", use_container_width=True):
+            if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", use_container_width=True):
                 try:
                     with st.spinner("Cerrando reporte en BDSUCURSALES2..."):
                         ok, msg = eliminar_reporte_hoja1(target['estado'], target['sucursal'], target['rep'], target.get('indice', None))
@@ -1009,7 +1135,7 @@ if st.session_state.get('show_delete_confirm'):
                             # Log en historial como cierre
                             log_eliminacion_historial(st.session_state.get('current_user','sistema'), target['estado'], target['sucursal'], target['rep'], target['fec'], target['obs'])
                             log_acceso(st.session_state.get('current_user','sistema'), f"CERRO REPORTE {target['rep']} {target['sucursal']} - {target['estado']} | Limpiado BDSUCURSALES2")
-                            st.success(f" Reporte {target['rep']} CERRADO correctamente. Campos limpiados en BDSUCURSALES2. Historial mantenido en HISTORIAL_REPORTES.")
+                            st.success(f"✅ Reporte {target['rep']} CERRADO correctamente. Campos limpiados en BDSUCURSALES2. Historial mantenido en HISTORIAL_REPORTES.")
                             st.balloons()
                             time.sleep(2)
                             st.session_state['show_delete_confirm'] = False

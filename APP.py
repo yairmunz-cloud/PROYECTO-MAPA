@@ -84,7 +84,7 @@ def cargar_datos(sheet_id_override=None):
     if df_privado is not None and not df_privado.empty and len(df_privado) > 5:
         return df_privado
     try:
-        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTySrWdMEtPBo7u4r6df8shaedXk8783RUOdOPsjLwIh1xz4nLHdAdaheYFMB1-CLI2XtzpzLa7SQXm/pub?output=csv"
+        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
         url = f"{base_url}&cb={int(time.time())}"
         df = pd.read_csv(url, dtype=str)
         df.columns = df.columns.str.strip().str.upper()

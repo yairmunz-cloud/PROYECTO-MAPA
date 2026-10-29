@@ -541,15 +541,25 @@ with c2:
             label_visibility="collapsed",
             placeholder="🔍 Selecciona sucursal con reporte activo..."
         )
-        if sel_activo != "-- Ver todas las sucursales --":
-            info_sel = mapa_activos.get(sel_activo)
-            if info_sel:
-                if st.session_state.get('estado_real') != info_sel['estado'] or st.session_state.get('sucursal_real') != info_sel['sucursal']:
+        # FIX: Solo aplicar el filtro de arriba cuando realmente cambio, no en cada rerun
+        last_filtro = st.session_state.get('last_filtro_activo_sel', '-- Ver todas las sucursales --')
+        if sel_activo != last_filtro:
+            st.session_state['last_filtro_activo_sel'] = sel_activo
+            if sel_activo != "-- Ver todas las sucursales --":
+                info_sel = mapa_activos.get(sel_activo)
+                if info_sel:
                     st.session_state['estado_real'] = info_sel['estado']
                     st.session_state['sucursal_real'] = info_sel['sucursal']
+                    # Limpiar keys dinamicas para forzar reseteo
+                    for k in list(st.session_state.keys()):
+                        if k.startswith('sucursal_real_'):
+                            del st.session_state[k]
                     st.rerun()
+            else:
+                # Usuario selecciono "Ver todas" -> no forzar nada
+                pass
     else:
-        st.markdown('<div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #16a34a; background:white !important; border-radius:12px;"><div style="display:flex; align-items:center; gap:8px;"><div style="width:20px; height:20px; background:#16a34a; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;">✅</div><b style="color:#166534; font-size:0.75rem;">Sin reportes activos</b></div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #16a34a; background:white !important; border-radius:12px;"><div style="display:flex; align-items:center; gap:8px;"><div style="width:20px; height:20px; background:#16a34a; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;"></div><b style="color:#166534; font-size:0.75rem;">Sin reportes activos</b></div></div>', unsafe_allow_html=True)
 
 # --- MODAL PDF TELEFONOS CASE NACIONAL ---
 if st.session_state.get('show_case_pdf'):
@@ -631,6 +641,18 @@ if not es_modo_agregar:
                 st.session_state["sucursal_real"] = lista_suc[0]
         sucursal_actual = st.selectbox("Sucursales", lista_suc, key="sucursal_real", label_visibility="collapsed")
         st.markdown('</div>', unsafe_allow_html=True)
+        # FIX: si el usuario cambia Estado/Sucursal manualmente abajo, liberar filtro de arriba
+        try:
+            filtro_actual = st.session_state.get('filtro_activo_sel', '-- Ver todas las sucursales --')
+            if filtro_actual != "-- Ver todas las sucursales --":
+                info_filtro = mapa_activos.get(filtro_actual)
+                if info_filtro:
+                    if estado_actual != info_filtro['estado'] or sucursal_actual != info_filtro['sucursal']:
+                        st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                        st.session_state['last_filtro_activo_sel'] = "-- Ver todas las sucursales --"
+        except:
+            pass
+
     with f3:
         st.markdown('<div class="filter-pill"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
         ca1, ca2 = st.columns(2)

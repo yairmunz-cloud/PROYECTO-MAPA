@@ -615,14 +615,21 @@ if not es_modo_agregar:
     f1, f2, f3 = st.columns([1.1, 1.8, 0.7], gap="medium")
     with f1:
         st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
-        estado_actual = st.selectbox("Estado", lista_estados, index=default_est_idx, key="estado_real", label_visibility="collapsed")
+        # FIX estado_real: no usar index + key
+        if "estado_real" not in st.session_state or st.session_state["estado_real"] not in lista_estados:
+            st.session_state["estado_real"] = lista_estados[default_est_idx] if lista_estados else ""
+        estado_actual = st.selectbox("Estado", lista_estados, key="estado_real", label_visibility="collapsed")
         st.markdown('</div>', unsafe_allow_html=True)
     df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df
     lista_suc = sorted(df_estado[COL_SUC].dropna().unique()) if COL_SUC else []
     with f2:
         st.markdown(f'<div class="filter-pill"><div class="filter-label">🏬 Sucursales • {len(lista_suc)} en {estado_actual}</div>', unsafe_allow_html=True)
-        idx_suc = lista_suc.index(default_suc) if default_suc and default_suc in lista_suc else 0
-        sucursal_actual = st.selectbox("Sucursales", lista_suc, index=idx_suc, key="sucursal_real", label_visibility="collapsed")
+        if "sucursal_real" not in st.session_state or st.session_state["sucursal_real"] not in lista_suc:
+            if default_suc and default_suc in lista_suc:
+                st.session_state["sucursal_real"] = default_suc
+            elif lista_suc:
+                st.session_state["sucursal_real"] = lista_suc[0]
+        sucursal_actual = st.selectbox("Sucursales", lista_suc, key="sucursal_real", label_visibility="collapsed")
         st.markdown('</div>', unsafe_allow_html=True)
     with f3:
         st.markdown('<div class="filter-pill"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)

@@ -209,29 +209,42 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             # Asignar colores según cantidad de estados
             domain_estados = por_edo['ESTADO'].tolist()
             range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
-            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=80, outerRadius=140, cornerRadius=4, stroke="#ffffff", strokeWidth=2).encode(
+            total_edo = int(por_edo['REPORTES'].sum())
+            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=75, outerRadius=130, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
                 theta=alt.Theta('REPORTES:Q', stack=True),
-                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
+                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right", titleFontSize=12, labelFontSize=11)),
                 tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
                 order=alt.Order('REPORTES:Q', sort='descending')
-            ).properties(height=420).configure_view(strokeWidth=0)
-            # Texto central con total
-            total_edo = por_edo['REPORTES'].sum()
-            chart3_center = alt.Chart(pd.DataFrame({'text': [f"{total_edo}"]})).mark_text(fontSize=22, fontWeight=700, color="#0f172a", dy=-5).encode(text='text:N')
-            chart3_center2 = alt.Chart(pd.DataFrame({'text': ['total']})).mark_text(fontSize=11, color="#64748b", dy=12).encode(text='text:N')
-            st.altair_chart(chart3 + chart3_center + chart3_center2, use_container_width=True)
+            ).properties(height=420, title=alt.TitleParams(text=f"Fallas por Estado - Total: {total_edo}", fontSize=13, color="#334155"))
+            st.altair_chart(chart3, use_container_width=True)
     
     with c4:
-        # Contexto de filtros seleccionados
+        # Helper mes numero -> letra
+        def mes_a_letra(m):
+            mapa = {'1':'Enero','2':'Febrero','3':'Marzo','4':'Abril','5':'Mayo','6':'Junio','7':'Julio','8':'Agosto','9':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre',
+                    1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre',
+                    '01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre'}
+            try:
+                return mapa.get(str(m).strip().lstrip('0') if str(m).strip().lstrip('0') else str(m).strip(), mapa.get(int(str(m).strip()), str(m)))
+            except:
+                return str(m)
+        
+        # Contexto de filtros seleccionados con mes en letra
         contexto_mes = ""
+        contexto_mes_largo = ""
         if 'sel_mes' in locals() and sel_mes != "Todos":
-            contexto_mes += f" Mes: {sel_mes}"
+            mes_letra = mes_a_letra(sel_mes)
+            contexto_mes += f" Mes: {mes_letra}"
+            contexto_mes_largo += f" Mes: {mes_letra}"
         if 'sel_anio' in locals() and sel_anio != "Todos":
             contexto_mes += f" Año: {sel_anio}"
+            contexto_mes_largo += f" Año: {sel_anio}"
         if 'sel_estado' in locals() and sel_estado != "Todos":
             contexto_mes += f" Estado: {sel_estado}"
+            contexto_mes_largo += f" Estado: {sel_estado}"
         if not contexto_mes:
             contexto_mes = " Todos los meses/años"
+            contexto_mes_largo = " Todos los meses/años"
         
         st.subheader("📊 Reportes por Día / Hora")
         st.caption(f"Contexto actual:{contexto_mes} • Selecciona vista detallada")
@@ -240,7 +253,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             data = df_f['DIA'].value_counts().sort_index().reset_index()
             data.columns = ['DIA','REPORTES']
             # Título con mes/año
-            titulo_dia = f"Reportes por Día del Mes{contexto_mes}"
+            titulo_dia = f"Reportes por Día del Mes{contexto_mes_largo}"
             chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(
                 x=alt.X('DIA:O', title=f"Día del mes ({contexto_mes.strip()})"),
                 y=alt.Y('REPORTES:Q', title='Reportes'),
@@ -252,7 +265,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
                 data = df_f['_HORA'].value_counts().sort_index().reset_index()
                 data.columns = ['HORA','REPORTES']
-                titulo_hora = f"Reportes por Hora del Día{contexto_mes}"
+                titulo_hora = f"Reportes por Hora del Día{contexto_mes_largo}"
                 chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(
                     x=alt.X('HORA:O', title='Hora del día'),
                     y=alt.Y('REPORTES:Q', title='Reportes'),
@@ -264,7 +277,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         elif vista == "MES" and 'MES' in df_f.columns:
             data = df_f['MES'].value_counts().sort_index().reset_index()
             data.columns = ['MES','REPORTES']
-            titulo_mes = f"Reportes por Mes{contexto_mes}"
+            titulo_mes = f"Reportes por Mes{contexto_mes_largo}"
             chart4 = alt.Chart(data).mark_bar(color='#64748b').encode(
                 x=alt.X('MES:O', title='Mes'),
                 y=alt.Y('REPORTES:Q', title='Reportes'),

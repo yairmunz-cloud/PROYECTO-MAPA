@@ -200,37 +200,76 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     c3, c4 = st.columns(2)
     with c3:
         st.subheader("🗺️ Fallas por Estado")
+        st.caption("Paleta azul-gris • Gráfico de anillo")
         if 'ESTADO' in df_f.columns:
             por_edo = df_f['ESTADO'].value_counts().reset_index()
             por_edo.columns = ['ESTADO','REPORTES']
-            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=50).encode(
-                theta='REPORTES:Q',
-                color='ESTADO:N',
-                tooltip=['ESTADO','REPORTES']
-            ).properties(height=400)
-            st.altair_chart(chart3, use_container_width=True)
+            # Paleta azul-gris degradado estetico
+            blues_grays = ['#0f172a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#e0e7ff','#cbd5e1','#94a3b8','#64748b','#475569','#334155']
+            # Asignar colores según cantidad de estados
+            domain_estados = por_edo['ESTADO'].tolist()
+            range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
+            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=80, outerRadius=140, cornerRadius=4, stroke="#ffffff", strokeWidth=2).encode(
+                theta=alt.Theta('REPORTES:Q', stack=True),
+                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
+                tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
+                order=alt.Order('REPORTES:Q', sort='descending')
+            ).properties(height=420).configure_view(strokeWidth=0)
+            # Texto central con total
+            total_edo = por_edo['REPORTES'].sum()
+            chart3_center = alt.Chart(pd.DataFrame({'text': [f"{total_edo}"]})).mark_text(fontSize=22, fontWeight=700, color="#0f172a", dy=-5).encode(text='text:N')
+            chart3_center2 = alt.Chart(pd.DataFrame({'text': ['total']})).mark_text(fontSize=11, color="#64748b", dy=12).encode(text='text:N')
+            st.altair_chart(chart3 + chart3_center + chart3_center2, use_container_width=True)
     
     with c4:
+        # Contexto de filtros seleccionados
+        contexto_mes = ""
+        if 'sel_mes' in locals() and sel_mes != "Todos":
+            contexto_mes += f" Mes: {sel_mes}"
+        if 'sel_anio' in locals() and sel_anio != "Todos":
+            contexto_mes += f" Año: {sel_anio}"
+        if 'sel_estado' in locals() and sel_estado != "Todos":
+            contexto_mes += f" Estado: {sel_estado}"
+        if not contexto_mes:
+            contexto_mes = " Todos los meses/años"
+        
         st.subheader("📊 Reportes por Día / Hora")
+        st.caption(f"Contexto actual:{contexto_mes} • Selecciona vista detallada")
         vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], key="vista_dashboard")
         if vista == "DIA del mes" and 'DIA' in df_f.columns:
             data = df_f['DIA'].value_counts().sort_index().reset_index()
             data.columns = ['DIA','REPORTES']
-            chart4 = alt.Chart(data).mark_bar().encode(x='DIA:O', y='REPORTES:Q')
+            # Título con mes/año
+            titulo_dia = f"Reportes por Día del Mes{contexto_mes}"
+            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(
+                x=alt.X('DIA:O', title=f"Día del mes ({contexto_mes.strip()})"),
+                y=alt.Y('REPORTES:Q', title='Reportes'),
+                tooltip=['DIA','REPORTES']
+            ).properties(title=titulo_dia, height=380)
             st.altair_chart(chart4, use_container_width=True)
         elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
             try:
                 df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
                 data = df_f['_HORA'].value_counts().sort_index().reset_index()
                 data.columns = ['HORA','REPORTES']
-                chart4 = alt.Chart(data).mark_bar(color='#f59e0b').encode(x='HORA:O', y='REPORTES:Q')
+                titulo_hora = f"Reportes por Hora del Día{contexto_mes}"
+                chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(
+                    x=alt.X('HORA:O', title='Hora del día'),
+                    y=alt.Y('REPORTES:Q', title='Reportes'),
+                    tooltip=['HORA','REPORTES']
+                ).properties(title=titulo_hora, height=380)
                 st.altair_chart(chart4, use_container_width=True)
             except Exception as e:
                 st.error(str(e))
         elif vista == "MES" and 'MES' in df_f.columns:
             data = df_f['MES'].value_counts().sort_index().reset_index()
             data.columns = ['MES','REPORTES']
-            chart4 = alt.Chart(data).mark_bar().encode(x='MES:O', y='REPORTES:Q')
+            titulo_mes = f"Reportes por Mes{contexto_mes}"
+            chart4 = alt.Chart(data).mark_bar(color='#64748b').encode(
+                x=alt.X('MES:O', title='Mes'),
+                y=alt.Y('REPORTES:Q', title='Reportes'),
+                tooltip=['MES','REPORTES']
+            ).properties(title=titulo_mes, height=380)
             st.altair_chart(chart4, use_container_width=True)
     
     # Tiempo de reparación

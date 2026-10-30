@@ -202,7 +202,20 @@ def dias_desde(fecha_str):
     if not fecha_str or str(fecha_str).lower() in ['nan','none','']: return None, "Sin fecha"
     dt = pd.to_datetime(fecha_str, errors='coerce', dayfirst=True)
     if pd.isna(dt): return None, "Fecha invalida"
-    diff = ((datetime.now(TZ_MX) if TZ_MX else datetime.now()) - dt).days
+    now_naive = (datetime.now(TZ_MX) if TZ_MX else datetime.now())
+    try:
+        now_naive = now_naive.replace(tzinfo=None)
+    except:
+        pass
+    try:
+        # Convertir dt a naive si es Timestamp o aware
+        if hasattr(dt, 'to_pydatetime'):
+            dt = dt.to_pydatetime()
+        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+            dt = dt.replace(tzinfo=None)
+    except:
+        pass
+    diff = (now_naive - dt).days
     if diff < 0:
         return diff, "Fecha futura"
     if diff == 0:

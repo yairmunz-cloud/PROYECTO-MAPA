@@ -29,45 +29,90 @@ import time
 import base64
 
 
-st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 
 
-# --- NAVEGACIÓN SUPERIOR - SIN SIDEBAR QUE ESTORBE (V38) ---
+# --- SIDEBAR MENU PRINCIPAL - ESTÉTICO V39 ---
 if 'pagina' not in st.session_state:
     st.session_state['pagina'] = "🏠 Reportes"
 
-# CSS para ocultar sidebar completamente y mostrar navegación arriba
-st.markdown("""
-<style>
-    [data-testid="stSidebar"] {display: none !important;}
-    [data-testid="stSidebarNav"] {display: none !important;}
-    [data-testid="collapsedControl"] {display: none !important;}
-    .stSidebar {display: none !important;}
-    /* Asegurar que el contenido principal use todo el ancho */
-    .main .block-container {padding-left: 2rem; padding-right: 2rem; max-width: 100%;}
-    /* Estilo navegación superior */
-    .top-nav {display: flex; gap: 10px; margin-bottom: 20px;}
-</style>
-""", unsafe_allow_html=True)
-
-# Navegación superior con 2 botones grandes
-st.markdown("### 🧭 Navegación")
-col1, col2, col3 = st.columns([1,1,4])
-with col1:
-    btn_reportes = st.button("🏠 Reportes", key="nav_reportes_v38", type="primary" if st.session_state['pagina']=="🏠 Reportes" else "secondary", width='stretch')
-    if btn_reportes:
+with st.sidebar:
+    # CSS estético para sidebar
+    st.markdown("""
+    <style>
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+            border-right: 1px solid #e2e8f0 !important;
+        }
+        [data-testid="stSidebar"] .stRadio > div {
+            gap: 8px !important;
+        }
+        [data-testid="stSidebar"] .stRadio label {
+            background: white !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            padding: 14px 16px !important;
+            margin: 6px 0 !important;
+            transition: all 0.2s ease !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+            font-weight: 500 !important;
+            font-size: 14px !important;
+            cursor: pointer !important;
+        }
+        [data-testid="stSidebar"] .stRadio label:hover {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 4px 12px rgba(59,130,246,0.15) !important;
+            transform: translateY(-1px) !important;
+        }
+        [data-testid="stSidebar"] .stRadio label[data-checked="true"] {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+            border-color: #2563eb !important;
+            color: white !important;
+            box-shadow: 0 4px 14px rgba(37,99,235,0.35) !important;
+        }
+        [data-testid="stSidebar"] .stRadio label[data-checked="true"] p {
+            color: white !important;
+            font-weight: 600 !important;
+        }
+        /* Título navegación */
+        .nav-title {
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            letter-spacing: 1.2px !important;
+            color: #64748b !important;
+            margin-bottom: 12px !important;
+            text-transform: uppercase !important;
+        }
+        /* Ocultar el círculo del radio original */
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label > div:first-child {
+            display: none !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="nav-title">🧭 Navegación</div>', unsafe_allow_html=True)
+    
+    # Iconos más estéticos: 🗺️ para reportes (mapa) y 📈 para dashboard (analítica)
+    pagina = st.radio(
+        "Ir a:", 
+        ["🗺️ Mapa Reportes", "📈 Analítica Dashboard"], 
+        index=0 if "Mapa" in st.session_state['pagina'] or "Reportes" in st.session_state['pagina'] else 1, 
+        key="menu_pagina_v39"
+    )
+    # Mapear a valores internos para compatibilidad
+    if "Mapa" in pagina:
         st.session_state['pagina'] = "🏠 Reportes"
-        st.rerun()
-with col2:
-    btn_dash = st.button("📊 Dashboard", key="nav_dashboard_v38", type="primary" if st.session_state['pagina']=="📊 Dashboard Analítica" else "secondary", width='stretch')
-    if btn_dash:
+    else:
         st.session_state['pagina'] = "📊 Dashboard Analítica"
-        st.rerun()
-with col3:
-    st.caption("V38 - Sin sidebar, navegación superior")
-
-pagina = st.session_state['pagina']
+    
+    st.markdown("---")
+    st.markdown("""
+    <div style="padding: 12px; background: white; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 10px;">
+        <div style="font-size: 11px; color: #94a3b8; font-weight: 600; margin-bottom: 6px;">💡 V39 ESTÉTICO</div>
+        <div style="font-size: 12px; color: #64748b;">Sidebar con diseño moderno y iconos estéticos</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- DASHBOARD ANALÍTICA ---
 # --- DASHBOARD ANALÍTICA ---

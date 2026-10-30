@@ -1341,7 +1341,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
 
 
 
-# --- DETALLE CON FORMATO PRODUCCION + MULTI-REPORTE + LINEAS CON FALLA ---
+# --- DETALLE CON FORMATO PRODUCCION + MULTI-REPORTE + LINEAS CON FALLA (FIX: telefonos solo 1 vez) ---
 if not st.session_state.get('show_add_form', False):
     if 'estado_real' in st.session_state and 'sucursal_real' in st.session_state and COL_EST and COL_SUC:
         estado_sel = st.session_state['estado_real']
@@ -1385,7 +1385,29 @@ if not st.session_state.get('show_add_form', False):
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
+                        # Telefonos solo 1 vez tambien para sin reporte
+                        if tels:
+                            st.markdown(f"<div style='margin-top:14px; margin-bottom:8px; font-weight:700; font-size:0.85rem; color:#334155;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros</div>", unsafe_allow_html=True)
+                            cols = st.columns(2)
+                            for i, t in enumerate(tels):
+                                with cols[i % 2]:
+                                    st.markdown(f"""
+                                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                        <div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px;">📞</div>
+                                        <div style="font-weight:600; font-size:0.9rem; color:#334155;">{t}</div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
                     else:
+                        # 1) Mostrar TODOS los reportes primero (sin telefonos)
+                        # Recolectar todas las lineas con falla de todos los reportes para highlight único
+                        todas_fallas_union = set()
+                        for tf in tel_falla_list:
+                            # tf puede ser "333-827-1396, 333-826-1965"
+                            for part in str(tf).split(','):
+                                p = part.strip()
+                                if p:
+                                    todas_fallas_union.add(p.strip())
+                        
                         for idx_rep, rep in enumerate(reps_list):
                             fec = fecs_list[idx_rep] if idx_rep < len(fecs_list) else (fecs_list[0] if fecs_list else "")
                             obs = obs_list[idx_rep] if idx_rep < len(obs_list) else (obs_list[0] if obs_list else obs_raw)
@@ -1466,35 +1488,31 @@ if not st.session_state.get('show_add_form', False):
                                         st.session_state['show_delete_confirm'] = True
                                         st.session_state['show_delete_login'] = False
                                     st.rerun()
-                            # Mostrar lineas telefonicas con highlight de falla para este reporte
-                            st.markdown(f"<div style='margin-top:10px; margin-bottom:8px; font-weight:800; font-size:0.85rem;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros | 🔴 En falla para este REP: {tel_falla_cur if tel_falla_cur else 'N/A'}</div>", unsafe_allow_html=True)
-                            if tels:
-                                cols = st.columns(2)
-                                for i, t in enumerate(tels):
-                                    is_falla = False
-                                    if tel_falla_cur and t.strip() in tel_falla_cur:
-                                        is_falla = True
-                                    with cols[i % 2]:
-                                        if is_falla:
-                                            st.markdown(f"""
-                                            <div style="background:#fef2f2; border:2px solid #ef4444; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 2px 6px rgba(239,68,68,0.15);">
-                                                <div style="width:28px; height:28px; background:#ef4444; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">🚨</div>
-                                                <div>
-                                                    <div style="font-size:0.65rem; font-weight:800; color:#b91c1c; letter-spacing:0.5px;">LINEA CON FALLA • REP {rep}</div>
-                                                    <div style="font-weight:900; font-size:0.95rem; color:#991b1b;">{t}</div>
-                                                </div>
+                        # 2) DESPUES DE TODOS LOS REPORTES, mostrar telefonos SOLO 1 VEZ con highlight de union
+                        if tels:
+                            resumen_fallas = ", ".join(sorted(todas_fallas_union)) if todas_fallas_union else "N/A"
+                            st.markdown(f"<div style='margin-top:18px; margin-bottom:10px; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; display:flex; justify-content:space-between; align-items:center;'><div style='font-weight:700; font-size:0.85rem; color:#334155;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros (mostradas 1 vez)</div><div style='font-size:0.75rem; color:#b91c1c; font-weight:600;'>🔴 En falla: {resumen_fallas}</div></div>", unsafe_allow_html=True)
+                            cols = st.columns(2)
+                            for i, t in enumerate(tels):
+                                is_falla = t.strip() in todas_fallas_union
+                                with cols[i % 2]:
+                                    if is_falla:
+                                        st.markdown(f"""
+                                        <div style="background:#fef2f2; border:2px solid #ef4444; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 2px 6px rgba(239,68,68,0.15);">
+                                            <div style="width:28px; height:28px; background:#ef4444; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">🚨</div>
+                                            <div>
+                                                <div style="font-size:0.65rem; font-weight:700; color:#b91c1c; letter-spacing:0.5px;">LINEA CON FALLA</div>
+                                                <div style="font-weight:700; font-size:0.95rem; color:#991b1b;">{t}</div>
                                             </div>
-                                            """, unsafe_allow_html=True)
-                                        else:
-                                            st.markdown(f"""
-                                            <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                                <div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:14px;">📞</div>
-                                                <div>
-                                                    <div style="font-size:0.65rem; font-weight:700; color:#64748b; letter-spacing:0.5px;">LINEA TELEFONICA</div>
-                                                    <div style="font-weight:800; font-size:0.90rem; color:#0f172a;">{t}</div>
-                                                </div>
-                                            </div>
-                                            """, unsafe_allow_html=True)
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                    else:
+                                        st.markdown(f"""
+                                        <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                            <div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px;">📞</div>
+                                            <div style="font-weight:600; font-size:0.9rem; color:#334155;">{t}</div>
+                                        </div>
+                                        """, unsafe_allow_html=True)
 
 
 # --- MODAL LOGIN CERRAR REPORTE ---

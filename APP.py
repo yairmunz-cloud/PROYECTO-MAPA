@@ -182,7 +182,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 y=alt.Y('SUCURSAL:N', sort='-x'),
                 tooltip=['SUCURSAL','REPORTES']
             ).properties(height=400)
-            st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(chart, width='stretch')
     
     with c2:
         st.subheader("📅 Reportes por Mes / Año")
@@ -195,7 +195,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 y='REPORTES:Q',
                 tooltip=['MES_ANO','REPORTES']
             ).properties(height=400)
-            st.altair_chart(chart2, use_container_width=True)
+            st.altair_chart(chart2, width='stretch')
     
     c3, c4 = st.columns(2)
     with c3:
@@ -216,7 +216,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
                 order=alt.Order('REPORTES:Q', sort='descending')
             ).properties(height=420, title=alt.TitleParams(text=f"Fallas por Estado - Total: {total_edo}", fontSize=13, color="#334155"))
-            st.altair_chart(chart3, use_container_width=True)
+            st.altair_chart(chart3, width='stretch')
     
     with c4:
         # Helper mes numero -> letra
@@ -259,7 +259,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 y=alt.Y('REPORTES:Q', title='Reportes'),
                 tooltip=['DIA','REPORTES']
             ).properties(title=titulo_dia, height=380)
-            st.altair_chart(chart4, use_container_width=True)
+            st.altair_chart(chart4, width='stretch')
         elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
             try:
                 df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
@@ -271,7 +271,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                     y=alt.Y('REPORTES:Q', title='Reportes'),
                     tooltip=['HORA','REPORTES']
                 ).properties(title=titulo_hora, height=380)
-                st.altair_chart(chart4, use_container_width=True)
+                st.altair_chart(chart4, width='stretch')
             except Exception as e:
                 st.error(str(e))
         elif vista == "MES" and 'MES' in df_f.columns:
@@ -283,7 +283,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 y=alt.Y('REPORTES:Q', title='Reportes'),
                 tooltip=['MES','REPORTES']
             ).properties(title=titulo_mes, height=380)
-            st.altair_chart(chart4, use_container_width=True)
+            st.altair_chart(chart4, width='stretch')
     
     # Tiempo de reparación
     st.markdown("---")
@@ -303,14 +303,14 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                     alt.X('_DIAS:Q', bin=alt.Bin(maxbins=20), title='Días para cierre'),
                     y='count()'
                 ).properties(title="Distribución tiempo de cierre")
-                st.altair_chart(chart5, use_container_width=True)
+                st.altair_chart(chart5, width='stretch')
                 
                 por_suc_tiempo = df_valid.groupby('SUCURSAL')['_DIAS'].mean().reset_index().sort_values('_DIAS', ascending=False).head(10)
                 chart6 = alt.Chart(por_suc_tiempo).mark_bar(color='#f97316').encode(
                     x='_DIAS:Q',
                     y=alt.Y('SUCURSAL:N', sort='-x')
                 ).properties(title="Tiempo promedio cierre por sucursal (Top 10 más lentas)")
-                st.altair_chart(chart6, use_container_width=True)
+                st.altair_chart(chart6, width='stretch')
     except Exception as e:
         st.warning(f"No se pudo calcular tiempo: {e}")
     
@@ -326,7 +326,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     
     col_btn1, col_btn2 = st.columns([1,3])
     with col_btn1:
-        if st.button("📋 Revisar Reportes Cerrados", key="btn_toggle_hist", type="primary", use_container_width=False):
+        if st.button("📋 Revisar Reportes Cerrados", key="btn_toggle_hist", type="primary", width='content'):
             st.session_state['show_historial_cerrados'] = not st.session_state['show_historial_cerrados']
     with col_btn2:
         if st.session_state['show_historial_cerrados']:
@@ -451,7 +451,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 st.download_button("📥 Descargar CSV", csv_hist, "historial_cerrados.csv", "text/csv", key="dl_hist_v2")
             with c_dl2:
                 with st.expander("🔍 Tabla interactiva completa"):
-                    st.dataframe(df_tabla, use_container_width=True, hide_index=True, height=300)
+                    st.dataframe(df_tabla, width='stretch', hide_index=True, height=300)
             
         except Exception as e:
             st.error(f"Error: {e}")
@@ -512,10 +512,10 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                         y=alt.Y('LINEA:N', sort='-x', title='LINEA'),
                         tooltip=['LINEA','FALLAS','SUCURSAL(ES)','ESTADO']
                     ).properties(height=450)
-                    st.altair_chart(chart_line, use_container_width=True)
+                    st.altair_chart(chart_line, width='stretch')
                 with c_line2:
                     st.markdown("**Detalle con sucursal:**")
-                    st.dataframe(df_lineas, use_container_width=True, hide_index=True)
+                    st.dataframe(df_lineas, width='stretch', hide_index=True)
                     csv_lineas = df_lineas.to_csv(index=False).encode('utf-8')
                     st.download_button("📥 Descargar líneas CSV", csv_lineas, "lineas_mas_fallas_con_sucursal.csv", "text/csv")
             else:
@@ -1080,7 +1080,7 @@ with c1:
         st.markdown(f"""<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div>""", unsafe_allow_html=True)
     # BOTON AZUL - TELEFONOS CASE NACIONAL (debajo del titulo)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-    if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="primary", use_container_width=False):
+    if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="primary", width='content'):
         st.session_state['show_case_pdf'] = True
     st.markdown("""
     <style>
@@ -1143,7 +1143,7 @@ if st.session_state.get('show_case_pdf'):
     st.markdown("### 📞 Telefonos CASE NACIONAL - Soporte Empresarial 24H 365 días")
     c_pdf1, c_pdf2 = st.columns([4,1])
     with c_pdf2:
-        if st.button("✖️ Cerrar", use_container_width=True):
+        if st.button("✖️ Cerrar", width='stretch'):
             st.session_state['show_case_pdf'] = False
             st.rerun()
     # Intentar mostrar PDF si existe, si no, mostrar info directa sin mensajes de error
@@ -1164,7 +1164,7 @@ if st.session_state.get('show_case_pdf'):
             b64_pdf = base64.b64encode(pdf_bytes).decode()
             pdf_display = f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="650" type="application/pdf"></iframe>'
             st.markdown(pdf_display, unsafe_allow_html=True)
-            st.download_button("⬇️ Descargar PDF CASE", data=pdf_bytes, file_name="Telefonos_CASE_NACIONAL.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button("⬇️ Descargar PDF CASE", data=pdf_bytes, file_name="Telefonos_CASE_NACIONAL.pdf", mime="application/pdf", width='stretch')
         except:
             pass
         st.markdown("---")
@@ -1233,11 +1233,11 @@ if not es_modo_agregar:
         st.markdown('<div class="filter-pill"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
         ca1, ca2 = st.columns(2)
         with ca1:
-            if st.button("🔄", use_container_width=True, help="Actualizar"):
+            if st.button("🔄", width='stretch', help="Actualizar"):
                 st.cache_data.clear()
                 st.rerun()
         with ca2:
-            if st.button("➕", use_container_width=True, help="Agregar reporte"):
+            if st.button("➕", width='stretch', help="Agregar reporte"):
                 st.session_state['show_login'] = True
                 st.session_state['show_add_form'] = False
                 st.rerun()
@@ -1260,7 +1260,7 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
     p = st.text_input("Contraseña", type="password", key="login_pwd")
     cl1, cl2 = st.columns(2)
     with cl1:
-        if st.button("Ingresar", type="primary", use_container_width=True):
+        if st.button("Ingresar", type="primary", width='stretch'):
             if check_login(u.lower().strip(), p):
                 st.session_state['admin_auth'] = True
                 st.session_state['current_user'] = u.lower().strip()
@@ -1271,7 +1271,7 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
             else:
                 st.error("Usuario o contraseña incorrectos")
     with cl2:
-        if st.button("Cancelar", use_container_width=True):
+        if st.button("Cancelar", width='stretch'):
             st.session_state['show_login'] = False
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
@@ -1334,9 +1334,9 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
         st.markdown("---")
         c1f, c2f = st.columns([0.7, 1.3])
         with c1f:
-            btn_close = st.form_submit_button("Cerrar formulario", use_container_width=True)
+            btn_close = st.form_submit_button("Cerrar formulario", width='stretch')
         with c2f:
-            btn_add = st.form_submit_button("➕ AGREGAR REPORTE A LA LISTA", type="primary", use_container_width=True)
+            btn_add = st.form_submit_button("➕ AGREGAR REPORTE A LA LISTA", type="primary", width='stretch')
         if btn_close:
             log_acceso(st.session_state['current_user'], "Cerro formulario y logout")
             st.session_state['admin_auth'] = False
@@ -1403,11 +1403,11 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
         st.markdown("---")
         c_save1, c_save2 = st.columns([0.5, 1.5])
         with c_save1:
-            if st.button("🗑 Limpiar lista", use_container_width=True):
+            if st.button("🗑 Limpiar lista", width='stretch'):
                 st.session_state['batch_reportes'] = []
                 st.rerun()
         with c_save2:
-            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS (PRUEBA REAL)", type="primary", use_container_width=True):
+            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS (PRUEBA REAL)", type="primary", width='stretch'):
                 try:
                     guardados = 0
                     if "gcp_service_account" in st.secrets:
@@ -1674,7 +1674,7 @@ if not st.session_state.get('show_add_form', False):
                             with c_btn1:
                                 st.markdown("<div style='font-size:0.70rem; color:#64748b; padding-top:8px;'>💡 Al cerrar se limpiará solo este REPORTE de BDSUCURSALES. Se guardará log en HISTORIAL_REPORTES.</div>", unsafe_allow_html=True)
                             with c_btn2:
-                                if st.button(f"✅ CERRAR REPORTE {rep}", key=f"btn_cerrar_{estado_sel}_{suc_sel}_{idx_rep}_{rep}", type="primary", use_container_width=True):
+                                if st.button(f"✅ CERRAR REPORTE {rep}", key=f"btn_cerrar_{estado_sel}_{suc_sel}_{idx_rep}_{rep}", type="primary", width='stretch'):
                                     st.session_state['delete_target'] = {"estado": estado_sel, "sucursal": suc_sel, "rep": rep, "fec": fec, "obs": obs, "tel": tel_raw, "indice": idx_rep}
                                     if not st.session_state.get('admin_auth'):
                                         st.session_state['show_delete_login'] = True
@@ -1731,12 +1731,12 @@ if st.session_state.get('show_delete_login') and not st.session_state.get('admin
     p_del = st.text_input("Contraseña", type="password", key="delete_login_pwd", placeholder="Ingresa tu contraseña")
     cd1, cd2 = st.columns(2)
     with cd1:
-        if st.button("❌ Cancelar", key="cancel_delete_login", use_container_width=True):
+        if st.button("❌ Cancelar", key="cancel_delete_login", width='stretch'):
             st.session_state['show_delete_login'] = False
             st.session_state['delete_target'] = None
             st.rerun()
     with cd2:
-        if st.button("🔐 Ingresar y Continuar", key="confirm_delete_login", type="primary", use_container_width=True):
+        if st.button("🔐 Ingresar y Continuar", key="confirm_delete_login", type="primary", width='stretch'):
             if check_login(u_del, p_del):
                 st.session_state['admin_auth'] = True
                 st.session_state['current_user'] = u_del
@@ -1781,13 +1781,13 @@ if st.session_state.get('show_delete_confirm'):
         """, unsafe_allow_html=True)
         cc1, cc2 = st.columns(2)
         with cc1:
-            if st.button("❌ No, Cancelar", key="cancel_delete_final", use_container_width=True):
+            if st.button("❌ No, Cancelar", key="cancel_delete_final", width='stretch'):
                 st.session_state['show_delete_confirm'] = False
                 st.session_state['delete_target'] = None
                 st.session_state['show_delete_login'] = False
                 st.rerun()
         with cc2:
-            if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", use_container_width=True):
+            if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", width='stretch'):
                 try:
                     with st.spinner("Cerrando reporte en BDSUCURSALES2..."):
                         ok, msg = eliminar_reporte_hoja1(target['estado'], target['sucursal'], target['rep'], target.get('indice', None))

@@ -49,50 +49,49 @@ with st.sidebar:
         st.session_state['pagina_prev'] = pagina
     st.session_state['pagina'] = pagina
     st.markdown("---")
-    st.caption("💡 El menú se oculta automáticamente al seleccionar")
 
-# Auto-cerrar sidebar con JS después de selección
+# Auto-cerrar sidebar - sin deprecation st.components.v1.html
 if st.session_state.get('auto_close_sidebar', False):
     st.session_state['auto_close_sidebar'] = False
-    import streamlit.components.v1 as components
-    components.html("""
-    <script>
-    setTimeout(() => {
-        const parentDoc = window.parent.document;
-        // Buscar botón de colapsar sidebar (varias versiones de Streamlit)
-        let collapseBtn = parentDoc.querySelector('[data-testid="stSidebarCollapseButton"]');
-        if (!collapseBtn) {
-            collapseBtn = parentDoc.querySelector('button[data-testid="stSidebarNav"]');
-        }
-        if (!collapseBtn) {
-            // Buscar por aria-label
-            const buttons = parentDoc.querySelectorAll('button');
-            for (let b of buttons) {
-                const label = b.getAttribute('aria-label') || '';
-                if (label.toLowerCase().includes('close sidebar') || label.toLowerCase().includes('collapse')) {
-                    collapseBtn = b;
-                    break;
-                }
-            }
-        }
-        if (collapseBtn) {
-            collapseBtn.click();
-        } else {
-            // Fallback: intentar con el botón de header
-            const headerBtns = parentDoc.querySelectorAll('[data-testid="stHeader"] button');
-            if (headerBtns.length > 0) {
-                // El primer botón suele ser el de sidebar en móvil
-                for (let hb of headerBtns) {
-                    if (hb.innerHTML.includes('sidebar') || hb.getAttribute('aria-label')) {
-                        hb.click();
-                        break;
+    # Usamos st.html en lugar de components.v1.html (deprecated después de 2026-06-01)
+    try:
+        st.html("""
+        <script>
+        function closeSidebar() {
+            try {
+                const parentDoc = window.parent.document;
+                let btns = parentDoc.querySelectorAll('button');
+                for (let b of btns) {
+                    let aria = (b.getAttribute('aria-label') || '').toLowerCase();
+                    let title = (b.getAttribute('title') || '').toLowerCase();
+                    let testid = (b.getAttribute('data-testid') || '').toLowerCase();
+                    if (aria.includes('close sidebar') || aria.includes('collapse') || title.includes('close sidebar') || testid.includes('sidebarcollapse')) {
+                        b.click();
+                        return true;
                     }
                 }
-            }
+                let sidebar = parentDoc.querySelector('[data-testid="stSidebar"]');
+                if (sidebar) {
+                    let header = parentDoc.querySelector('[data-testid="stHeader"]');
+                    if (header) {
+                        let headerBtns = header.querySelectorAll('button');
+                        if (headerBtns.length > 0) {
+                            headerBtns[0].click();
+                            return true;
+                        }
+                    }
+                }
+            } catch(e) {}
+            return false;
         }
-    }, 300);
-    </script>
-    """, height=0, width=0)
+        setTimeout(closeSidebar, 400);
+        setTimeout(closeSidebar, 800);
+        </script>
+        """)
+    except:
+        # Fallback para versiones viejas de Streamlit
+        import streamlit.components.v1 as components
+        st.html("<script>try{window.parent.document.querySelector('[data-testid=stSidebarCollapseButton]')?.click()}catch(e){}</script>", height=0, width=0)
 
 # --- DASHBOARD ANALÍTICA ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":

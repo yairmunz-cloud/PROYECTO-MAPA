@@ -332,13 +332,48 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         import traceback
         st.code(traceback.format_exc())
     
-    # Tabla resumen - hide index
+    # Tabla resumen - FIX: centrado + sin scroll horizontal
     st.markdown("---")
     st.subheader("📋 Resumen por Sucursal")
     if 'SUCURSAL' in df_f.columns:
         resumen = df_f.groupby(['ESTADO','SUCURSAL']).size().reset_index(name='TOTAL_REPORTES')
         resumen = resumen.sort_values('TOTAL_REPORTES', ascending=False)
-        st.dataframe(resumen, use_container_width=True, hide_index=True)
+        
+        # Configuración columnas: centrar TOTAL_REPORTES en medio
+        from streamlit import column_config
+        st.dataframe(
+            resumen,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "ESTADO": column_config.TextColumn("ESTADO", width="medium"),
+                "SUCURSAL": column_config.TextColumn("SUCURSAL", width="large"),
+                "TOTAL_REPORTES": column_config.NumberColumn(
+                    "TOTAL_REPORTES",
+                    help="Total de reportes",
+                    width="small",
+                    format="%d",
+                ),
+            }
+        )
+        
+        # Alternativa visual HTML sin scroll para ver todo centrado
+        html_table = """
+        <style>
+        .resumen-table { width:100%; border-collapse:collapse; font-family: sans-serif; font-size:14px; }
+        .resumen-table th { background:#f8fafc; color:#64748b; text-align:left; padding:10px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; }
+        .resumen-table td { padding:10px 12px; border-bottom:1px solid #f1f5f9; }
+        .resumen-table td:last-child { text-align:center; font-weight:700; color:#0f172a; background:#f8fafc; border-radius:6px; }
+        .resumen-table tr:hover { background:#f8fafc; }
+        </style>
+        <table class="resumen-table">
+        <tr><th style="width:25%">ESTADO</th><th style="width:50%">SUCURSAL</th><th style="width:25%; text-align:center;">TOTAL_REPORTES</th></tr>
+        """
+        for _, r in resumen.iterrows():
+            html_table += f"<tr><td>{r['ESTADO']}</td><td>{r['SUCURSAL']}</td><td style='text-align:center; font-weight:800;'>{int(r['TOTAL_REPORTES'])}</td></tr>"
+        html_table += "</table>"
+        st.markdown(html_table, unsafe_allow_html=True)
+        
         csv = resumen.to_csv(index=False).encode('utf-8')
         st.download_button("📥 Descargar reporte CSV", csv, "reporte_sucursales_mas_fallas.csv", "text/csv")
     

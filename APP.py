@@ -33,66 +33,43 @@ st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", l
 
 
 
-# --- SIDEBAR MENU PRINCIPAL ---
+# --- NAVEGACIÓN SUPERIOR - SIN SIDEBAR QUE ESTORBE (V38) ---
 if 'pagina' not in st.session_state:
     st.session_state['pagina'] = "🏠 Reportes"
 
-with st.sidebar:
-    st.markdown("### 📂 NAVEGACIÓN")
-    pagina = st.radio("Ir a:", ["🏠 Reportes", "📊 Dashboard Analítica"], index=0 if st.session_state['pagina']=="🏠 Reportes" else 1, key="menu_pagina")
-    # Auto-ocultar menú después de seleccionar opción (no estorbe)
-    if pagina != st.session_state.get('pagina_prev', pagina):
-        st.session_state['pagina_prev'] = pagina
-        # Marcar que se debe cerrar sidebar
-        st.session_state['auto_close_sidebar'] = True
-    if 'pagina_prev' not in st.session_state:
-        st.session_state['pagina_prev'] = pagina
-    st.session_state['pagina'] = pagina
-    st.markdown("---")
+# CSS para ocultar sidebar completamente y mostrar navegación arriba
+st.markdown("""
+<style>
+    [data-testid="stSidebar"] {display: none !important;}
+    [data-testid="stSidebarNav"] {display: none !important;}
+    [data-testid="collapsedControl"] {display: none !important;}
+    .stSidebar {display: none !important;}
+    /* Asegurar que el contenido principal use todo el ancho */
+    .main .block-container {padding-left: 2rem; padding-right: 2rem; max-width: 100%;}
+    /* Estilo navegación superior */
+    .top-nav {display: flex; gap: 10px; margin-bottom: 20px;}
+</style>
+""", unsafe_allow_html=True)
 
-# Auto-cerrar sidebar - sin deprecation st.components.v1.html
-if st.session_state.get('auto_close_sidebar', False):
-    st.session_state['auto_close_sidebar'] = False
-    # Usamos st.html en lugar de components.v1.html (deprecated después de 2026-06-01)
-    try:
-        st.html("""
-        <script>
-        function closeSidebar() {
-            try {
-                const parentDoc = window.parent.document;
-                let btns = parentDoc.querySelectorAll('button');
-                for (let b of btns) {
-                    let aria = (b.getAttribute('aria-label') || '').toLowerCase();
-                    let title = (b.getAttribute('title') || '').toLowerCase();
-                    let testid = (b.getAttribute('data-testid') || '').toLowerCase();
-                    if (aria.includes('close sidebar') || aria.includes('collapse') || title.includes('close sidebar') || testid.includes('sidebarcollapse')) {
-                        b.click();
-                        return true;
-                    }
-                }
-                let sidebar = parentDoc.querySelector('[data-testid="stSidebar"]');
-                if (sidebar) {
-                    let header = parentDoc.querySelector('[data-testid="stHeader"]');
-                    if (header) {
-                        let headerBtns = header.querySelectorAll('button');
-                        if (headerBtns.length > 0) {
-                            headerBtns[0].click();
-                            return true;
-                        }
-                    }
-                }
-            } catch(e) {}
-            return false;
-        }
-        setTimeout(closeSidebar, 400);
-        setTimeout(closeSidebar, 800);
-        </script>
-        """)
-    except:
-        # Fallback para versiones viejas de Streamlit
-        import streamlit.components.v1 as components
-        st.html("<script>try{window.parent.document.querySelector('[data-testid=stSidebarCollapseButton]')?.click()}catch(e){}</script>", height=0, width=0)
+# Navegación superior con 2 botones grandes
+st.markdown("### 🧭 Navegación")
+col1, col2, col3 = st.columns([1,1,4])
+with col1:
+    btn_reportes = st.button("🏠 Reportes", key="nav_reportes_v38", type="primary" if st.session_state['pagina']=="🏠 Reportes" else "secondary", width='stretch')
+    if btn_reportes:
+        st.session_state['pagina'] = "🏠 Reportes"
+        st.rerun()
+with col2:
+    btn_dash = st.button("📊 Dashboard", key="nav_dashboard_v38", type="primary" if st.session_state['pagina']=="📊 Dashboard Analítica" else "secondary", width='stretch')
+    if btn_dash:
+        st.session_state['pagina'] = "📊 Dashboard Analítica"
+        st.rerun()
+with col3:
+    st.caption("V38 - Sin sidebar, navegación superior")
 
+pagina = st.session_state['pagina']
+
+# --- DASHBOARD ANALÍTICA ---
 # --- DASHBOARD ANALÍTICA ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt

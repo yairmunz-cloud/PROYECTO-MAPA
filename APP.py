@@ -315,7 +315,7 @@ def log_acceso(usuario, accion="Login"):
         pass
 
 def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, tel="", observaciones=""):
-    now = datetime.now()
+    now = now_mx()
     fecha_reg = now.strftime("%d/%m/%Y")
     hora_reg = now.strftime("%H:%M:%S")
     mes = now.strftime("%m")
@@ -342,7 +342,7 @@ def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, 
 
 def log_eliminacion_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, observaciones=""):
     # Registra la eliminacion en HISTORIAL_REPORTES como evento ELIMINADO, pero mantiene historial
-    now = datetime.now()
+    now = now_mx()
     fecha_reg = now.strftime("%d/%m/%Y")
     hora_reg = now.strftime("%H:%M:%S")
     mes = now.strftime("%m")

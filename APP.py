@@ -29,20 +29,99 @@ import time
 import base64
 
 
-st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢")
+st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 
 
-# --- SIDEBAR MENU PRINCIPAL ---
+# --- SIDEBAR MENU PRINCIPAL - V42 GRIS ESTÉTICO FORZADO ---
 if 'pagina' not in st.session_state:
     st.session_state['pagina'] = "🏠 Reportes"
 
 with st.sidebar:
-    st.markdown("### 📂 NAVEGACIÓN")
-    pagina = st.radio("Ir a:", ["🏠 Reportes", "📊 Dashboard Analítica"], index=0 if st.session_state['pagina']=="🏠 Reportes" else 1, key="menu_pagina")
-    st.session_state['pagina'] = pagina
-    st.markdown("---")
+    st.markdown("""
+    <style>
+        section[data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+        }
+        section[data-testid="stSidebar"] input[type="radio"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
+            display: none !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] {
+            gap: 14px !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label {
+            background: #ffffff !important;
+            border: 1.5px solid #e2e8f0 !important;
+            border-radius: 14px !important;
+            padding: 18px 20px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+            transition: all 0.25s ease !important;
+            cursor: pointer !important;
+            min-height: 52px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label p {
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            color: #475569 !important;
+            line-height: 1.4 !important;
+            letter-spacing: 0.15px !important;
+            margin: 0 !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
+            background: #f8fafc !important;
+            border-color: #94a3b8 !important;
+            box-shadow: 0 6px 16px rgba(71,85,105,0.12) !important;
+            transform: translateY(-2px) !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked),
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+            border-color: #64748b !important;
+            box-shadow: 0 6px 20px rgba(71,85,105,0.20) !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p,
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] p {
+            color: #1e293b !important;
+            font-weight: 650 !important;
+            font-size: 16px !important;
+        }
+        .small-hint {
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+            color: #94a3b8 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.2px !important;
+            margin-bottom: 18px !important;
+            margin-left: 4px !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="small-hint">selecciona una opción</div>', unsafe_allow_html=True)
+    
+    pagina = st.radio(
+        "navegacion", 
+        ["🗺️ Mapa Reportes", "📈 Analítica Dashboard"], 
+        index=0 if "Mapa" in st.session_state['pagina'] or "Reportes" in st.session_state['pagina'] else 1, 
+        key="menu_pagina_v42",
+        label_visibility="collapsed"
+    )
+    if "Mapa" in pagina:
+        st.session_state['pagina'] = "🏠 Reportes"
+    else:
+        st.session_state['pagina'] = "📊 Dashboard Analítica"
 
+# --- DASHBOARD ANALÍTICA ---
+# --- DASHBOARD ANALÍTICA ---
+# --- DASHBOARD ANALÍTICA ---
 # --- DASHBOARD ANALÍTICA ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
@@ -182,7 +261,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 y=alt.Y('SUCURSAL:N', sort='-x'),
                 tooltip=['SUCURSAL','REPORTES']
             ).properties(height=400)
-            st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(chart, width='stretch')
     
     with c2:
         st.subheader("📅 Reportes por Mes / Año")
@@ -195,44 +274,113 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 y='REPORTES:Q',
                 tooltip=['MES_ANO','REPORTES']
             ).properties(height=400)
-            st.altair_chart(chart2, use_container_width=True)
+            st.altair_chart(chart2, width='stretch')
     
     c3, c4 = st.columns(2)
     with c3:
         st.subheader("🗺️ Fallas por Estado")
+        st.caption("Paleta azul-gris • Anillo")
         if 'ESTADO' in df_f.columns:
             por_edo = df_f['ESTADO'].value_counts().reset_index()
             por_edo.columns = ['ESTADO','REPORTES']
-            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=50).encode(
-                theta='REPORTES:Q',
-                color='ESTADO:N',
-                tooltip=['ESTADO','REPORTES']
-            ).properties(height=400)
-            st.altair_chart(chart3, use_container_width=True)
+            blues_grays = ['#0f172a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#e0e7ff','#cbd5e1','#94a3b8','#64748b','#475569','#334155']
+            domain_estados = por_edo['ESTADO'].tolist()
+            range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
+            total_edo = int(por_edo['REPORTES'].sum())
+            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=75, outerRadius=130, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
+                theta=alt.Theta('REPORTES:Q', stack=True),
+                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
+                tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
+                order=alt.Order('REPORTES:Q', sort='descending')
+            ).properties(height=420, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
+            st.altair_chart(chart3, width='stretch')
     
     with c4:
+        def mes_a_letra(m):
+            mapa = {'1':'Enero','2':'Febrero','3':'Marzo','4':'Abril','5':'Mayo','6':'Junio','7':'Julio','8':'Agosto','9':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre',
+                    1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre',
+                    '01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'}
+            try:
+                s = str(m).strip()
+                if not s:
+                    return s
+                key = s.lstrip('0')
+                if key == '':
+                    key = '0'
+                if key in mapa:
+                    return mapa[key]
+                try:
+                    return mapa[int(s)]
+                except:
+                    return mapa.get(s, s)
+            except:
+                return str(m)
+        
+        contexto_mes = ""
+        contexto_largo = ""
+        if 'sel_mes' in locals() and sel_mes != "Todos":
+            ml = mes_a_letra(sel_mes)
+            contexto_mes += f" Mes: {ml}"
+            contexto_largo += f" Mes: {ml}"
+        if 'sel_anio' in locals() and sel_anio != "Todos":
+            contexto_mes += f" Año: {sel_anio}"
+            contexto_largo += f" Año: {sel_anio}"
+        if 'sel_estado' in locals() and sel_estado != "Todos":
+            contexto_mes += f" Estado: {sel_estado}"
+            contexto_largo += f" Estado: {sel_estado}"
+        if not contexto_mes:
+            contexto_mes = " Todos los meses/años"
+            contexto_largo = " Todos los meses/años"
+        
         st.subheader("📊 Reportes por Día / Hora")
-        vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], key="vista_dashboard")
+        vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], index=2, key="vista_dashboard_final")
+        
         if vista == "DIA del mes" and 'DIA' in df_f.columns:
             data = df_f['DIA'].value_counts().sort_index().reset_index()
             data.columns = ['DIA','REPORTES']
-            chart4 = alt.Chart(data).mark_bar().encode(x='DIA:O', y='REPORTES:Q')
-            st.altair_chart(chart4, use_container_width=True)
+            contexto_display = contexto_largo.strip() if contexto_largo.strip() else "Todos los meses/años"
+            titulo_dia = f"Reportes por Día del Mes ({contexto_display})"
+            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(
+                x=alt.X('DIA:O', title=f"Día del mes ({contexto_display})"),
+                y=alt.Y('REPORTES:Q', title='Reportes'),
+                tooltip=[alt.Tooltip('DIA:O', title='Día del mes'), alt.Tooltip('REPORTES:Q', title='Reportes')]
+            ).properties(title=titulo_dia, height=380)
+            st.altair_chart(chart4, width='stretch')
         elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
             try:
                 df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
                 data = df_f['_HORA'].value_counts().sort_index().reset_index()
                 data.columns = ['HORA','REPORTES']
-                chart4 = alt.Chart(data).mark_bar(color='#f59e0b').encode(x='HORA:O', y='REPORTES:Q')
-                st.altair_chart(chart4, use_container_width=True)
+                contexto_display_hora = contexto_largo.strip() if contexto_largo.strip() else "Todos los meses/años"
+                titulo_hora = f"Reportes por Hora ({contexto_display_hora})"
+                chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(
+                    x=alt.X('HORA:O', title='Hora del día'),
+                    y=alt.Y('REPORTES:Q', title='Reportes'),
+                    tooltip=['HORA','REPORTES']
+                ).properties(title=titulo_hora, height=380)
+                st.altair_chart(chart4, width='stretch')
             except Exception as e:
                 st.error(str(e))
         elif vista == "MES" and 'MES' in df_f.columns:
             data = df_f['MES'].value_counts().sort_index().reset_index()
             data.columns = ['MES','REPORTES']
-            chart4 = alt.Chart(data).mark_bar().encode(x='MES:O', y='REPORTES:Q')
-            st.altair_chart(chart4, use_container_width=True)
+            data['MES_LETRA'] = data['MES'].apply(lambda x: mes_a_letra(x))
+            try:
+                data['MES_NUM'] = pd.to_numeric(data['MES'], errors='coerce')
+                data = data.sort_values('MES_NUM')
+            except:
+                pass
+            contexto_display_mes = contexto_largo.strip() if contexto_largo.strip() else "Todos los meses/años"
+            titulo_mes = f"Reportes por Mes ({contexto_display_mes})"
+            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(
+                x=alt.X('MES_LETRA:O', title='Mes', sort=None),
+                y=alt.Y('REPORTES:Q', title='Reportes'),
+                tooltip=[alt.Tooltip('MES_LETRA:N', title='Mes'), alt.Tooltip('REPORTES:Q', title='Reportes')]
+            ).properties(title=titulo_mes, height=380)
+            st.altair_chart(chart4, width='stretch')
     
+    # Tiempo de reparación
+    # Tiempo de reparación
     # Tiempo de reparación
     st.markdown("---")
     st.subheader("⏱️ Tiempo de reparación / Cierre")
@@ -251,18 +399,161 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                     alt.X('_DIAS:Q', bin=alt.Bin(maxbins=20), title='Días para cierre'),
                     y='count()'
                 ).properties(title="Distribución tiempo de cierre")
-                st.altair_chart(chart5, use_container_width=True)
+                st.altair_chart(chart5, width='stretch')
                 
                 por_suc_tiempo = df_valid.groupby('SUCURSAL')['_DIAS'].mean().reset_index().sort_values('_DIAS', ascending=False).head(10)
                 chart6 = alt.Chart(por_suc_tiempo).mark_bar(color='#f97316').encode(
                     x='_DIAS:Q',
                     y=alt.Y('SUCURSAL:N', sort='-x')
                 ).properties(title="Tiempo promedio cierre por sucursal (Top 10 más lentas)")
-                st.altair_chart(chart6, use_container_width=True)
+                st.altair_chart(chart6, width='stretch')
     except Exception as e:
         st.warning(f"No se pudo calcular tiempo: {e}")
     
-    # Gráfico LINEAS CON FALLA - FIX con sucursal + hide index
+
+    # --- HISTORIAL DE REPORTES CERRADOS - FIX: box mitad + boton desplegable ---
+    st.markdown("---")
+    st.subheader("📜 Historial de Reportes Cerrados")
+    st.caption("Consulta reportes cerrados: fecha, REP, tiempo reparación")
+    
+    # Inicializar estado
+    if 'show_historial_cerrados' not in st.session_state:
+        st.session_state['show_historial_cerrados'] = False
+    
+    col_btn1, col_btn2 = st.columns([1,3])
+    with col_btn1:
+        if st.button("📋 Revisar Reportes Cerrados", key="btn_toggle_hist", type="primary", width='content'):
+            st.session_state['show_historial_cerrados'] = not st.session_state['show_historial_cerrados']
+    with col_btn2:
+        if st.session_state['show_historial_cerrados']:
+            st.markdown("<span style='color:#64748b; font-size:13px;'>👁️ Mostrando historial (clic de nuevo para ocultar)</span>", unsafe_allow_html=True)
+    
+    if st.session_state['show_historial_cerrados']:
+        try:
+            df_hist_detalle = df_f.copy()
+            if 'FECHA_REGISTRO' in df_hist_detalle.columns and 'FECHA' in df_hist_detalle.columns:
+                df_hist_detalle['_FECHA_REG_DT'] = pd.to_datetime(df_hist_detalle['FECHA_REGISTRO'], dayfirst=True, errors='coerce')
+                df_hist_detalle['_FECHA_REP_DT'] = pd.to_datetime(df_hist_detalle['FECHA'], dayfirst=True, errors='coerce')
+                df_hist_detalle['DIAS_REPARACION'] = (df_hist_detalle['_FECHA_REG_DT'] - df_hist_detalle['_FECHA_REP_DT']).dt.days
+            else:
+                df_hist_detalle['DIAS_REPARACION'] = None
+            
+            c_h1, c_h2, c_h3 = st.columns([2,1,1])
+            with c_h1:
+                buscador = st.text_input("🔍 Buscar:", placeholder="PUEBLA, REP123, CORDOBA", key="busc_hist_v2", label_visibility="collapsed")
+            with c_h2:
+                estados_list = sorted(df_hist_detalle['ESTADO'].dropna().unique().tolist()) if 'ESTADO' in df_hist_detalle.columns else []
+                filtro_estado_hist = st.selectbox("Estado:", ["Todos"] + estados_list, key="filtro_estado_hist_v2", label_visibility="collapsed")
+            with c_h3:
+                orden_hist = st.selectbox("Orden:", ["Más reciente", "Más antiguo", "Más lento", "Más rápido"], key="orden_hist_v2", label_visibility="collapsed")
+            
+            df_mostrar = df_hist_detalle.copy()
+            if buscador:
+                busc = buscador.lower()
+                mask = pd.Series([False]*len(df_mostrar))
+                for col in ['SUCURSAL','REP','REPORTE','OBS','OBSERVACION','ESTADO']:
+                    if col in df_mostrar.columns:
+                        mask = mask | df_mostrar[col].astype(str).str.lower().str.contains(busc, na=False)
+                df_mostrar = df_mostrar[mask]
+            if filtro_estado_hist != "Todos" and 'ESTADO' in df_mostrar.columns:
+                df_mostrar = df_mostrar[df_mostrar['ESTADO']==filtro_estado_hist]
+            
+            if orden_hist == "Más reciente" and '_FECHA_REG_DT' in df_mostrar.columns:
+                df_mostrar = df_mostrar.sort_values('_FECHA_REG_DT', ascending=False)
+            elif orden_hist == "Más antiguo" and '_FECHA_REG_DT' in df_mostrar.columns:
+                df_mostrar = df_mostrar.sort_values('_FECHA_REG_DT', ascending=True)
+            elif orden_hist == "Más lento" and 'DIAS_REPARACION' in df_mostrar.columns:
+                df_mostrar = df_mostrar.sort_values('DIAS_REPARACION', ascending=False)
+            elif orden_hist == "Más rápido" and 'DIAS_REPARACION' in df_mostrar.columns:
+                df_mostrar = df_mostrar.sort_values('DIAS_REPARACION', ascending=True)
+            
+            cols_show = []
+            for cand in ['FECHA','FECHA_REGISTRO','REPORTE','REP','SUCURSAL','ESTADO','DIAS_REPARACION','OBS','OBSERVACION','LINEAS CON FALLA','USUARIO','HORA_REGISTRO']:
+                if cand in df_mostrar.columns:
+                    cols_show.append(cand)
+            if not cols_show:
+                cols_show = list(df_mostrar.columns[:8])
+            
+            df_tabla = df_mostrar[cols_show].copy()
+            df_tabla = df_tabla.rename(columns={
+                'FECHA': '📅 Reporte',
+                'FECHA_REGISTRO': '✅ Cierre',
+                'REP': '🗂️ REP',
+                'REPORTE': '🗂️ REP',
+                'SUCURSAL': '🏢 Sucursal',
+                'ESTADO': '📍 Estado',
+                'DIAS_REPARACION': '⏱️ Días',
+                'OBS': '📝 Falla',
+                'OBSERVACION': '📝 Falla',
+                'LINEAS CON FALLA': '📞 Líneas',
+                'USUARIO': '👤 Cerró',
+                'HORA_REGISTRO': '🕒 Hora'
+            })
+            
+            st.markdown(f"<div style='font-size:12px; color:#64748b; margin:4px 0;'>Mostrando {len(df_tabla)} reportes cerrados</div>", unsafe_allow_html=True)
+            
+            # BOX MITAD DE TAMAÑO: 300px alto vs 600px antes
+            html_hist = """
+            <style>
+            .hist-wrap { width:100%; background:white; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 1px 2px rgba(0,0,0,0.05); max-height:300px; overflow:auto; }
+            .hist-table { width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:12px; min-width:800px; }
+            .hist-table th { background:#0f172a; color:white; font-weight:600; font-size:10px; text-transform:uppercase; padding:8px 10px; text-align:left; position:sticky; top:0; z-index:2; white-space:nowrap; }
+            .hist-table td { padding:7px 10px; border-bottom:1px solid #f1f5f9; color:#334155; white-space:nowrap; max-width:250px; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
+            .hist-table tr:hover { background:#f8fafc; }
+            .badge-dias { background:#f1f5f9; border:1px solid #e2e8f0; padding:1px 8px; border-radius:99px; font-weight:600; display:inline-block; text-align:center; min-width:32px; font-size:11px; }
+            .badge-dias-rapido { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
+            .badge-dias-lento { background:#fef2f2; border-color:#fecaca; color:#b91c1c; }
+            .badge-dias-medio { background:#fef9c3; border-color:#fde68a; color:#854d0e; }
+            </style>
+            <div class="hist-wrap">
+            <table class="hist-table">
+            <thead><tr>
+            """
+            for col in df_tabla.columns:
+                align = "text-align:center;" if "Días" in col else ""
+                html_hist += f"<th style='{align}'>{col}</th>"
+            html_hist += "</tr></thead><tbody>"
+            
+            for _, r in df_tabla.head(100).iterrows():
+                html_hist += "<tr>"
+                for col in df_tabla.columns:
+                    val = r[col]
+                    if pd.isna(val):
+                        val = ""
+                    val_str = str(val)[:100]
+                    if "Días" in col:
+                        try:
+                            dias_val = int(float(str(val).replace('nan','0'))) if str(val).strip() not in ['','nan','None'] else 0
+                            if dias_val <= 2:
+                                cls = "badge-dias badge-dias-rapido"
+                            elif dias_val <= 5:
+                                cls = "badge-dias badge-dias-medio"
+                            else:
+                                cls = "badge-dias badge-dias-lento"
+                            html_hist += f"<td style='text-align:center;'><span class='{cls}'>{val_str}d</span></td>"
+                        except:
+                            html_hist += f"<td style='text-align:center;'>{val_str}</td>"
+                    else:
+                        html_hist += f"<td title='{val_str}'>{val_str}</td>"
+                html_hist += "</tr>"
+            html_hist += "</tbody></table></div>"
+            if len(df_tabla) > 100:
+                html_hist += f"<div style='padding:6px; font-size:11px; color:#64748b;'>Mostrando 100 de {len(df_tabla)} - Descarga CSV para ver todos</div>"
+            st.markdown(html_hist, unsafe_allow_html=True)
+            
+            c_dl1, c_dl2 = st.columns([1,2])
+            with c_dl1:
+                csv_hist = df_tabla.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Descargar CSV", csv_hist, "historial_cerrados.csv", "text/csv", key="dl_hist_v2")
+            with c_dl2:
+                with st.expander("🔍 Tabla interactiva completa"):
+                    st.dataframe(df_tabla, width='stretch', hide_index=True, height=300)
+            
+        except Exception as e:
+            st.error(f"Error: {e}")
+            import traceback
+            st.code(traceback.format_exc())
+        # Gráfico LINEAS CON FALLA - FIX con sucursal + hide index
     st.markdown("---")
     st.subheader("📞 Top Líneas Telefónicas con más fallas")
     try:
@@ -317,10 +608,10 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                         y=alt.Y('LINEA:N', sort='-x', title='LINEA'),
                         tooltip=['LINEA','FALLAS','SUCURSAL(ES)','ESTADO']
                     ).properties(height=450)
-                    st.altair_chart(chart_line, use_container_width=True)
+                    st.altair_chart(chart_line, width='stretch')
                 with c_line2:
                     st.markdown("**Detalle con sucursal:**")
-                    st.dataframe(df_lineas, use_container_width=True, hide_index=True)
+                    st.dataframe(df_lineas, width='stretch', hide_index=True)
                     csv_lineas = df_lineas.to_csv(index=False).encode('utf-8')
                     st.download_button("📥 Descargar líneas CSV", csv_lineas, "lineas_mas_fallas_con_sucursal.csv", "text/csv")
             else:
@@ -885,7 +1176,7 @@ with c1:
         st.markdown(f"""<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div>""", unsafe_allow_html=True)
     # BOTON AZUL - TELEFONOS CASE NACIONAL (debajo del titulo)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-    if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="primary", use_container_width=False):
+    if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="primary", width='content'):
         st.session_state['show_case_pdf'] = True
     st.markdown("""
     <style>
@@ -948,7 +1239,7 @@ if st.session_state.get('show_case_pdf'):
     st.markdown("### 📞 Telefonos CASE NACIONAL - Soporte Empresarial 24H 365 días")
     c_pdf1, c_pdf2 = st.columns([4,1])
     with c_pdf2:
-        if st.button("✖️ Cerrar", use_container_width=True):
+        if st.button("✖️ Cerrar", width='stretch'):
             st.session_state['show_case_pdf'] = False
             st.rerun()
     # Intentar mostrar PDF si existe, si no, mostrar info directa sin mensajes de error
@@ -969,7 +1260,7 @@ if st.session_state.get('show_case_pdf'):
             b64_pdf = base64.b64encode(pdf_bytes).decode()
             pdf_display = f'<iframe src="data:application/pdf;base64,{b64_pdf}" width="100%" height="650" type="application/pdf"></iframe>'
             st.markdown(pdf_display, unsafe_allow_html=True)
-            st.download_button("⬇️ Descargar PDF CASE", data=pdf_bytes, file_name="Telefonos_CASE_NACIONAL.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button("⬇️ Descargar PDF CASE", data=pdf_bytes, file_name="Telefonos_CASE_NACIONAL.pdf", mime="application/pdf", width='stretch')
         except:
             pass
         st.markdown("---")
@@ -1038,11 +1329,11 @@ if not es_modo_agregar:
         st.markdown('<div class="filter-pill"><div class="filter-label">⚡ Acciones</div>', unsafe_allow_html=True)
         ca1, ca2 = st.columns(2)
         with ca1:
-            if st.button("🔄", use_container_width=True, help="Actualizar"):
+            if st.button("🔄", width='stretch', help="Actualizar"):
                 st.cache_data.clear()
                 st.rerun()
         with ca2:
-            if st.button("➕", use_container_width=True, help="Agregar reporte"):
+            if st.button("➕", width='stretch', help="Agregar reporte"):
                 st.session_state['show_login'] = True
                 st.session_state['show_add_form'] = False
                 st.rerun()
@@ -1065,7 +1356,7 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
     p = st.text_input("Contraseña", type="password", key="login_pwd")
     cl1, cl2 = st.columns(2)
     with cl1:
-        if st.button("Ingresar", type="primary", use_container_width=True):
+        if st.button("Ingresar", type="primary", width='stretch'):
             if check_login(u.lower().strip(), p):
                 st.session_state['admin_auth'] = True
                 st.session_state['current_user'] = u.lower().strip()
@@ -1076,7 +1367,7 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
             else:
                 st.error("Usuario o contraseña incorrectos")
     with cl2:
-        if st.button("Cancelar", use_container_width=True):
+        if st.button("Cancelar", width='stretch'):
             st.session_state['show_login'] = False
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
@@ -1139,9 +1430,9 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
         st.markdown("---")
         c1f, c2f = st.columns([0.7, 1.3])
         with c1f:
-            btn_close = st.form_submit_button("Cerrar formulario", use_container_width=True)
+            btn_close = st.form_submit_button("Cerrar formulario", width='stretch')
         with c2f:
-            btn_add = st.form_submit_button("➕ AGREGAR REPORTE A LA LISTA", type="primary", use_container_width=True)
+            btn_add = st.form_submit_button("➕ AGREGAR REPORTE A LA LISTA", type="primary", width='stretch')
         if btn_close:
             log_acceso(st.session_state['current_user'], "Cerro formulario y logout")
             st.session_state['admin_auth'] = False
@@ -1208,11 +1499,11 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
         st.markdown("---")
         c_save1, c_save2 = st.columns([0.5, 1.5])
         with c_save1:
-            if st.button("🗑 Limpiar lista", use_container_width=True):
+            if st.button("🗑 Limpiar lista", width='stretch'):
                 st.session_state['batch_reportes'] = []
                 st.rerun()
         with c_save2:
-            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS (PRUEBA REAL)", type="primary", use_container_width=True):
+            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS (PRUEBA REAL)", type="primary", width='stretch'):
                 try:
                     guardados = 0
                     if "gcp_service_account" in st.secrets:
@@ -1341,7 +1632,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
 
 
 
-# --- DETALLE CON FORMATO PRODUCCION + MULTI-REPORTE + LINEAS CON FALLA ---
+# --- DETALLE CON FORMATO PRODUCCION + MULTI-REPORTE + LINEAS CON FALLA (FIX: telefonos solo 1 vez) ---
 if not st.session_state.get('show_add_form', False):
     if 'estado_real' in st.session_state and 'sucursal_real' in st.session_state and COL_EST and COL_SUC:
         estado_sel = st.session_state['estado_real']
@@ -1385,7 +1676,29 @@ if not st.session_state.get('show_add_form', False):
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
+                        # Telefonos solo 1 vez tambien para sin reporte
+                        if tels:
+                            st.markdown(f"<div style='margin-top:14px; margin-bottom:8px; font-weight:700; font-size:0.85rem; color:#334155;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros</div>", unsafe_allow_html=True)
+                            cols = st.columns(2)
+                            for i, t in enumerate(tels):
+                                with cols[i % 2]:
+                                    st.markdown(f"""
+                                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                        <div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px;">📞</div>
+                                        <div style="font-weight:600; font-size:0.9rem; color:#334155;">{t}</div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
                     else:
+                        # 1) Mostrar TODOS los reportes primero (sin telefonos)
+                        # Recolectar todas las lineas con falla de todos los reportes para highlight único
+                        todas_fallas_union = set()
+                        for tf in tel_falla_list:
+                            # tf puede ser "333-827-1396, 333-826-1965"
+                            for part in str(tf).split(','):
+                                p = part.strip()
+                                if p:
+                                    todas_fallas_union.add(p.strip())
+                        
                         for idx_rep, rep in enumerate(reps_list):
                             fec = fecs_list[idx_rep] if idx_rep < len(fecs_list) else (fecs_list[0] if fecs_list else "")
                             obs = obs_list[idx_rep] if idx_rep < len(obs_list) else (obs_list[0] if obs_list else obs_raw)
@@ -1457,7 +1770,7 @@ if not st.session_state.get('show_add_form', False):
                             with c_btn1:
                                 st.markdown("<div style='font-size:0.70rem; color:#64748b; padding-top:8px;'>💡 Al cerrar se limpiará solo este REPORTE de BDSUCURSALES. Se guardará log en HISTORIAL_REPORTES.</div>", unsafe_allow_html=True)
                             with c_btn2:
-                                if st.button(f"✅ CERRAR REPORTE {rep}", key=f"btn_cerrar_{estado_sel}_{suc_sel}_{idx_rep}_{rep}", type="primary", use_container_width=True):
+                                if st.button(f"✅ CERRAR REPORTE {rep}", key=f"btn_cerrar_{estado_sel}_{suc_sel}_{idx_rep}_{rep}", type="primary", width='stretch'):
                                     st.session_state['delete_target'] = {"estado": estado_sel, "sucursal": suc_sel, "rep": rep, "fec": fec, "obs": obs, "tel": tel_raw, "indice": idx_rep}
                                     if not st.session_state.get('admin_auth'):
                                         st.session_state['show_delete_login'] = True
@@ -1466,35 +1779,31 @@ if not st.session_state.get('show_add_form', False):
                                         st.session_state['show_delete_confirm'] = True
                                         st.session_state['show_delete_login'] = False
                                     st.rerun()
-                            # Mostrar lineas telefonicas con highlight de falla para este reporte
-                            st.markdown(f"<div style='margin-top:10px; margin-bottom:8px; font-weight:800; font-size:0.85rem;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros | 🔴 En falla para este REP: {tel_falla_cur if tel_falla_cur else 'N/A'}</div>", unsafe_allow_html=True)
-                            if tels:
-                                cols = st.columns(2)
-                                for i, t in enumerate(tels):
-                                    is_falla = False
-                                    if tel_falla_cur and t.strip() in tel_falla_cur:
-                                        is_falla = True
-                                    with cols[i % 2]:
-                                        if is_falla:
-                                            st.markdown(f"""
-                                            <div style="background:#fef2f2; border:2px solid #ef4444; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 2px 6px rgba(239,68,68,0.15);">
-                                                <div style="width:28px; height:28px; background:#ef4444; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">🚨</div>
-                                                <div>
-                                                    <div style="font-size:0.65rem; font-weight:800; color:#b91c1c; letter-spacing:0.5px;">LINEA CON FALLA • REP {rep}</div>
-                                                    <div style="font-weight:900; font-size:0.95rem; color:#991b1b;">{t}</div>
-                                                </div>
+                        # 2) DESPUES DE TODOS LOS REPORTES, mostrar telefonos SOLO 1 VEZ con highlight de union
+                        if tels:
+                            resumen_fallas = ", ".join(sorted(todas_fallas_union)) if todas_fallas_union else "N/A"
+                            st.markdown(f"<div style='margin-top:18px; margin-bottom:10px; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; display:flex; justify-content:space-between; align-items:center;'><div style='font-weight:700; font-size:0.85rem; color:#334155;'>☎️ LINEAS TELEFONICAS • {len(tels)} numeros (mostradas 1 vez)</div><div style='font-size:0.75rem; color:#b91c1c; font-weight:600;'>🔴 En falla: {resumen_fallas}</div></div>", unsafe_allow_html=True)
+                            cols = st.columns(2)
+                            for i, t in enumerate(tels):
+                                is_falla = t.strip() in todas_fallas_union
+                                with cols[i % 2]:
+                                    if is_falla:
+                                        st.markdown(f"""
+                                        <div style="background:#fef2f2; border:2px solid #ef4444; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 2px 6px rgba(239,68,68,0.15);">
+                                            <div style="width:28px; height:28px; background:#ef4444; border-radius:8px; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">🚨</div>
+                                            <div>
+                                                <div style="font-size:0.65rem; font-weight:700; color:#b91c1c; letter-spacing:0.5px;">LINEA CON FALLA</div>
+                                                <div style="font-weight:700; font-size:0.95rem; color:#991b1b;">{t}</div>
                                             </div>
-                                            """, unsafe_allow_html=True)
-                                        else:
-                                            st.markdown(f"""
-                                            <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                                <div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#64748b; font-size:14px;">📞</div>
-                                                <div>
-                                                    <div style="font-size:0.65rem; font-weight:700; color:#64748b; letter-spacing:0.5px;">LINEA TELEFONICA</div>
-                                                    <div style="font-weight:800; font-size:0.90rem; color:#0f172a;">{t}</div>
-                                                </div>
-                                            </div>
-                                            """, unsafe_allow_html=True)
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                    else:
+                                        st.markdown(f"""
+                                        <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                            <div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px;">📞</div>
+                                            <div style="font-weight:600; font-size:0.9rem; color:#334155;">{t}</div>
+                                        </div>
+                                        """, unsafe_allow_html=True)
 
 
 # --- MODAL LOGIN CERRAR REPORTE ---
@@ -1518,12 +1827,12 @@ if st.session_state.get('show_delete_login') and not st.session_state.get('admin
     p_del = st.text_input("Contraseña", type="password", key="delete_login_pwd", placeholder="Ingresa tu contraseña")
     cd1, cd2 = st.columns(2)
     with cd1:
-        if st.button("❌ Cancelar", key="cancel_delete_login", use_container_width=True):
+        if st.button("❌ Cancelar", key="cancel_delete_login", width='stretch'):
             st.session_state['show_delete_login'] = False
             st.session_state['delete_target'] = None
             st.rerun()
     with cd2:
-        if st.button("🔐 Ingresar y Continuar", key="confirm_delete_login", type="primary", use_container_width=True):
+        if st.button("🔐 Ingresar y Continuar", key="confirm_delete_login", type="primary", width='stretch'):
             if check_login(u_del, p_del):
                 st.session_state['admin_auth'] = True
                 st.session_state['current_user'] = u_del
@@ -1568,13 +1877,13 @@ if st.session_state.get('show_delete_confirm'):
         """, unsafe_allow_html=True)
         cc1, cc2 = st.columns(2)
         with cc1:
-            if st.button("❌ No, Cancelar", key="cancel_delete_final", use_container_width=True):
+            if st.button("❌ No, Cancelar", key="cancel_delete_final", width='stretch'):
                 st.session_state['show_delete_confirm'] = False
                 st.session_state['delete_target'] = None
                 st.session_state['show_delete_login'] = False
                 st.rerun()
         with cc2:
-            if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", use_container_width=True):
+            if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", width='stretch'):
                 try:
                     with st.spinner("Cerrando reporte en BDSUCURSALES2..."):
                         ok, msg = eliminar_reporte_hoja1(target['estado'], target['sucursal'], target['rep'], target.get('indice', None))

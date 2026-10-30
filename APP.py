@@ -31,6 +31,257 @@ import base64
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢")
 
+
+# --- SIDEBAR MENU PRINCIPAL ---
+if 'pagina' not in st.session_state:
+    st.session_state['pagina'] = "🏠 Reportes"
+
+with st.sidebar:
+    st.markdown("### 📂 NAVEGACIÓN")
+    pagina = st.radio("Ir a:", ["🏠 Reportes", "📊 Dashboard Analítica"], index=0 if st.session_state['pagina']=="🏠 Reportes" else 1, key="menu_pagina")
+    st.session_state['pagina'] = pagina
+    st.markdown("---")
+
+# --- DASHBOARD ANALÍTICA ---
+if st.session_state.get('pagina') == "📊 Dashboard Analítica":
+    import plotly.express as px
+    import plotly.graph_objects as go
+    
+    st.title("📊 Dashboard Analítica - Sucursales")
+    st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
+    
+    @st.cache_data(ttl=60)
+    def cargar_historial_dashboard():
+        df_hist = None
+        try:
+            if "gcp_service_account" in st.secrets:
+                import gspread
+                from google.oauth2.service_account import Credentials
+                creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets","https://www.googleapis.com/auth/drive"])
+                client = gspread.authorize(creds)
+                sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+                sh = client.open_by_key(sheet_id)
+                for name in ["HISTORIAL_REPORTES","BDSUCURSALES2","BDSUCURSALES"]:
+                    try:
+                        ws = sh.worksheet(name)
+                        vals = ws.get_all_values()
+                        if vals and len(vals)>1:
+                            headers = [h.strip().upper() for h in vals[0]]
+                            df_tmp = pd.DataFrame(vals[1:], columns=headers)
+                            # Si es BDSUCURSALES y tiene pocas columnas, no es historial, seguir buscando
+                            if len(headers) < 8:
+                                continue
+                            df_hist = df_tmp
+                            break
+                    except:
+                        continue
+        except Exception as e:
+            st.error(f"Error cargando historial: {e}")
+        return df_hist
+
+    df_hist = cargar_historial_dashboard()
+    
+    if df_hist is None or df_hist.empty:
+        st.warning("No se encontró HISTORIAL_REPORTES. Mostrando demo con datos de tu captura.")
+        st.stop()
+    
+    # Limpiar
+    # Columnas esperadas: FECHA_REGISTRO, HORA_REGISTRO, DIA, MES, ANO, USUARIO, ESTADO, SUCURSAL, NO. REPORTE, FECHA, etc
+    # Normalizar nombres
+    df_hist.columns = [c.strip().upper() for c in df_hist.columns]
+    
+    # KPIs
+    st.markdown("### 📌 KPIs Generales")
+    c1,c2,c3,c4 = st.columns(4)
+    with c1:
+        st.metric("📋 Total eventos", len(df_hist))
+    with c2:
+        top_suc = df_hist['SUCURSAL'].value_counts().index[0] if 'SUCURSAL' in df_hist.columns else 'N/A'
+        st.metric("🏆 Sucursal con más eventos", top_suc, f"{df_hist['SUCURSAL'].value_counts().iloc[0]} eventos" if 'SUCURSAL' in df_hist.columns else "")
+    with c3:
+        top_edo = df_hist['ESTADO'].value_counts().index[0] if 'ESTADO' in df_hist.columns else 'N/A'
+        st.metric("🗺️ Estado con más fallas", top_edo)
+    with c4:
+        usuarios = df_hist['USUARIO'].nunique() if 'USUARIO' in df_hist.columns else 0
+        st.metric("👥 Usuarios activos", usuarios)
+    
+    st.markdown("---")
+    
+    # Filtros
+    col_f1, col_f2, col_f3 = st.columns(3)
+    with col_f1:
+        anios = sorted(df_hist['ANO'].dropna().unique().tolist()) if 'ANO' in df_hist.columns else []
+        sel_anio = st.selectbox("Filtrar por AÑO:", ["Todos"] + anios)
+    with col_f2:
+        estados = sorted(df_hist['ESTADO'].dropna().unique().tolist()) if 'ESTADO' in df_hist.columns else []
+        sel_estado = st.selectbox("Filtrar por ESTADO:", ["Todos"] + estados)
+    with col_f3:
+        meses = sorted(df_hist['MES'].dropna().unique().tolist()) if 'MES' in df_hist.columns else []
+        sel_mes = st.selectbox("Filtrar por MES:", ["Todos"] + meses)
+    
+    df_f = df_hist.copy()
+    if sel_anio != "Todos" and 'ANO' in df_f.columns:
+        df_f = df_f[df_f['ANO']==sel_anio]
+    if sel_estado != "Todos" and 'ESTADO' in df_f.columns:
+        df_f = df_f[df_f['ESTADO']==sel_estado]
+    if sel_mes != "Todos" and 'MES' in df_f.columns:
+        df_f = df_f[df_f['MES']==sel_mes]
+    
+    # Gráficos fila 1
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("🏆 Top 10 Sucursales con más fallas")
+        if 'SUCURSAL' in df_f.columns:
+            top10 = df_f['SUCURSAL'].value_counts().head(10).reset_index()
+            top10.columns = ['SUCURSAL','REPORTES']
+            fig = px.bar(top10, x='REPORTES', y='SUCURSAL', orientation='h', color='REPORTES', color_continuous_scale='Reds', text='REPORTES')
+            fig.update_layout(height=420, yaxis={'categoryorder':'total ascending'})
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with c2:
+        st.subheader("📅 Reportes por Mes / Año")
+        if 'MES' in df_f.columns and 'ANO' in df_f.columns:
+            df_f['MES_ANO'] = df_f['ANO'].astype(str) + "-" + df_f['MES'].astype(str).str.zfill(2)
+            por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES')
+            por_mes = por_mes.sort_values('MES_ANO')
+            fig2 = px.line(por_mes, x='MES_ANO', y='REPORTES', markers=True, line_shape='spline')
+            fig2.update_layout(height=420)
+            st.plotly_chart(fig2, use_container_width=True)
+        elif 'FECHA_REGISTRO' in df_f.columns:
+            try:
+                df_f['_FECHA'] = pd.to_datetime(df_f['FECHA_REGISTRO'], dayfirst=True, errors='coerce')
+                df_f['_MES'] = df_f['_FECHA'].dt.to_period('M').astype(str)
+                por_mes = df_f.groupby('_MES').size().reset_index(name='REPORTES')
+                fig2 = px.line(por_mes, x='_MES', y='REPORTES', markers=True)
+                st.plotly_chart(fig2, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error: {e}")
+    
+    c3, c4 = st.columns(2)
+    with c3:
+        st.subheader("🗺️ Fallas por Estado")
+        if 'ESTADO' in df_f.columns:
+            por_edo = df_f['ESTADO'].value_counts().reset_index()
+            por_edo.columns = ['ESTADO','REPORTES']
+            fig3 = px.pie(por_edo, values='REPORTES', names='ESTADO', hole=0.4)
+            fig3.update_layout(height=400)
+            st.plotly_chart(fig3, use_container_width=True)
+    
+    with c4:
+        st.subheader("📊 Reportes por Semana / Día / Hora")
+        vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], key="vista_dashboard")
+        if vista == "DIA del mes" and 'DIA' in df_f.columns:
+            data = df_f['DIA'].value_counts().sort_index().reset_index()
+            data.columns = ['DIA','REPORTES']
+            fig4 = px.bar(data, x='DIA', y='REPORTES', color='REPORTES', color_continuous_scale='Blues')
+            st.plotly_chart(fig4, use_container_width=True)
+        elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
+            try:
+                df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
+                data = df_f['_HORA'].value_counts().sort_index().reset_index()
+                data.columns = ['HORA','REPORTES']
+                fig4 = px.bar(data, x='HORA', y='REPORTES', title="¿A qué hora se reportan más fallas?")
+                st.plotly_chart(fig4, use_container_width=True)
+            except Exception as e:
+                st.error(str(e))
+        elif vista == "MES" and 'MES' in df_f.columns:
+            data = df_f['MES'].value_counts().sort_index().reset_index()
+            data.columns = ['MES','REPORTES']
+            fig4 = px.bar(data, x='MES', y='REPORTES')
+            st.plotly_chart(fig4, use_container_width=True)
+    
+    # Tiempo de reparación
+    st.markdown("---")
+    st.subheader("⏱️ Tiempo de reparación / Cierre")
+    st.caption("Calculado como FECHA_REGISTRO (cierre) - FECHA_REPORTE (apertura) cuando ambos existen")
+    
+    try:
+        if 'FECHA_REGISTRO' in df_f.columns and 'FECHA' in df_f.columns:
+            df_f['_FECHA_REG'] = pd.to_datetime(df_f['FECHA_REGISTRO'], dayfirst=True, errors='coerce')
+            df_f['_FECHA_REP'] = pd.to_datetime(df_f['FECHA'], dayfirst=True, errors='coerce')
+            df_f['_DIAS'] = (df_f['_FECHA_REG'] - df_f['_FECHA_REP']).dt.days
+            df_valid = df_f[df_f['_DIAS'].notna() & (df_f['_DIAS']>=0)]
+            if not df_valid.empty:
+                col_a, col_b, col_c = st.columns(3)
+                col_a.metric("Promedio cierre", f"{df_valid['_DIAS'].mean():.1f} días")
+                col_b.metric("Más rápido", f"{df_valid['_DIAS'].min()} días")
+                col_c.metric("Más lento", f"{df_valid['_DIAS'].max()} días")
+                fig5 = px.histogram(df_valid, x='_DIAS', nbins=20, title="Distribución tiempo de cierre (días)")
+                st.plotly_chart(fig5, use_container_width=True)
+                
+                # Por sucursal
+                por_suc_tiempo = df_valid.groupby('SUCURSAL')['_DIAS'].mean().reset_index().sort_values('_DIAS', ascending=False).head(10)
+                fig6 = px.bar(por_suc_tiempo, x='_DIAS', y='SUCURSAL', orientation='h', title="Tiempo promedio cierre por sucursal (Top 10 más lentas)")
+                st.plotly_chart(fig6, use_container_width=True)
+            else:
+                st.info("No hay suficientes datos con FECHA_REGISTRO y FECHA para calcular tiempo.")
+    except Exception as e:
+        st.warning(f"No se pudo calcular tiempo: {e}")
+    
+    # Gráfico LINEAS CON FALLA
+    st.markdown("---")
+    st.subheader("📞 Top Líneas Telefónicas con más fallas")
+    st.caption("Basado en columna LINEAS CON FALLA / TEL de HISTORIAL_REPORTES y BDSUCURSALES")
+    try:
+        # Buscar columna de lineas
+        col_tel = None
+        for cand in ['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','TEL','REPOR','LINEA','TELMEX']:
+            if cand in df_f.columns:
+                col_tel = cand
+                break
+        if col_tel:
+            # Extraer todas las lineas (pueden venir como "333-827-1396, 333-826-1965 | 333-827-0269")
+            todas_lineas = []
+            for val in df_f[col_tel].dropna().astype(str):
+                if not val or val.lower() in ['nan','none','']:
+                    continue
+                # Split por | primero (multi-reporte)
+                partes_pipe = val.split('|')
+                for p in partes_pipe:
+                    # Split por coma
+                    partes_coma = p.split(',')
+                    for pc in partes_coma:
+                        num = pc.strip()
+                        if num and len(num)>=4:
+                            todas_lineas.append(num)
+            if todas_lineas:
+                import collections
+                counter = collections.Counter(todas_lineas)
+                top_lineas = counter.most_common(15)
+                df_lineas = pd.DataFrame(top_lineas, columns=['LINEA','FALLAS'])
+                c_line1, c_line2 = st.columns([2,1])
+                with c_line1:
+                    fig_line = px.bar(df_lineas.head(10), x='FALLAS', y='LINEA', orientation='h', color='FALLAS', color_continuous_scale='Reds', text='FALLAS')
+                    fig_line.update_layout(height=450, yaxis={'categoryorder':'total ascending'})
+                    st.plotly_chart(fig_line, use_container_width=True)
+                with c_line2:
+                    st.dataframe(df_lineas, use_container_width=True)
+                    csv_lineas = df_lineas.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Descargar líneas con más fallas CSV", csv_lineas, "lineas_mas_fallas.csv", "text/csv")
+            else:
+                st.info("No hay datos en LINEAS CON FALLA / TEL")
+        else:
+            st.info("No se encontró columna de líneas telefónicas (LINEAS CON FALLA / TEL)")
+    except Exception as e:
+        st.error(f"Error graficando líneas: {e}")
+    
+    # Tabla resumen
+    st.markdown("---")
+    st.subheader("📋 Resumen por Sucursal")
+    if 'SUCURSAL' in df_f.columns:
+        resumen = df_f.groupby(['ESTADO','SUCURSAL']).size().reset_index(name='TOTAL_REPORTES')
+        resumen = resumen.sort_values('TOTAL_REPORTES', ascending=False)
+        st.dataframe(resumen, use_container_width=True)
+        csv = resumen.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Descargar reporte CSV", csv, "reporte_sucursales_mas_fallas.csv", "text/csv")
+    
+    st.stop()
+
+# --- FIN DASHBOARD, CONTINUA CON REPORTES NORMALES ---
+if st.session_state.get('pagina') != "🏠 Reportes":
+    st.stop()
+
+
 # LOGO ATLAS - Incrustado directo base64 para Cloud
 B64_ATLAS_LOGO = """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"""
 b64_logo = B64_ATLAS_LOGO

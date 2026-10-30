@@ -113,20 +113,40 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     
     df_hist.columns = [c.strip().upper() for c in df_hist.columns]
     
-    # KPIs
+    # KPIs - FIX: sin truncation, sin usuarios activos, full width
     st.markdown("### 📌 KPIs Generales")
-    c1,c2,c3,c4 = st.columns(4)
-    with c1:
-        st.metric("📋 Total eventos", len(df_hist))
-    with c2:
-        top_suc = df_hist['SUCURSAL'].value_counts().index[0] if 'SUCURSAL' in df_hist.columns else 'N/A'
-        st.metric("🏆 Sucursal con más eventos", top_suc, f"{df_hist['SUCURSAL'].value_counts().iloc[0]} eventos" if 'SUCURSAL' in df_hist.columns else "")
-    with c3:
-        top_edo = df_hist['ESTADO'].value_counts().index[0] if 'ESTADO' in df_hist.columns else 'N/A'
-        st.metric("🗺️ Estado con más fallas", top_edo)
-    with c4:
-        usuarios = df_hist['USUARIO'].nunique() if 'USUARIO' in df_hist.columns else 0
-        st.metric("👥 Usuarios activos", usuarios)
+    total_ev = len(df_hist)
+    top_suc_count = df_hist['SUCURSAL'].value_counts()
+    top_suc = top_suc_count.index[0] if not top_suc_count.empty else 'N/A'
+    top_suc_num = int(top_suc_count.iloc[0]) if not top_suc_count.empty else 0
+    top_edo_count = df_hist['ESTADO'].value_counts() if 'ESTADO' in df_hist.columns else pd.Series()
+    top_edo = top_edo_count.index[0] if not top_edo_count.empty else 'N/A'
+    top_edo_num = int(top_edo_count.iloc[0]) if not top_edo_count.empty else 0
+    
+    k1, k2, k3 = st.columns([1,2,1])
+    with k1:
+        st.markdown(f"""
+        <div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:110px;">
+            <div style="font-size:13px; color:#64748b; font-weight:600;">📋 Total eventos</div>
+            <div style="font-size:32px; font-weight:800; color:#0f172a; margin-top:4px;">{total_ev}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with k2:
+        st.markdown(f"""
+        <div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #ef4444; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:110px;">
+            <div style="font-size:13px; color:#64748b; font-weight:600;">🏆 Sucursal con más eventos</div>
+            <div style="font-size:18px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word; line-height:1.2;">{top_suc}</div>
+            <div style="font-size:12px; color:#16a34a; background:#dcfce7; display:inline-block; padding:2px 8px; border-radius:99px; margin-top:4px;">↗ {top_suc_num} eventos</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with k3:
+        st.markdown(f"""
+        <div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #3b82f6; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:110px;">
+            <div style="font-size:13px; color:#64748b; font-weight:600;">🗺️ Estado con más fallas</div>
+            <div style="font-size:22px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word;">{top_edo}</div>
+            <div style="font-size:12px; color:#64748b; margin-top:4px;">{top_edo_num} eventos</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -242,56 +262,83 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     except Exception as e:
         st.warning(f"No se pudo calcular tiempo: {e}")
     
-    # Gráfico LINEAS CON FALLA
+    # Gráfico LINEAS CON FALLA - FIX con sucursal + hide index
     st.markdown("---")
     st.subheader("📞 Top Líneas Telefónicas con más fallas")
     try:
         col_tel = None
-        for cand in ['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','TEL','REPOR','LINEA','TELMEX']:
+        for cand in ['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','LINEAS','LINEA','TEL','REPOR','TELMEX']:
             if cand in df_f.columns:
                 col_tel = cand
                 break
+        if not col_tel:
+            # Buscar columna que contenga LINEA
+            for c in df_f.columns:
+                if 'LINEA' in c or 'TEL' in c:
+                    col_tel = c
+                    break
         if col_tel:
+            from collections import Counter, defaultdict
             todas_lineas = []
-            for val in df_f[col_tel].dropna().astype(str):
+            linea_to_suc = defaultdict(set)
+            linea_to_estado = defaultdict(set)
+            for idx, row in df_f.iterrows():
+                val = str(row.get(col_tel, '')).strip()
                 if not val or val.lower() in ['nan','none','']:
                     continue
+                suc = str(row.get('SUCURSAL','')).strip()
+                edo = str(row.get('ESTADO','')).strip()
                 partes_pipe = val.split('|')
                 for p in partes_pipe:
                     partes_coma = p.split(',')
                     for pc in partes_coma:
                         num = pc.strip()
-                        if num and len(num)>=4:
+                        if num and len(num)>=3:
                             todas_lineas.append(num)
+                            if suc:
+                                linea_to_suc[num].add(suc)
+                            if edo:
+                                linea_to_estado[num].add(edo)
             if todas_lineas:
-                import collections
-                counter = collections.Counter(todas_lineas)
-                top_lineas = counter.most_common(15)
-                df_lineas = pd.DataFrame(top_lineas, columns=['LINEA','FALLAS'])
-                c_line1, c_line2 = st.columns([2,1])
+                counter = Counter(todas_lineas)
+                top_lineas = counter.most_common(20)
+                # Construir DataFrame con sucursal y estado
+                data_rows = []
+                for linea, fallas in top_lineas:
+                    sucs = ", ".join(sorted(linea_to_suc.get(linea, []))[:3])
+                    edos = ", ".join(sorted(linea_to_estado.get(linea, []))[:2])
+                    data_rows.append({"LINEA": linea, "FALLAS": fallas, "SUCURSAL(ES)": sucs, "ESTADO": edos})
+                df_lineas = pd.DataFrame(data_rows)
+                c_line1, c_line2 = st.columns([1.5,1.5])
                 with c_line1:
-                    chart_line = alt.Chart(df_lineas.head(10)).mark_bar(color='#ef4444').encode(
+                    chart_df = df_lineas.head(10).copy()
+                    chart_line = alt.Chart(chart_df).mark_bar(color='#ef4444').encode(
                         x='FALLAS:Q',
-                        y=alt.Y('LINEA:N', sort='-x'),
-                        tooltip=['LINEA','FALLAS']
+                        y=alt.Y('LINEA:N', sort='-x', title='LINEA'),
+                        tooltip=['LINEA','FALLAS','SUCURSAL(ES)','ESTADO']
                     ).properties(height=450)
                     st.altair_chart(chart_line, use_container_width=True)
                 with c_line2:
-                    st.dataframe(df_lineas, use_container_width=True)
+                    st.markdown("**Detalle con sucursal:**")
+                    st.dataframe(df_lineas, use_container_width=True, hide_index=True)
                     csv_lineas = df_lineas.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Descargar líneas CSV", csv_lineas, "lineas_mas_fallas.csv", "text/csv")
+                    st.download_button("📥 Descargar líneas CSV", csv_lineas, "lineas_mas_fallas_con_sucursal.csv", "text/csv")
             else:
                 st.info("No hay datos en LINEAS CON FALLA / TEL")
+        else:
+            st.info(f"No se encontró columna de líneas. Columnas disponibles: {list(df_f.columns)[:20]}")
     except Exception as e:
         st.error(f"Error graficando líneas: {e}")
+        import traceback
+        st.code(traceback.format_exc())
     
-    # Tabla resumen
+    # Tabla resumen - hide index
     st.markdown("---")
     st.subheader("📋 Resumen por Sucursal")
     if 'SUCURSAL' in df_f.columns:
         resumen = df_f.groupby(['ESTADO','SUCURSAL']).size().reset_index(name='TOTAL_REPORTES')
         resumen = resumen.sort_values('TOTAL_REPORTES', ascending=False)
-        st.dataframe(resumen, use_container_width=True)
+        st.dataframe(resumen, use_container_width=True, hide_index=True)
         csv = resumen.to_csv(index=False).encode('utf-8')
         st.download_button("📥 Descargar reporte CSV", csv, "reporte_sucursales_mas_fallas.csv", "text/csv")
     

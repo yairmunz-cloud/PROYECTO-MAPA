@@ -200,64 +200,75 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     c3, c4 = st.columns(2)
     with c3:
         st.subheader("🗺️ Fallas por Estado")
-        st.caption("Paleta azul-gris • Gráfico de anillo")
+        st.caption("Paleta azul-gris • Anillo")
         if 'ESTADO' in df_f.columns:
             por_edo = df_f['ESTADO'].value_counts().reset_index()
             por_edo.columns = ['ESTADO','REPORTES']
-            # Paleta azul-gris degradado estetico
             blues_grays = ['#0f172a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#e0e7ff','#cbd5e1','#94a3b8','#64748b','#475569','#334155']
-            # Asignar colores según cantidad de estados
             domain_estados = por_edo['ESTADO'].tolist()
             range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
             total_edo = int(por_edo['REPORTES'].sum())
             chart3 = alt.Chart(por_edo).mark_arc(innerRadius=75, outerRadius=130, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
                 theta=alt.Theta('REPORTES:Q', stack=True),
-                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right", titleFontSize=12, labelFontSize=11)),
+                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
                 tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
                 order=alt.Order('REPORTES:Q', sort='descending')
-            ).properties(height=420, title=alt.TitleParams(text=f"Fallas por Estado - Total: {total_edo}", fontSize=13, color="#334155"))
+            ).properties(height=420, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
             st.altair_chart(chart3, width='stretch')
     
     with c4:
-        # Helper mes numero -> letra
         def mes_a_letra(m):
             mapa = {'1':'Enero','2':'Febrero','3':'Marzo','4':'Abril','5':'Mayo','6':'Junio','7':'Julio','8':'Agosto','9':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre',
                     1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre',
-                    '01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre'}
+                    '01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre',
+                    '1':'Enero','2':'Febrero','3':'Marzo','4':'Abril','5':'Mayo','6':'Junio','7':'Julio','8':'Agosto','9':'Septiembre'}
             try:
-                return mapa.get(str(m).strip().lstrip('0') if str(m).strip().lstrip('0') else str(m).strip(), mapa.get(int(str(m).strip()), str(m)))
+                s = str(m).strip()
+                if not s:
+                    return s
+                # quitar ceros a la izquierda pero mantener
+                key = s.lstrip('0')
+                if key == '':
+                    key = '0'
+                if key in mapa:
+                    return mapa[key]
+                # intentar int
+                try:
+                    return mapa[int(s)]
+                except:
+                    return mapa.get(s, s)
             except:
                 return str(m)
         
-        # Contexto de filtros seleccionados con mes en letra
         contexto_mes = ""
-        contexto_mes_largo = ""
+        contexto_largo = ""
         if 'sel_mes' in locals() and sel_mes != "Todos":
-            mes_letra = mes_a_letra(sel_mes)
-            contexto_mes += f" Mes: {mes_letra}"
-            contexto_mes_largo += f" Mes: {mes_letra}"
+            ml = mes_a_letra(sel_mes)
+            contexto_mes += f" Mes: {ml}"
+            contexto_largo += f" Mes: {ml}"
         if 'sel_anio' in locals() and sel_anio != "Todos":
             contexto_mes += f" Año: {sel_anio}"
-            contexto_mes_largo += f" Año: {sel_anio}"
+            contexto_largo += f" Año: {sel_anio}"
         if 'sel_estado' in locals() and sel_estado != "Todos":
             contexto_mes += f" Estado: {sel_estado}"
-            contexto_mes_largo += f" Estado: {sel_estado}"
+            contexto_largo += f" Estado: {sel_estado}"
         if not contexto_mes:
             contexto_mes = " Todos los meses/años"
-            contexto_mes_largo = " Todos los meses/años"
+            contexto_largo = " Todos los meses/años"
         
         st.subheader("📊 Reportes por Día / Hora")
-        st.caption(f"Contexto actual:{contexto_mes} • Selecciona vista detallada")
-        vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], key="vista_dashboard")
+        st.caption(f"Contexto:{contexto_mes} • Tip: Elige MES para ver meses con letra")
+        st.info("💡 Selecciona **MES** para ver Enero, Febrero... Octubre con letra. **DIA del mes** muestra días 1-31.")
+        vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], index=2, key="vista_dashboard_final")
+        
         if vista == "DIA del mes" and 'DIA' in df_f.columns:
             data = df_f['DIA'].value_counts().sort_index().reset_index()
             data.columns = ['DIA','REPORTES']
-            # Título con mes/año
-            titulo_dia = f"Reportes por Día del Mes{contexto_mes_largo}"
+            titulo_dia = f"Reportes por Día del Mes{contexto_largo}"
             chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(
-                x=alt.X('DIA:O', title=f"Día del mes ({contexto_mes.strip()})"),
+                x=alt.X('DIA:O', title=f"Día del mes ({contexto_largo.strip()})"),
                 y=alt.Y('REPORTES:Q', title='Reportes'),
-                tooltip=['DIA','REPORTES']
+                tooltip=[alt.Tooltip('DIA:O', title='Día'), alt.Tooltip('REPORTES:Q', title='Reportes')]
             ).properties(title=titulo_dia, height=380)
             st.altair_chart(chart4, width='stretch')
         elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
@@ -265,7 +276,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
                 data = df_f['_HORA'].value_counts().sort_index().reset_index()
                 data.columns = ['HORA','REPORTES']
-                titulo_hora = f"Reportes por Hora del Día{contexto_mes_largo}"
+                titulo_hora = f"Reportes por Hora{contexto_largo}"
                 chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(
                     x=alt.X('HORA:O', title='Hora del día'),
                     y=alt.Y('REPORTES:Q', title='Reportes'),
@@ -277,14 +288,22 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         elif vista == "MES" and 'MES' in df_f.columns:
             data = df_f['MES'].value_counts().sort_index().reset_index()
             data.columns = ['MES','REPORTES']
-            titulo_mes = f"Reportes por Mes{contexto_mes_largo}"
-            chart4 = alt.Chart(data).mark_bar(color='#64748b').encode(
-                x=alt.X('MES:O', title='Mes'),
+            # Convertir a letra
+            data['MES_LETRA'] = data['MES'].apply(lambda x: mes_a_letra(x))
+            try:
+                data['MES_NUM'] = pd.to_numeric(data['MES'], errors='coerce')
+                data = data.sort_values('MES_NUM')
+            except:
+                pass
+            titulo_mes = f"Reportes por Mes{contexto_largo}"
+            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(
+                x=alt.X('MES_LETRA:O', title='Mes', sort=None),
                 y=alt.Y('REPORTES:Q', title='Reportes'),
-                tooltip=['MES','REPORTES']
+                tooltip=[alt.Tooltip('MES_LETRA:N', title='Mes'), alt.Tooltip('REPORTES:Q', title='Reportes')]
             ).properties(title=titulo_mes, height=380)
             st.altair_chart(chart4, width='stretch')
     
+    # Tiempo de reparación
     # Tiempo de reparación
     st.markdown("---")
     st.subheader("⏱️ Tiempo de reparación / Cierre")

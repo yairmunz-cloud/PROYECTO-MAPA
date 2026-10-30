@@ -33,90 +33,93 @@ st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", l
 
 
 
-# --- SIDEBAR MENU PRINCIPAL - ESTÉTICO V40 LIMPIO ---
+# --- SIDEBAR MENU PRINCIPAL - V42 GRIS ESTÉTICO FORZADO ---
 if 'pagina' not in st.session_state:
     st.session_state['pagina'] = "🏠 Reportes"
 
 with st.sidebar:
-    # CSS estético GRIS sin azul feo - V41
     st.markdown("""
     <style>
-        [data-testid="stSidebar"] {
+        section[data-testid="stSidebar"] {
             background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
-            border-right: 1px solid #e2e8f0 !important;
         }
-        [data-testid="stSidebar"] .stRadio > div {
-            gap: 12px !important;
+        section[data-testid="stSidebar"] input[type="radio"] {
+            display: none !important;
+            visibility: hidden !important;
         }
-        [data-testid="stSidebar"] .stRadio label {
-            background: white !important;
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 14px !important;
-            padding: 16px 18px !important;
-            margin: 6px 0 !important;
-            transition: all 0.2s ease !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
-            font-weight: 500 !important;
-            font-size: 15.5px !important;
-            color: #475569 !important;
-            cursor: pointer !important;
-            letter-spacing: 0.2px !important;
-        }
-        [data-testid="stSidebar"] .stRadio label p {
-            font-size: 15.5px !important;
-            color: #475569 !important;
-            font-weight: 500 !important;
-            margin: 0 !important;
-        }
-        [data-testid="stSidebar"] .stRadio label:hover {
-            border-color: #94a3b8 !important;
-            background: #f8fafc !important;
-            box-shadow: 0 4px 12px rgba(71,85,105,0.12) !important;
-            transform: translateY(-1px) !important;
-        }
-        [data-testid="stSidebar"] .stRadio label[data-checked="true"] {
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
-            border-color: #94a3b8 !important;
-            border-width: 1.5px !important;
-            color: #1e293b !important;
-            box-shadow: 0 4px 14px rgba(71,85,105,0.18) !important;
-        }
-        [data-testid="stSidebar"] .stRadio label[data-checked="true"] p {
-            color: #1e293b !important;
-            font-weight: 600 !important;
-            font-size: 15.5px !important;
-        }
-        /* Ocultar el círculo del radio original */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label > div:first-child {
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
             display: none !important;
         }
-        /* Texto pequeño selecciona opción - gris estético */
+        section[data-testid="stSidebar"] div[role="radiogroup"] {
+            gap: 14px !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label {
+            background: #ffffff !important;
+            border: 1.5px solid #e2e8f0 !important;
+            border-radius: 14px !important;
+            padding: 18px 20px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+            transition: all 0.25s ease !important;
+            cursor: pointer !important;
+            min-height: 52px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label p {
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            color: #475569 !important;
+            line-height: 1.4 !important;
+            letter-spacing: 0.15px !important;
+            margin: 0 !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
+            background: #f8fafc !important;
+            border-color: #94a3b8 !important;
+            box-shadow: 0 6px 16px rgba(71,85,105,0.12) !important;
+            transform: translateY(-2px) !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked),
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+            border-color: #64748b !important;
+            box-shadow: 0 6px 20px rgba(71,85,105,0.20) !important;
+        }
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p,
+        section[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] p {
+            color: #1e293b !important;
+            font-weight: 650 !important;
+            font-size: 16px !important;
+        }
         .small-hint {
-            font-size: 12px !important;
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
             color: #94a3b8 !important;
-            margin-bottom: 14px !important;
-            letter-spacing: 0.4px !important;
-            font-weight: 400 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.2px !important;
+            margin-bottom: 18px !important;
+            margin-left: 4px !important;
         }
     </style>
     """, unsafe_allow_html=True)
     
     st.markdown('<div class="small-hint">selecciona una opción</div>', unsafe_allow_html=True)
     
-    # Iconos estéticos sin label "Ir a:"
     pagina = st.radio(
         "navegacion", 
         ["🗺️ Mapa Reportes", "📈 Analítica Dashboard"], 
         index=0 if "Mapa" in st.session_state['pagina'] or "Reportes" in st.session_state['pagina'] else 1, 
-        key="menu_pagina_v40",
+        key="menu_pagina_v42",
         label_visibility="collapsed"
     )
-    # Mapear a valores internos para compatibilidad
     if "Mapa" in pagina:
         st.session_state['pagina'] = "🏠 Reportes"
     else:
         st.session_state['pagina'] = "📊 Dashboard Analítica"
 
+# --- DASHBOARD ANALÍTICA ---
 # --- DASHBOARD ANALÍTICA ---
 # --- DASHBOARD ANALÍTICA ---
 # --- DASHBOARD ANALÍTICA ---

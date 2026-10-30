@@ -1,4 +1,9 @@
 import streamlit as st
+from zoneinfo import ZoneInfo
+try:
+    TZ_MX = ZoneInfo("America/Mexico_City")
+except:
+    TZ_MX = None
 import pandas as pd
 from datetime import datetime
 import re
@@ -197,7 +202,7 @@ def dias_desde(fecha_str):
     if not fecha_str or str(fecha_str).lower() in ['nan','none','']: return None, "Sin fecha"
     dt = pd.to_datetime(fecha_str, errors='coerce', dayfirst=True)
     if pd.isna(dt): return None, "Fecha invalida"
-    diff = (datetime.now() - dt).days
+    diff = ((datetime.now(TZ_MX) if TZ_MX else datetime.now()) - dt).days
     if diff < 0:
         return diff, "Fecha futura"
     if diff == 0:
@@ -258,7 +263,7 @@ def check_login(user, pwd):
         return USUARIOS.get(user) == pwd
 
 def log_acceso(usuario, accion="Login"):
-    now = datetime.now()
+    now = datetime.now(TZ_MX) if TZ_MX else datetime.now()
     fecha = now.strftime("%d/%m/%Y")
     hora = now.strftime("%H:%M:%S")
     try:
@@ -754,7 +759,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
         with fc1:
             rep_new = st.text_input("No. Reporte *", placeholder="45163", key="form_rep_final")
         with fc2:
-            fec_new = st.date_input("Fecha Reporte", value=datetime.now().date(), max_value=datetime.now().date(), key="form_fec_final")
+            fec_new = st.date_input("Fecha Reporte", value=(datetime.now(TZ_MX) if TZ_MX else datetime.now()).date(), max_value=(datetime.now(TZ_MX) if TZ_MX else datetime.now()).date(), key="form_fec_final")
         obs_new = st.text_area("📝 Observaciones / Falla reportada *", placeholder="Ej: falla, sin linea, ruido...", height=90, key="form_obs_final")
         st.markdown("---")
         c1f, c2f = st.columns([0.7, 1.3])
@@ -794,7 +799,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                 st.error("Selecciona al menos una linea")
             elif not obs_new:
                 st.error("Observaciones obligatoria")
-            elif fec_new > datetime.now().date():
+            elif fec_new > (datetime.now(TZ_MX) if TZ_MX else datetime.now()).date():
                 st.error("❌ Fecha futura no permitida")
             else:
                 nuevo = {"estado": est_new, "sucursal": suc_new, "tel": tel_final, "no_reporte": rep_new_clean, "fecha_reporte": fec_new.strftime("%d/%m/%Y"), "obs": obs_new}

@@ -220,19 +220,16 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         def mes_a_letra(m):
             mapa = {'1':'Enero','2':'Febrero','3':'Marzo','4':'Abril','5':'Mayo','6':'Junio','7':'Julio','8':'Agosto','9':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre',
                     1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre',
-                    '01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre',
-                    '1':'Enero','2':'Febrero','3':'Marzo','4':'Abril','5':'Mayo','6':'Junio','7':'Julio','8':'Agosto','9':'Septiembre'}
+                    '01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'}
             try:
                 s = str(m).strip()
                 if not s:
                     return s
-                # quitar ceros a la izquierda pero mantener
                 key = s.lstrip('0')
                 if key == '':
                     key = '0'
                 if key in mapa:
                     return mapa[key]
-                # intentar int
                 try:
                     return mapa[int(s)]
                 except:
@@ -257,18 +254,17 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             contexto_largo = " Todos los meses/años"
         
         st.subheader("📊 Reportes por Día / Hora")
-        st.caption(f"Contexto:{contexto_mes} • Tip: Elige MES para ver meses con letra")
-        st.info("💡 Selecciona **MES** para ver Enero, Febrero... Octubre con letra. **DIA del mes** muestra días 1-31.")
         vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], index=2, key="vista_dashboard_final")
         
         if vista == "DIA del mes" and 'DIA' in df_f.columns:
             data = df_f['DIA'].value_counts().sort_index().reset_index()
             data.columns = ['DIA','REPORTES']
-            titulo_dia = f"Reportes por Día del Mes{contexto_largo}"
+            contexto_display = contexto_largo.strip() if contexto_largo.strip() else "Todos los meses/años"
+            titulo_dia = f"Reportes por Día del Mes ({contexto_display})"
             chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(
-                x=alt.X('DIA:O', title=f"Día del mes ({contexto_largo.strip()})"),
+                x=alt.X('DIA:O', title=f"Día del mes ({contexto_display})"),
                 y=alt.Y('REPORTES:Q', title='Reportes'),
-                tooltip=[alt.Tooltip('DIA:O', title='Día'), alt.Tooltip('REPORTES:Q', title='Reportes')]
+                tooltip=[alt.Tooltip('DIA:O', title='Día del mes'), alt.Tooltip('REPORTES:Q', title='Reportes')]
             ).properties(title=titulo_dia, height=380)
             st.altair_chart(chart4, width='stretch')
         elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
@@ -276,7 +272,8 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
                 data = df_f['_HORA'].value_counts().sort_index().reset_index()
                 data.columns = ['HORA','REPORTES']
-                titulo_hora = f"Reportes por Hora{contexto_largo}"
+                contexto_display_hora = contexto_largo.strip() if contexto_largo.strip() else "Todos los meses/años"
+                titulo_hora = f"Reportes por Hora ({contexto_display_hora})"
                 chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(
                     x=alt.X('HORA:O', title='Hora del día'),
                     y=alt.Y('REPORTES:Q', title='Reportes'),
@@ -288,14 +285,14 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         elif vista == "MES" and 'MES' in df_f.columns:
             data = df_f['MES'].value_counts().sort_index().reset_index()
             data.columns = ['MES','REPORTES']
-            # Convertir a letra
             data['MES_LETRA'] = data['MES'].apply(lambda x: mes_a_letra(x))
             try:
                 data['MES_NUM'] = pd.to_numeric(data['MES'], errors='coerce')
                 data = data.sort_values('MES_NUM')
             except:
                 pass
-            titulo_mes = f"Reportes por Mes{contexto_largo}"
+            contexto_display_mes = contexto_largo.strip() if contexto_largo.strip() else "Todos los meses/años"
+            titulo_mes = f"Reportes por Mes ({contexto_display_mes})"
             chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(
                 x=alt.X('MES_LETRA:O', title='Mes', sort=None),
                 y=alt.Y('REPORTES:Q', title='Reportes'),
@@ -303,6 +300,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             ).properties(title=titulo_mes, height=380)
             st.altair_chart(chart4, width='stretch')
     
+    # Tiempo de reparación
     # Tiempo de reparación
     # Tiempo de reparación
     st.markdown("---")

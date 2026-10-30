@@ -29,7 +29,7 @@ import time
 import base64
 
 
-st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢")
+st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 
 
@@ -40,8 +40,59 @@ if 'pagina' not in st.session_state:
 with st.sidebar:
     st.markdown("### 📂 NAVEGACIÓN")
     pagina = st.radio("Ir a:", ["🏠 Reportes", "📊 Dashboard Analítica"], index=0 if st.session_state['pagina']=="🏠 Reportes" else 1, key="menu_pagina")
+    # Auto-ocultar menú después de seleccionar opción (no estorbe)
+    if pagina != st.session_state.get('pagina_prev', pagina):
+        st.session_state['pagina_prev'] = pagina
+        # Marcar que se debe cerrar sidebar
+        st.session_state['auto_close_sidebar'] = True
+    if 'pagina_prev' not in st.session_state:
+        st.session_state['pagina_prev'] = pagina
     st.session_state['pagina'] = pagina
     st.markdown("---")
+    st.caption("💡 El menú se oculta automáticamente al seleccionar")
+
+# Auto-cerrar sidebar con JS después de selección
+if st.session_state.get('auto_close_sidebar', False):
+    st.session_state['auto_close_sidebar'] = False
+    import streamlit.components.v1 as components
+    components.html("""
+    <script>
+    setTimeout(() => {
+        const parentDoc = window.parent.document;
+        // Buscar botón de colapsar sidebar (varias versiones de Streamlit)
+        let collapseBtn = parentDoc.querySelector('[data-testid="stSidebarCollapseButton"]');
+        if (!collapseBtn) {
+            collapseBtn = parentDoc.querySelector('button[data-testid="stSidebarNav"]');
+        }
+        if (!collapseBtn) {
+            // Buscar por aria-label
+            const buttons = parentDoc.querySelectorAll('button');
+            for (let b of buttons) {
+                const label = b.getAttribute('aria-label') || '';
+                if (label.toLowerCase().includes('close sidebar') || label.toLowerCase().includes('collapse')) {
+                    collapseBtn = b;
+                    break;
+                }
+            }
+        }
+        if (collapseBtn) {
+            collapseBtn.click();
+        } else {
+            // Fallback: intentar con el botón de header
+            const headerBtns = parentDoc.querySelectorAll('[data-testid="stHeader"] button');
+            if (headerBtns.length > 0) {
+                // El primer botón suele ser el de sidebar en móvil
+                for (let hb of headerBtns) {
+                    if (hb.innerHTML.includes('sidebar') || hb.getAttribute('aria-label')) {
+                        hb.click();
+                        break;
+                    }
+                }
+            }
+        }
+    }, 300);
+    </script>
+    """, height=0, width=0)
 
 # --- DASHBOARD ANALÍTICA ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":

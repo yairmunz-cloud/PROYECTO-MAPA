@@ -38,7 +38,7 @@ if 'pagina' not in st.session_state:
     st.session_state['pagina'] = "🏠 Reportes"
 
 with st.sidebar:
-    # CSS estético para sidebar LIMPIO sin cajas feas
+    # CSS estético GRIS sin azul feo - V41
     st.markdown("""
     <style>
         [data-testid="stSidebar"] {
@@ -46,45 +46,57 @@ with st.sidebar:
             border-right: 1px solid #e2e8f0 !important;
         }
         [data-testid="stSidebar"] .stRadio > div {
-            gap: 10px !important;
+            gap: 12px !important;
         }
         [data-testid="stSidebar"] .stRadio label {
             background: white !important;
             border: 1px solid #e2e8f0 !important;
-            border-radius: 12px !important;
-            padding: 14px 16px !important;
+            border-radius: 14px !important;
+            padding: 16px 18px !important;
             margin: 6px 0 !important;
             transition: all 0.2s ease !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
             font-weight: 500 !important;
-            font-size: 14px !important;
+            font-size: 15.5px !important;
+            color: #475569 !important;
             cursor: pointer !important;
+            letter-spacing: 0.2px !important;
+        }
+        [data-testid="stSidebar"] .stRadio label p {
+            font-size: 15.5px !important;
+            color: #475569 !important;
+            font-weight: 500 !important;
+            margin: 0 !important;
         }
         [data-testid="stSidebar"] .stRadio label:hover {
-            border-color: #3b82f6 !important;
-            box-shadow: 0 4px 12px rgba(59,130,246,0.15) !important;
+            border-color: #94a3b8 !important;
+            background: #f8fafc !important;
+            box-shadow: 0 4px 12px rgba(71,85,105,0.12) !important;
             transform: translateY(-1px) !important;
         }
         [data-testid="stSidebar"] .stRadio label[data-checked="true"] {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-            border-color: #2563eb !important;
-            color: white !important;
-            box-shadow: 0 4px 14px rgba(37,99,235,0.35) !important;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+            border-color: #94a3b8 !important;
+            border-width: 1.5px !important;
+            color: #1e293b !important;
+            box-shadow: 0 4px 14px rgba(71,85,105,0.18) !important;
         }
         [data-testid="stSidebar"] .stRadio label[data-checked="true"] p {
-            color: white !important;
+            color: #1e293b !important;
             font-weight: 600 !important;
+            font-size: 15.5px !important;
         }
         /* Ocultar el círculo del radio original */
         [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label > div:first-child {
             display: none !important;
         }
-        /* Texto pequeño selecciona opción */
+        /* Texto pequeño selecciona opción - gris estético */
         .small-hint {
-            font-size: 11px !important;
+            font-size: 12px !important;
             color: #94a3b8 !important;
-            margin-bottom: 10px !important;
-            letter-spacing: 0.3px !important;
+            margin-bottom: 14px !important;
+            letter-spacing: 0.4px !important;
+            font-weight: 400 !important;
         }
     </style>
     """, unsafe_allow_html=True)

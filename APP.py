@@ -339,18 +339,18 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         resumen = df_f.groupby(['ESTADO','SUCURSAL']).size().reset_index(name='TOTAL_REPORTES')
         resumen = resumen.sort_values('TOTAL_REPORTES', ascending=False)
 
-        # Un solo BOX - HTML con TOTAL_REPORTES 100% centrado en medio de la columna
+        # Un solo BOX - HTML con TOTAL_REPORTES centrado, sin negritas, con scroll
         html = """
         <style>
-        .resumen-wrap { width:100%; background:white; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+        .resumen-wrap { width:100%; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); max-height:500px; overflow-y:auto; overflow-x:hidden; }
         .resumen-table { width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:14px; }
-        .resumen-table th { background:#f8fafc; color:#64748b; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; padding:12px 16px; border-bottom:1px solid #e2e8f0; text-align:left; }
+        .resumen-table th { background:#f8fafc; color:#64748b; font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; padding:12px 16px; border-bottom:1px solid #e2e8f0; text-align:left; position:sticky; top:0; z-index:1; }
         .resumen-table th:last-child { text-align:center !important; }
-        .resumen-table td { padding:12px 16px; border-bottom:1px solid #f1f5f9; color:#334155; }
-        .resumen-table td:last-child { text-align:center !important; font-weight:800 !important; color:#0f172a; display: table-cell; vertical-align: middle; }
+        .resumen-table td { padding:10px 16px; border-bottom:1px solid #f1f5f9; color:#334155; font-weight:400; }
+        .resumen-table td:last-child { text-align:center !important; font-weight:400 !important; color:#334155; vertical-align: middle; }
         .resumen-table tr:last-child td { border-bottom:none; }
         .resumen-table tr:hover { background:#f8fafc; }
-        .badge-total { background:#f1f5f9; border:1px solid #e2e8f0; padding:4px 12px; border-radius:99px; font-weight:800; display:inline-block; min-width:32px; text-align:center; }
+        .badge-total { background:transparent; border:none; padding:2px 8px; font-weight:400; display:inline-block; min-width:32px; text-align:center; color:#334155; }
         </style>
         <div class="resumen-wrap">
         <table class="resumen-table">

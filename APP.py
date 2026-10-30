@@ -262,7 +262,144 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     except Exception as e:
         st.warning(f"No se pudo calcular tiempo: {e}")
     
-    # Gráfico LINEAS CON FALLA - FIX con sucursal + hide index
+
+    # --- NUEVO: HISTORIAL DE REPORTES CERRADOS ---
+    st.markdown("---")
+    st.subheader("📜 Historial de Reportes Cerrados - Fecha, REP, Tiempo Reparación")
+    st.caption("Consulta todos los reportes ya cerrados desde HISTORIAL_REPORTES")
+    try:
+        # Preparar df para historial
+        df_hist_detalle = df_f.copy()
+        # Asegurar columnas
+        if 'FECHA_REGISTRO' in df_hist_detalle.columns and 'FECHA' in df_hist_detalle.columns:
+            df_hist_detalle['_FECHA_REG_DT'] = pd.to_datetime(df_hist_detalle['FECHA_REGISTRO'], dayfirst=True, errors='coerce')
+            df_hist_detalle['_FECHA_REP_DT'] = pd.to_datetime(df_hist_detalle['FECHA'], dayfirst=True, errors='coerce')
+            df_hist_detalle['DIAS_REPARACION'] = (df_hist_detalle['_FECHA_REG_DT'] - df_hist_detalle['_FECHA_REP_DT']).dt.days
+        else:
+            df_hist_detalle['DIAS_REPARACION'] = None
+        
+        # Filtros para historial
+        col_h1, col_h2, col_h3 = st.columns([2,1,1])
+        with col_h1:
+            buscador = st.text_input("🔍 Buscar sucursal o REP:", placeholder="Ej: PUEBLA, REP123, CORDOBA", key="busc_hist")
+        with col_h2:
+            filtro_estado_hist = st.selectbox("Estado:", ["Todos"] + sorted(df_hist_detalle['ESTADO'].dropna().unique().tolist()) if 'ESTADO' in df_hist_detalle.columns else ["Todos"], key="filtro_estado_hist")
+        with col_h3:
+            orden_hist = st.selectbox("Ordenar por:", ["Más reciente", "Más antiguo", "Más lento en reparar", "Más rápido"], key="orden_hist")
+        
+        df_mostrar = df_hist_detalle.copy()
+        if buscador:
+            busc = buscador.lower()
+            mask = pd.Series([False]*len(df_mostrar))
+            for col in ['SUCURSAL','REP','REPORTE','OBS','OBSERVACION','ESTADO']:
+                if col in df_mostrar.columns:
+                    mask = mask | df_mostrar[col].astype(str).str.lower().str.contains(busc, na=False)
+            df_mostrar = df_mostrar[mask]
+        if filtro_estado_hist != "Todos" and 'ESTADO' in df_mostrar.columns:
+            df_mostrar = df_mostrar[df_mostrar['ESTADO']==filtro_estado_hist]
+        
+        # Orden
+        if orden_hist == "Más reciente" and '_FECHA_REG_DT' in df_mostrar.columns:
+            df_mostrar = df_mostrar.sort_values('_FECHA_REG_DT', ascending=False)
+        elif orden_hist == "Más antiguo" and '_FECHA_REG_DT' in df_mostrar.columns:
+            df_mostrar = df_mostrar.sort_values('_FECHA_REG_DT', ascending=True)
+        elif orden_hist == "Más lento en reparar" and 'DIAS_REPARACION' in df_mostrar.columns:
+            df_mostrar = df_mostrar.sort_values('DIAS_REPARACION', ascending=False)
+        elif orden_hist == "Más rápido" and 'DIAS_REPARACION' in df_mostrar.columns:
+            df_mostrar = df_mostrar.sort_values('DIAS_REPARACION', ascending=True)
+        
+        # Seleccionar columnas a mostrar
+        cols_show = []
+        for cand in ['FECHA','FECHA_REGISTRO','REPORTE','REP','SUCURSAL','ESTADO','DIAS_REPARACION','OBS','OBSERVACION','LINEAS CON FALLA','USUARIO','HORA_REGISTRO']:
+            if cand in df_mostrar.columns:
+                cols_show.append(cand)
+        # Asegurar DIAS al final visible
+        if not cols_show:
+            cols_show = list(df_mostrar.columns[:8])
+        
+        df_tabla = df_mostrar[cols_show].copy()
+        # Renombrar para claridad
+        df_tabla = df_tabla.rename(columns={
+            'FECHA': '📅 Fecha Reporte',
+            'FECHA_REGISTRO': '✅ Fecha Cierre',
+            'REP': '🗂️ REP',
+            'REPORTE': '🗂️ REP',
+            'SUCURSAL': '🏢 Sucursal',
+            'ESTADO': '📍 Estado',
+            'DIAS_REPARACION': '⏱️ Días Reparación',
+            'OBS': '📝 Falla',
+            'OBSERVACION': '📝 Falla',
+            'LINEAS CON FALLA': '📞 Líneas falla',
+            'USUARIO': '👤 Cerró',
+            'HORA_REGISTRO': '🕒 Hora Cierre'
+        })
+        
+        st.markdown(f"**Mostrando {len(df_tabla)} reportes cerrados**")
+        
+        # Tabla HTML con scroll, centrada DIAS
+        html_hist = """
+        <style>
+        .hist-wrap { width:100%; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); max-height:600px; overflow:auto; }
+        .hist-table { width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:13px; min-width:900px; }
+        .hist-table th { background:#0f172a; color:white; font-weight:600; font-size:11px; text-transform:uppercase; padding:10px 12px; text-align:left; position:sticky; top:0; z-index:2; white-space:nowrap; }
+        .hist-table td { padding:9px 12px; border-bottom:1px solid #f1f5f9; color:#334155; white-space:nowrap; max-width:300px; overflow:hidden; text-overflow:ellipsis; }
+        .hist-table tr:hover { background:#f8fafc; }
+        .badge-dias { background:#f1f5f9; border:1px solid #e2e8f0; padding:2px 10px; border-radius:99px; font-weight:600; display:inline-block; text-align:center; min-width:40px; }
+        .badge-dias-rapido { background:#dcfce7; border-color:#bbf7d0; color:#166534; }
+        .badge-dias-lento { background:#fef2f2; border-color:#fecaca; color:#b91c1c; }
+        .badge-dias-medio { background:#fef9c3; border-color:#fde68a; color:#854d0e; }
+        </style>
+        <div class="hist-wrap">
+        <table class="hist-table">
+        <thead><tr>
+        """
+        for col in df_tabla.columns:
+            align = "text-align:center;" if "Días" in col else ""
+            html_hist += f"<th style='{align}'>{col}</th>"
+        html_hist += "</tr></thead><tbody>"
+        
+        for _, r in df_tabla.head(200).iterrows():
+            html_hist += "<tr>"
+            for col in df_tabla.columns:
+                val = r[col]
+                if pd.isna(val):
+                    val = ""
+                val_str = str(val)[:120]
+                if "Días" in col:
+                    try:
+                        dias_val = int(float(str(val).replace('nan','0'))) if str(val).strip() not in ['','nan','None'] else 0
+                        if dias_val <= 2:
+                            cls = "badge-dias badge-dias-rapido"
+                        elif dias_val <= 5:
+                            cls = "badge-dias badge-dias-medio"
+                        else:
+                            cls = "badge-dias badge-dias-lento"
+                        html_hist += f"<td style='text-align:center;'><span class='{cls}'>{val_str} días</span></td>"
+                    except:
+                        html_hist += f"<td style='text-align:center;'>{val_str}</td>"
+                else:
+                    html_hist += f"<td title='{val_str}'>{val_str}</td>"
+            html_hist += "</tr>"
+        html_hist += "</tbody></table></div>"
+        if len(df_tabla) > 200:
+            html_hist += f"<div style='padding:8px; font-size:12px; color:#64748b;'>Mostrando 200 de {len(df_tabla)} - Descarga CSV para ver todos</div>"
+        st.markdown(html_hist, unsafe_allow_html=True)
+        
+        # Dataframe nativo para búsqueda rápida también
+        with st.expander("📊 Ver tabla interactiva completa (búsqueda, orden)"):
+            st.dataframe(df_tabla, use_container_width=True, hide_index=True, height=400)
+        
+        csv_hist = df_tabla.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Descargar historial completo CSV", csv_hist, "historial_reportes_cerrados.csv", "text/csv", key="dl_hist")
+        
+    except Exception as e:
+        st.error(f"Error mostrando historial: {e}")
+        import traceback
+        st.code(traceback.format_exc())
+
+    
+
+        # Gráfico LINEAS CON FALLA - FIX con sucursal + hide index
     st.markdown("---")
     st.subheader("📞 Top Líneas Telefónicas con más fallas")
     try:

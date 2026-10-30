@@ -32,6 +32,7 @@ import base64
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢")
 
 
+
 # --- SIDEBAR MENU PRINCIPAL ---
 if 'pagina' not in st.session_state:
     st.session_state['pagina'] = "🏠 Reportes"
@@ -44,8 +45,7 @@ with st.sidebar:
 
 # --- DASHBOARD ANALÍTICA ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
-    import plotly.express as px
-    import plotly.graph_objects as go
+    import altair as alt
     
     st.title("📊 Dashboard Analítica - Sucursales")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
@@ -59,7 +59,34 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 from google.oauth2.service_account import Credentials
                 creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets","https://www.googleapis.com/auth/drive"])
                 client = gspread.authorize(creds)
-                sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+                # Buscar sheet_id de forma robusta
+                sheet_id = None
+                try:
+                    sheet_id = st.secrets.get("sheet_id")
+                except:
+                    pass
+                if not sheet_id:
+                    try:
+                        sheet_id = st.secrets.get("GOOGLE_SHEET_ID")
+                    except:
+                        pass
+                if not sheet_id:
+                    try:
+                        sheet_id = st.secrets["SHEET_ID"]
+                    except:
+                        pass
+                if not sheet_id:
+                    # Fallback a variables globales del archivo original
+                    try:
+                        sheet_id = SHEET_ID
+                    except:
+                        try:
+                            sheet_id = SHEET_ID_PRUEBAS
+                        except:
+                            sheet_id = None
+                if not sheet_id:
+                    st.error("No se encontró sheet_id en secrets (sheet_id, GOOGLE_SHEET_ID, SHEET_ID)")
+                    return None
                 sh = client.open_by_key(sheet_id)
                 for name in ["HISTORIAL_REPORTES","BDSUCURSALES2","BDSUCURSALES"]:
                     try:
@@ -68,12 +95,11 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                         if vals and len(vals)>1:
                             headers = [h.strip().upper() for h in vals[0]]
                             df_tmp = pd.DataFrame(vals[1:], columns=headers)
-                            # Si es BDSUCURSALES y tiene pocas columnas, no es historial, seguir buscando
                             if len(headers) < 8:
                                 continue
                             df_hist = df_tmp
                             break
-                    except:
+                    except Exception as e:
                         continue
         except Exception as e:
             st.error(f"Error cargando historial: {e}")
@@ -82,12 +108,9 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     df_hist = cargar_historial_dashboard()
     
     if df_hist is None or df_hist.empty:
-        st.warning("No se encontró HISTORIAL_REPORTES. Mostrando demo con datos de tu captura.")
+        st.warning("No se encontró HISTORIAL_REPORTES.")
         st.stop()
     
-    # Limpiar
-    # Columnas esperadas: FECHA_REGISTRO, HORA_REGISTRO, DIA, MES, ANO, USUARIO, ESTADO, SUCURSAL, NO. REPORTE, FECHA, etc
-    # Normalizar nombres
     df_hist.columns = [c.strip().upper() for c in df_hist.columns]
     
     # KPIs
@@ -127,16 +150,19 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     if sel_mes != "Todos" and 'MES' in df_f.columns:
         df_f = df_f[df_f['MES']==sel_mes]
     
-    # Gráficos fila 1
+    # Gráficos fila 1 - Top sucursales
     c1, c2 = st.columns(2)
     with c1:
         st.subheader("🏆 Top 10 Sucursales con más fallas")
         if 'SUCURSAL' in df_f.columns:
             top10 = df_f['SUCURSAL'].value_counts().head(10).reset_index()
             top10.columns = ['SUCURSAL','REPORTES']
-            fig = px.bar(top10, x='REPORTES', y='SUCURSAL', orientation='h', color='REPORTES', color_continuous_scale='Reds', text='REPORTES')
-            fig.update_layout(height=420, yaxis={'categoryorder':'total ascending'})
-            st.plotly_chart(fig, use_container_width=True)
+            chart = alt.Chart(top10).mark_bar(color='#ef4444').encode(
+                x='REPORTES:Q',
+                y=alt.Y('SUCURSAL:N', sort='-x'),
+                tooltip=['SUCURSAL','REPORTES']
+            ).properties(height=400)
+            st.altair_chart(chart, use_container_width=True)
     
     with c2:
         st.subheader("📅 Reportes por Mes / Año")
@@ -144,18 +170,12 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             df_f['MES_ANO'] = df_f['ANO'].astype(str) + "-" + df_f['MES'].astype(str).str.zfill(2)
             por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES')
             por_mes = por_mes.sort_values('MES_ANO')
-            fig2 = px.line(por_mes, x='MES_ANO', y='REPORTES', markers=True, line_shape='spline')
-            fig2.update_layout(height=420)
-            st.plotly_chart(fig2, use_container_width=True)
-        elif 'FECHA_REGISTRO' in df_f.columns:
-            try:
-                df_f['_FECHA'] = pd.to_datetime(df_f['FECHA_REGISTRO'], dayfirst=True, errors='coerce')
-                df_f['_MES'] = df_f['_FECHA'].dt.to_period('M').astype(str)
-                por_mes = df_f.groupby('_MES').size().reset_index(name='REPORTES')
-                fig2 = px.line(por_mes, x='_MES', y='REPORTES', markers=True)
-                st.plotly_chart(fig2, use_container_width=True)
-            except Exception as e:
-                st.error(f"Error: {e}")
+            chart2 = alt.Chart(por_mes).mark_line(point=True, color='#0f172a').encode(
+                x='MES_ANO:N',
+                y='REPORTES:Q',
+                tooltip=['MES_ANO','REPORTES']
+            ).properties(height=400)
+            st.altair_chart(chart2, use_container_width=True)
     
     c3, c4 = st.columns(2)
     with c3:
@@ -163,38 +183,39 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         if 'ESTADO' in df_f.columns:
             por_edo = df_f['ESTADO'].value_counts().reset_index()
             por_edo.columns = ['ESTADO','REPORTES']
-            fig3 = px.pie(por_edo, values='REPORTES', names='ESTADO', hole=0.4)
-            fig3.update_layout(height=400)
-            st.plotly_chart(fig3, use_container_width=True)
+            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=50).encode(
+                theta='REPORTES:Q',
+                color='ESTADO:N',
+                tooltip=['ESTADO','REPORTES']
+            ).properties(height=400)
+            st.altair_chart(chart3, use_container_width=True)
     
     with c4:
-        st.subheader("📊 Reportes por Semana / Día / Hora")
+        st.subheader("📊 Reportes por Día / Hora")
         vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], key="vista_dashboard")
         if vista == "DIA del mes" and 'DIA' in df_f.columns:
             data = df_f['DIA'].value_counts().sort_index().reset_index()
             data.columns = ['DIA','REPORTES']
-            fig4 = px.bar(data, x='DIA', y='REPORTES', color='REPORTES', color_continuous_scale='Blues')
-            st.plotly_chart(fig4, use_container_width=True)
+            chart4 = alt.Chart(data).mark_bar().encode(x='DIA:O', y='REPORTES:Q')
+            st.altair_chart(chart4, use_container_width=True)
         elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
             try:
                 df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
                 data = df_f['_HORA'].value_counts().sort_index().reset_index()
                 data.columns = ['HORA','REPORTES']
-                fig4 = px.bar(data, x='HORA', y='REPORTES', title="¿A qué hora se reportan más fallas?")
-                st.plotly_chart(fig4, use_container_width=True)
+                chart4 = alt.Chart(data).mark_bar(color='#f59e0b').encode(x='HORA:O', y='REPORTES:Q')
+                st.altair_chart(chart4, use_container_width=True)
             except Exception as e:
                 st.error(str(e))
         elif vista == "MES" and 'MES' in df_f.columns:
             data = df_f['MES'].value_counts().sort_index().reset_index()
             data.columns = ['MES','REPORTES']
-            fig4 = px.bar(data, x='MES', y='REPORTES')
-            st.plotly_chart(fig4, use_container_width=True)
+            chart4 = alt.Chart(data).mark_bar().encode(x='MES:O', y='REPORTES:Q')
+            st.altair_chart(chart4, use_container_width=True)
     
     # Tiempo de reparación
     st.markdown("---")
     st.subheader("⏱️ Tiempo de reparación / Cierre")
-    st.caption("Calculado como FECHA_REGISTRO (cierre) - FECHA_REPORTE (apertura) cuando ambos existen")
-    
     try:
         if 'FECHA_REGISTRO' in df_f.columns and 'FECHA' in df_f.columns:
             df_f['_FECHA_REG'] = pd.to_datetime(df_f['FECHA_REGISTRO'], dayfirst=True, errors='coerce')
@@ -206,39 +227,37 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 col_a.metric("Promedio cierre", f"{df_valid['_DIAS'].mean():.1f} días")
                 col_b.metric("Más rápido", f"{df_valid['_DIAS'].min()} días")
                 col_c.metric("Más lento", f"{df_valid['_DIAS'].max()} días")
-                fig5 = px.histogram(df_valid, x='_DIAS', nbins=20, title="Distribución tiempo de cierre (días)")
-                st.plotly_chart(fig5, use_container_width=True)
+                chart5 = alt.Chart(df_valid).mark_bar().encode(
+                    alt.X('_DIAS:Q', bin=alt.Bin(maxbins=20), title='Días para cierre'),
+                    y='count()'
+                ).properties(title="Distribución tiempo de cierre")
+                st.altair_chart(chart5, use_container_width=True)
                 
-                # Por sucursal
                 por_suc_tiempo = df_valid.groupby('SUCURSAL')['_DIAS'].mean().reset_index().sort_values('_DIAS', ascending=False).head(10)
-                fig6 = px.bar(por_suc_tiempo, x='_DIAS', y='SUCURSAL', orientation='h', title="Tiempo promedio cierre por sucursal (Top 10 más lentas)")
-                st.plotly_chart(fig6, use_container_width=True)
-            else:
-                st.info("No hay suficientes datos con FECHA_REGISTRO y FECHA para calcular tiempo.")
+                chart6 = alt.Chart(por_suc_tiempo).mark_bar(color='#f97316').encode(
+                    x='_DIAS:Q',
+                    y=alt.Y('SUCURSAL:N', sort='-x')
+                ).properties(title="Tiempo promedio cierre por sucursal (Top 10 más lentas)")
+                st.altair_chart(chart6, use_container_width=True)
     except Exception as e:
         st.warning(f"No se pudo calcular tiempo: {e}")
     
     # Gráfico LINEAS CON FALLA
     st.markdown("---")
     st.subheader("📞 Top Líneas Telefónicas con más fallas")
-    st.caption("Basado en columna LINEAS CON FALLA / TEL de HISTORIAL_REPORTES y BDSUCURSALES")
     try:
-        # Buscar columna de lineas
         col_tel = None
         for cand in ['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','TEL','REPOR','LINEA','TELMEX']:
             if cand in df_f.columns:
                 col_tel = cand
                 break
         if col_tel:
-            # Extraer todas las lineas (pueden venir como "333-827-1396, 333-826-1965 | 333-827-0269")
             todas_lineas = []
             for val in df_f[col_tel].dropna().astype(str):
                 if not val or val.lower() in ['nan','none','']:
                     continue
-                # Split por | primero (multi-reporte)
                 partes_pipe = val.split('|')
                 for p in partes_pipe:
-                    # Split por coma
                     partes_coma = p.split(',')
                     for pc in partes_coma:
                         num = pc.strip()
@@ -251,17 +270,18 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 df_lineas = pd.DataFrame(top_lineas, columns=['LINEA','FALLAS'])
                 c_line1, c_line2 = st.columns([2,1])
                 with c_line1:
-                    fig_line = px.bar(df_lineas.head(10), x='FALLAS', y='LINEA', orientation='h', color='FALLAS', color_continuous_scale='Reds', text='FALLAS')
-                    fig_line.update_layout(height=450, yaxis={'categoryorder':'total ascending'})
-                    st.plotly_chart(fig_line, use_container_width=True)
+                    chart_line = alt.Chart(df_lineas.head(10)).mark_bar(color='#ef4444').encode(
+                        x='FALLAS:Q',
+                        y=alt.Y('LINEA:N', sort='-x'),
+                        tooltip=['LINEA','FALLAS']
+                    ).properties(height=450)
+                    st.altair_chart(chart_line, use_container_width=True)
                 with c_line2:
                     st.dataframe(df_lineas, use_container_width=True)
                     csv_lineas = df_lineas.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Descargar líneas con más fallas CSV", csv_lineas, "lineas_mas_fallas.csv", "text/csv")
+                    st.download_button("📥 Descargar líneas CSV", csv_lineas, "lineas_mas_fallas.csv", "text/csv")
             else:
                 st.info("No hay datos en LINEAS CON FALLA / TEL")
-        else:
-            st.info("No se encontró columna de líneas telefónicas (LINEAS CON FALLA / TEL)")
     except Exception as e:
         st.error(f"Error graficando líneas: {e}")
     
@@ -277,6 +297,9 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     
     st.stop()
 
+# --- FIN DASHBOARD, CONTINUA CON REPORTES NORMALES ---
+if st.session_state.get('pagina') != "🏠 Reportes":
+    st.stop()
 # --- FIN DASHBOARD, CONTINUA CON REPORTES NORMALES ---
 if st.session_state.get('pagina') != "🏠 Reportes":
     st.stop()

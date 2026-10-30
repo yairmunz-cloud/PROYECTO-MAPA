@@ -33,12 +33,12 @@ st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", l
 
 
 
-# --- SIDEBAR MENU PRINCIPAL - ESTÉTICO V39 ---
+# --- SIDEBAR MENU PRINCIPAL - ESTÉTICO V40 LIMPIO ---
 if 'pagina' not in st.session_state:
     st.session_state['pagina'] = "🏠 Reportes"
 
 with st.sidebar:
-    # CSS estético para sidebar
+    # CSS estético para sidebar LIMPIO sin cajas feas
     st.markdown("""
     <style>
         [data-testid="stSidebar"] {
@@ -46,7 +46,7 @@ with st.sidebar:
             border-right: 1px solid #e2e8f0 !important;
         }
         [data-testid="stSidebar"] .stRadio > div {
-            gap: 8px !important;
+            gap: 10px !important;
         }
         [data-testid="stSidebar"] .stRadio label {
             background: white !important;
@@ -75,45 +75,37 @@ with st.sidebar:
             color: white !important;
             font-weight: 600 !important;
         }
-        /* Título navegación */
-        .nav-title {
-            font-size: 11px !important;
-            font-weight: 700 !important;
-            letter-spacing: 1.2px !important;
-            color: #64748b !important;
-            margin-bottom: 12px !important;
-            text-transform: uppercase !important;
-        }
         /* Ocultar el círculo del radio original */
         [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label > div:first-child {
             display: none !important;
         }
+        /* Texto pequeño selecciona opción */
+        .small-hint {
+            font-size: 11px !important;
+            color: #94a3b8 !important;
+            margin-bottom: 10px !important;
+            letter-spacing: 0.3px !important;
+        }
     </style>
     """, unsafe_allow_html=True)
     
-    st.markdown('<div class="nav-title">🧭 Navegación</div>', unsafe_allow_html=True)
+    st.markdown('<div class="small-hint">selecciona una opción</div>', unsafe_allow_html=True)
     
-    # Iconos más estéticos: 🗺️ para reportes (mapa) y 📈 para dashboard (analítica)
+    # Iconos estéticos sin label "Ir a:"
     pagina = st.radio(
-        "Ir a:", 
+        "navegacion", 
         ["🗺️ Mapa Reportes", "📈 Analítica Dashboard"], 
         index=0 if "Mapa" in st.session_state['pagina'] or "Reportes" in st.session_state['pagina'] else 1, 
-        key="menu_pagina_v39"
+        key="menu_pagina_v40",
+        label_visibility="collapsed"
     )
     # Mapear a valores internos para compatibilidad
     if "Mapa" in pagina:
         st.session_state['pagina'] = "🏠 Reportes"
     else:
         st.session_state['pagina'] = "📊 Dashboard Analítica"
-    
-    st.markdown("---")
-    st.markdown("""
-    <div style="padding: 12px; background: white; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 10px;">
-        <div style="font-size: 11px; color: #94a3b8; font-weight: 600; margin-bottom: 6px;">💡 V39 ESTÉTICO</div>
-        <div style="font-size: 12px; color: #64748b;">Sidebar con diseño moderno y iconos estéticos</div>
-    </div>
-    """, unsafe_allow_html=True)
 
+# --- DASHBOARD ANALÍTICA ---
 # --- DASHBOARD ANALÍTICA ---
 # --- DASHBOARD ANALÍTICA ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":

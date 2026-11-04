@@ -1418,7 +1418,9 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
 if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px">', unsafe_allow_html=True)
     st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}** - PRUEBAS REALES")
-    st.info(f"Hoja pruebas ID: {SHEET_ID_PRUEBAS[:20]}... | Modo lote: agrega N reportes y al final guarda todo")
+    # BIEN:
+sid_show = st.secrets.get("sheet_id", "")[:20] if st.secrets.get("sheet_id") else "N/A"
+st.info(f"Hoja pruebas ID: {sid_show}... | Modo lote: agrega N reportes y al final guarda todo")
     st.markdown("#### 1⃣ Selecciona Estado y Sucursal")
     fc_sel1, fc_sel2 = st.columns(2)
     with fc_sel1:

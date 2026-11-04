@@ -136,7 +136,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             if "gcp_service_account" in st.secrets:
                 import gspread
                 from google.oauth2.service_account import Credentials
-                creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+                creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets","https://www.googleapis.com/auth/drive"])
                 client = gspread.authorize(creds)
                 # Buscar sheet_id de forma robusta
                 sheet_id = None
@@ -700,7 +700,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-SHEET_ID_PRUEBAS = None
+SHEET_ID_PRUEBAS = "12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4"
 
 def norm(s):
     return str(s).strip().upper().replace("  "," ").replace("\n","").replace("\r","")
@@ -712,7 +712,7 @@ def cargar_datos(sheet_id_override=None):
         if "gcp_service_account" in st.secrets:
             import gspread
             from google.oauth2.service_account import Credentials
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
             client = gspread.authorize(creds)
             sid = sheet_id_override or st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
             if sid:
@@ -916,59 +916,17 @@ def split_tels(raw):
             seen.add(t); uniq.append(t)
     return uniq
 
-import hashlib, hmac
-def _hash_pwd(p):
-    return hashlib.sha256(p.encode()).hexdigest()
-def sanitize_sheets_input(v, max_len=500):
-    if v is None:
-        return ""
-    s=str(v).strip()
-    if len(s)>max_len:
-        s=s[:max_len]
-    if s and s[0] in ("=","+","-","@"):
-        s="'"+s
-    return s
-USUARIOS = {}
+USUARIOS = {"yair": "AtlasY", "francisco": "AtlasF"}
 
 def check_login(user, pwd):
     try:
-        if "users" not in st.secrets:
-            return False
-        attempts = st.session_state.get('login_attempts',0)
-        if attempts >= 5:
-            last = st.session_state.get('last_failed_login')
-            if last:
-                try:
-                    diff = (now_mx().replace(tzinfo=None) - last.replace(tzinfo=None)).total_seconds()/60
-                    if diff < 10:
-                        return False
-                    else:
-                        st.session_state['login_attempts']=0
-                except:
-                    pass
-        users_secret = st.secrets["users"]
-        if user not in users_secret:
-            st.session_state['login_attempts']=st.session_state.get('login_attempts',0)+1
-            st.session_state['last_failed_login']=now_mx().replace(tzinfo=None)
-            import time as _t; _t.sleep(0.8)
-            return False
-        stored=str(users_secret[user]).strip()
-        pwd_input=str(pwd).strip()
-        ok=False
-        if len(stored)==64 and all(c in "0123456789abcdefABCDEF" for c in stored):
-            ok=_hash_pwd(pwd_input)==stored.lower()
+        if "users" in st.secrets:
+            users_secret = st.secrets["users"]
+            return user in users_secret and users_secret[user] == pwd
         else:
-            ok=hmac.compare_digest(stored,pwd_input)
-        if ok:
-            st.session_state['login_attempts']=0
-            st.session_state['last_activity']=now_mx().replace(tzinfo=None)
-        else:
-            st.session_state['login_attempts']=st.session_state.get('login_attempts',0)+1
-            st.session_state['last_failed_login']=now_mx().replace(tzinfo=None)
-        return ok
+            return USUARIOS.get(user) == pwd
     except:
-        return False
-
+        return USUARIOS.get(user) == pwd
 
 def log_acceso(usuario, accion="Login"):
     now = now_mx()
@@ -1059,7 +1017,7 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=
                 s = s.upper()
                 s = re.sub(r'\s+', ' ', s)
                 return s.strip()
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
             client = gspread.authorize(creds)
             sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
             sh = client.open_by_key(sheet_id)
@@ -1418,10 +1376,9 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
 if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px">', unsafe_allow_html=True)
     st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}** - PRUEBAS REALES")
-    # BIEN:
-sid_show = st.secrets.get("sheet_id", "")[:20] if st.secrets.get("sheet_id") else "N/A"
-st.info(f"Hoja pruebas ID: {sid_show}... | Modo lote: agrega N reportes y al final guarda todo")
-    st.markdown("#### 1⃣ Selecciona Estado y Sucursal")
+    sid_show = st.secrets.get("sheet_id", "")[:20] if st.secrets.get("sheet_id") else "N/A"
+    st.info(f"Hoja pruebas ID: {sid_show}... | Modo lote: agrega N reportes y al final guarda todo")
+    st.markdown("#### 1 Selecciona Estado y Sucursal")
     fc_sel1, fc_sel2 = st.columns(2)
     with fc_sel1:
         est_new = st.selectbox("Estado del reporte", lista_estados, index=lista_estados.index(estado_actual) if estado_actual in lista_estados else 0, key="form_est_outside")
@@ -1443,7 +1400,7 @@ st.info(f"Hoja pruebas ID: {sid_show}... | Modo lote: agrega N reportes y al fin
         else:
             lineas_sucursal = []
     st.markdown("---")
-    st.markdown("#### 2⃣ Lineas con falla")
+    st.markdown("#### 2 Lineas con falla")
     if lineas_sucursal:
         cols_lineas = st.columns(2)
         seleccionadas = []
@@ -1462,7 +1419,7 @@ st.info(f"Hoja pruebas ID: {sid_show}... | Modo lote: agrega N reportes y al fin
         tel_final = st.text_input("Lineas con falla", placeholder="551-102-2050", key="tel_new_suc_outside")
         seleccionadas = [tel_final] if tel_final else []
     st.markdown("---")
-    st.markdown("#### 3⃣ Datos del reporte")
+    st.markdown("#### 3 Datos del reporte")
     st.markdown(f"**Resumen:** Estado: {est_new} | Sucursal: {suc_new} | Lineas: {tel_final if tel_final else 'Ninguna'}")
     with st.form("form_reporte_final", clear_on_submit=True):
         fc1, fc2 = st.columns(2)
@@ -1553,7 +1510,7 @@ st.info(f"Hoja pruebas ID: {sid_show}... | Modo lote: agrega N reportes y al fin
                     if "gcp_service_account" in st.secrets:
                         import gspread
                         from google.oauth2.service_account import Credentials
-                        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+                        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
                         client = gspread.authorize(creds)
                         sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
                         sh = client.open_by_key(sheet_id)
@@ -1625,8 +1582,8 @@ st.info(f"Hoja pruebas ID: {sid_show}... | Modo lote: agrega N reportes y al fin
                                 ex_tel_falla = split_multi_val(cur_tel_falla)
                                 ex_reps.append(r['no_reporte'])
                                 ex_fecs.append(r['fecha_reporte'])
-                                ex_fallas.append(sanitize_sheets_input(r['obs'],500))
-                                ex_tel_falla.append(sanitize_sheets_input(r.get('tel',''),200))
+                                ex_fallas.append(r['obs'])
+                                ex_tel_falla.append(r.get('tel',''))
                                 if col_rep_idx: ws_main.update_cell(row_found, col_rep_idx, join_multi_val(ex_reps))
                                 if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, join_multi_val(ex_fecs))
                                 if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, join_multi_val(ex_fallas))

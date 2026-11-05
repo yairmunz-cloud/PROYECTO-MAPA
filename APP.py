@@ -26,12 +26,6 @@ import re
 import time
 import base64
 
-
-# --- DEBUG TEMPORAL YAIR ---
-st.warning(f"Sheet ID en Secrets: {st.secrets.get('sheet_id')}")
-st.warning(f"Service account: {st.secrets['gcp_service_account']['client_email']}")
-# --- FIN DEBUG ---
-
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---

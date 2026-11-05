@@ -690,16 +690,17 @@ if not df_reportes.empty:
             if d is not None and d > max_dias: max_dias = d; txt_badge = txt
         if count == 1: 
             label = f"{estado_val} - {suc_val} | REP: {reps_list[0]} | {txt_badge}"
+            opciones_activas.append(label)
+            mapa_activos[label] = {"estado": estado_val, "sucursal": suc_val, "count": count, "reps": reps_list, "rep_idx": 0, "reps_all": reps_list, "row": row_base, "fec": fecs[0] if fecs else ""}
         else: 
-            # Si tiene varios reportes, crear una entrada por cada reporte para que se puedan ver todos
+            # Si tiene varios reportes (ej: 2 reportes en misma fila con " | "), crear entrada por cada reporte
             for idx_rep, rep_single in enumerate(reps_list):
-                fec_single = fecs[idx_rep] if idx_rep < len(fecs) else fecs[0] if fecs else ""
+                fec_single = fecs[idx_rep] if idx_rep < len(fecs) else (fecs[0] if fecs else "")
                 d_single, txt_single = dias_desde(fec_single) if fec_single else (None, "Sin fecha")
                 label_single = f"{estado_val} - {suc_val} | REP: {rep_single} | {txt_single} ({idx_rep+1}/{count})"
                 opciones_activas.append(label_single)
-                mapa_activos[label_single] = {"estado": estado_val, "sucursal": suc_val, "count": count, "reps": [rep_single], "rep_idx": idx_rep, "reps_all": reps_list, "row": row_base, "fec": fec_single}
+                mapa_activos[label_single] = {"estado": estado_val, "sucursal": suc_val, "count": count, "reps": [rep_single], "rep_idx": idx_rep, "reps_all": reps_list, "row": row_base, "fec": fec_single, "fec_all": fecs}
             continue
-            label = f"{estado_val} - {suc_val} | {count} REPORTES | {txt_badge} ({count} activos)"
         opciones_activas.append(label)
         mapa_activos[label] = {"estado": estado_val, "sucursal": suc_val, "count": count, "reps": reps_list, "row": row_base}
     opciones_activas = sorted(opciones_activas)
@@ -1205,3 +1206,4 @@ if st.session_state.get('show_delete_confirm'):
                     import traceback
                     st.code(traceback.format_exc())
         st.markdown('</div>', unsafe_allow_html=True)
+

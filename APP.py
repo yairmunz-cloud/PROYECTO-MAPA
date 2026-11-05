@@ -33,6 +33,17 @@ try:
 except:
     pass
 
+
+# --- FIX CACHE: Forzar refresco cada vez ---
+try:
+    st.cache_data.clear()
+except:
+    pass
+try:
+    st.cache_resource.clear()
+except:
+    pass
+
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
@@ -724,6 +735,16 @@ with c1:
     """, unsafe_allow_html=True)
 with c2:
     st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
+    if st.button("🔄 Refrescar Reportes", key="btn_refrescar_top"):
+        try:
+            st.cache_data.clear()
+        except:
+            pass
+        try:
+            st.cache_resource.clear()
+        except:
+            pass
+        st.rerun()
     if not df_reportes.empty:
         st.markdown(f"""
         <div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #ef4444; background:white !important; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
@@ -1129,6 +1150,16 @@ if not st.session_state.get('show_add_form', False):
                                         st.session_state['show_delete_confirm'] = True
                                         st.session_state['show_delete_login'] = False
                                     st.rerun()
+                        # Mostrar telefonos incluso sin reporte - FIX v28
+                        try:
+                            if not tels:
+                                # Intentar obtener telefonos de la fila base
+                                if 'row_base' in locals() and row_base is not None:
+                                    tel_raw_full = str(row_base.get(COL_TEL, "")).strip() if COL_TEL in row_base else ""
+                                    if tel_raw_full:
+                                        tels = split_tels(tel_raw_full)
+                        except:
+                            pass
                         if tels:
                             resumen_fallas = ", ".join(sorted(todas_fallas_union)) if todas_fallas_union else "N/A"
                             st.markdown(f"<div style='margin-top:18px; margin-bottom:10px; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; display:flex; justify-content:space-between;'><div style='font-weight:700; font-size:0.85rem;'>☎ LINEAS TELEFONICAS • {len(tels)} numeros</div><div style='font-size:0.75rem; color:#b91c1c; font-weight:600;'>🔴 En falla: {resumen_fallas}</div></div>", unsafe_allow_html=True)

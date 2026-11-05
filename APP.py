@@ -760,6 +760,21 @@ with c2:
         if "filtro_activo_sel" not in st.session_state or st.session_state["filtro_activo_sel"] not in opciones_con_todos:
             st.session_state["filtro_activo_sel"] = "-- Ver todas las sucursales --"
         sel_activo = st.selectbox("Filtro reporte activo", opciones_con_todos, key="filtro_activo_sel", label_visibility="collapsed", placeholder="🔍 Selecciona sucursal con reporte activo...")
+    # --- FIX SYNC: Al seleccionar en Reportes Activos, sincronizar con Estado/Sucursal de abajo ---
+    try:
+        sel_filtro = st.session_state.get('filtro_activo_sel', '')
+        if sel_filtro and sel_filtro != "-- Ver todas las sucursales --" and sel_filtro in mapa_activos:
+            info_filtro = mapa_activos[sel_filtro]
+            est_f = info_filtro.get('estado', '')
+            suc_f = info_filtro.get('sucursal', '')
+            if est_f and suc_f:
+                if st.session_state.get('estado_real') != est_f or st.session_state.get('sucursal_real') != suc_f:
+                    st.session_state['estado_real'] = est_f
+                    st.session_state['sucursal_real'] = suc_f
+                    # Forzar rerun para mostrar detalle con telefonos
+                    # st.rerun() - no hacer rerun infinito, solo setear
+    except Exception as e_sync:
+        pass
         last_filtro = st.session_state.get('last_filtro_activo_sel', '-- Ver todas las sucursales --')
         if sel_activo != last_filtro:
             st.session_state['last_filtro_activo_sel'] = sel_activo
@@ -1116,6 +1131,22 @@ if not st.session_state.get('show_add_form', False):
                     tel_falla_list = split_multi_val(tel_falla_raw) if tel_falla_raw else []
                     if not reps_list or not any(tiene_reporte(r) for r in reps_list):
                         st.markdown(f"""<div class="glass" style="padding:20px; border-left:5px solid #16a34a; background: rgba(240,253,244,0.5) !important;"><div style="display:flex; justify-content:space-between;"><div><div style="font-size:1.2rem; font-weight:900;">{suc_sel}</div><div style="display:flex; gap:8px; margin-top:8px;"><span class="rep-box" style="background:#0f172a; color:white;">📍 {estado_sel}</span><span class="rep-box" style="background:#f0fdf4; color:#166534;">✅ Sin REP</span></div></div><span class="badge badge-ok">Sin reporte</span></div></div>""", unsafe_allow_html=True)
+
+                        # --- Mostrar telefonos aunque Sin reporte ---
+                        try:
+                            tel_raw_sin = str(row.get(COL_TEL, "")).strip() if COL_TEL in row else ""
+                            if tel_raw_sin:
+                                tels_sin = split_tels(tel_raw_sin)
+                                if tels_sin:
+                                    st.markdown(f"<div style='margin-top:12px; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;'><div style='font-weight:700; font-size:0.85rem;'>☎ LINEAS TELEFONICAS • {len(tels_sin)} numeros - Sin reporte activo</div></div>", unsafe_allow_html=True)
+                                    cols_sin = st.columns(2)
+                                    for i_sin, t_sin in enumerate(tels_sin):
+                                        with cols_sin[i_sin % 2]:
+                                            st.markdown(f"<div style='background:white; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; margin-bottom:6px; font-size:0.85rem;'>📞 {t_sin}</div>", unsafe_allow_html=True)
+                        except Exception as e_tel_sin:
+                            pass
+
+
                     else:
                         todas_fallas_union = set()
                         for tf in tel_falla_list:
@@ -1240,3 +1271,4 @@ if st.session_state.get('show_delete_confirm'):
                     import traceback
                     st.code(traceback.format_exc())
         st.markdown('</div>', unsafe_allow_html=True)
+

@@ -646,6 +646,8 @@ def eliminar_reporte_hoja1(estado, sucursal, reporte_a_borrar, fecha_a_borrar=No
         return False, f"Error al cerrar: {e} {traceback.format_exc()}"
 
 
+
+
 lista_estados = sorted(df[COL_EST].dropna().unique()) if COL_EST in df.columns else []
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP and COL_REP in df.columns else pd.DataFrame()
 
@@ -686,8 +688,18 @@ if not df_reportes.empty:
         for f in (fecs if fecs else [fec_raw]):
             d, txt = dias_desde(f) if f else (None, "Sin fecha")
             if d is not None and d > max_dias: max_dias = d; txt_badge = txt
-        if count == 1: label = f"{estado_val} - {suc_val} | REP: {reps_list[0]} | {txt_badge}"
-        else: label = f"{estado_val} - {suc_val} | {count} REPORTES | {txt_badge} ({count} activos)"
+        if count == 1: 
+            label = f"{estado_val} - {suc_val} | REP: {reps_list[0]} | {txt_badge}"
+        else: 
+            # Si tiene varios reportes, crear una entrada por cada reporte para que se puedan ver todos
+            for idx_rep, rep_single in enumerate(reps_list):
+                fec_single = fecs[idx_rep] if idx_rep < len(fecs) else fecs[0] if fecs else ""
+                d_single, txt_single = dias_desde(fec_single) if fec_single else (None, "Sin fecha")
+                label_single = f"{estado_val} - {suc_val} | REP: {rep_single} | {txt_single} ({idx_rep+1}/{count})"
+                opciones_activas.append(label_single)
+                mapa_activos[label_single] = {"estado": estado_val, "sucursal": suc_val, "count": count, "reps": [rep_single], "rep_idx": idx_rep, "reps_all": reps_list, "row": row_base, "fec": fec_single}
+            continue
+            label = f"{estado_val} - {suc_val} | {count} REPORTES | {txt_badge} ({count} activos)"
         opciones_activas.append(label)
         mapa_activos[label] = {"estado": estado_val, "sucursal": suc_val, "count": count, "reps": reps_list, "row": row_base}
     opciones_activas = sorted(opciones_activas)

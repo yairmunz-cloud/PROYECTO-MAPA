@@ -735,16 +735,7 @@ with c1:
     """, unsafe_allow_html=True)
 with c2:
     st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
-    if st.button("🔄 Refrescar Reportes", key="btn_refrescar_top"):
-        try:
-            st.cache_data.clear()
-        except:
-            pass
-        try:
-            st.cache_resource.clear()
-        except:
-            pass
-        st.rerun()
+    
     if not df_reportes.empty:
         st.markdown(f"""
         <div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #ef4444; background:white !important; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
@@ -786,8 +777,7 @@ with c2:
                     for k in list(st.session_state.keys()):
                         if k.startswith('sucursal_real_'): del st.session_state[k]
                     st.rerun()
-    else:
-        st.markdown('<div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #16a34a; background:white !important; border-radius:12px;"><div style="display:flex; align-items:center; gap:8px;"><div style="width:20px; height:20px; background:#16a34a; border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px;"></div><b style="color:#166534; font-size:0.75rem;">Sin reportes activos</b></div></div>', unsafe_allow_html=True)
+
 
 if st.session_state.get('show_case_pdf'):
     st.markdown('<div class="glass" style="border:2px solid #1e40af; padding:18px; margin-top:12px; background:white;">', unsafe_allow_html=True)
@@ -831,15 +821,22 @@ if not es_modo_agregar:
         if "estado_real" not in st.session_state or st.session_state["estado_real"] not in lista_estados:
             st.session_state["estado_real"] = lista_estados[default_est_idx] if lista_estados else ""
         estado_actual = st.selectbox("Estado", lista_estados, key="estado_real", label_visibility="collapsed")
-    # --- FIX: Si cambias Estado abajo manualmente, resetear filtro de arriba para no mostrar info vieja ---
+    # --- FIX: Si cambias Estado abajo manualmente, resetear filtro de arriba ---
     try:
         if 'last_estado_real' not in st.session_state:
             st.session_state['last_estado_real'] = st.session_state.get('estado_real', '')
-        if st.session_state.get('estado_real') != st.session_state.get('last_estado_real'):
+        curr_est = st.session_state.get('estado_real', '')
+        last_est = st.session_state.get('last_estado_real', '')
+        if curr_est != last_est:
             st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
-            st.session_state['last_estado_real'] = st.session_state.get('estado_real', '')
-            # Limpiar cache de filtro
             st.session_state['last_filtro_activo_sel'] = "-- Ver todas las sucursales --"
+            st.session_state['last_estado_real'] = curr_est
+            st.session_state['last_sucursal_real'] = ""
+            try:
+                st.cache_data.clear()
+            except:
+                pass
+            st.rerun()
     except:
         pass
         st.markdown('</div>', unsafe_allow_html=True)

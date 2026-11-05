@@ -542,88 +542,77 @@ def log_eliminacion_historial(usuario, estado, sucursal, no_reporte, fecha_repor
     except: return False
     return True
 
+
 def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=None):
     try:
-        if "gcp_service_account" in st.secrets:
-            import gspread
-            from google.oauth2.service_account import Credentials
-            import unicodedata
-            def clean_norm(s):
-                s = str(s).strip()
-                if not s: return ""
-                s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
-                s = s.upper()
-                s = re.sub(r'\s+', ' ', s)
-                return s.strip()
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
-            client = gspread.authorize(creds)
-            sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
-            sh = client.open_by_key(sheet_id)
-            # FIX: SIEMPRE BDSUCURSALES2
+        if "gcp_service_account" not in st.secrets:
+            return True, "Demo"
+        import gspread
+        from google.oauth2.service_account import Credentials
+        import unicodedata, re
+        def clean_norm(s):
+            s = str(s).strip()
+            if not s: return ""
+            s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+            s = s.upper()
+            s = re.sub(r'\s+', ' ', s)
+            return s.strip()
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+        client = gspread.authorize(creds)
+        # Probar con ID correcto y con el de secrets
+        ids_a_probar = [ID_CORRECTO_SHEETS, st.secrets.get("sheet_id", SHEET_ID_PRUEBAS), "196gIWN8Sfk0_ZC-WHbL0FDw-BRwK4XnCkS14gAaN9UE"]
+        sh = None
+        last_err = ""
+        for sid in ids_a_probar:
+            if not sid: continue
             try:
-                ws_main = sh.worksheet(SHEET_PRINCIPAL)
-            except:
-                ws_main = sh.worksheet("BDSUCURSALES")
-            headers = ws_main.row_values(1)
-            headers_upper = [h.strip().upper() for h in headers]
-            def find_idx(kws):
-                for i, h in enumerate(headers_upper):
-                    for kw in kws:
-                        if kw in h: return i+1
-                return None
-            col_est_idx = find_idx(['ESTADO','EDO'])
-            col_suc_idx = find_idx(['SUCURSAL','SUC','SITIO'])
-            col_rep_idx = find_idx(['NO. REPORTE','NO REPORTE','REPORTE'])
-            col_fec_idx = find_idx(['FECHA DE REPORTE','FECHA REPORTE','FECHA','FEC'])
-            col_falla_idx = find_idx(['FALLA','OBSERVACIONES','OBS','COMENTARIO'])
-            col_tel_falla_idx = find_idx(['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','LINEA FALLA','LINEA REPORTADA'])
-            all_vals = ws_main.get_all_values()
-            row_found = None
-            last_estado = ""
-            for idx_row in range(1, len(all_vals)):
-                row = all_vals[idx_row]
-                try:
-                    est_cell_raw = row[col_est_idx-1] if col_est_idx and col_est_idx-1 < len(row) else ""
-                    suc_cell_raw = row[col_suc_idx-1] if col_suc_idx and col_suc_idx-1 < len(row) else ""
-                    if est_cell_raw and str(est_cell_raw).strip(): last_estado = est_cell_raw
-                    est_cell = last_estado if last_estado else est_cell_raw
-                    if not est_cell or not suc_cell_raw: continue
-                    if clean_norm(est_cell) == clean_norm(estado) and clean_norm(suc_cell_raw) == clean_norm(sucursal):
-                        row_found = idx_row+1
+                sh = client.open_by_key(sid)
+                break
+            except Exception as e:
+                last_err = str(e)
+                continue
+        if not sh:
+            return False, f"No se pudo abrir ningún spreadsheet. Último error: {last_err}"
+        
+        # Buscar la fila de Guerrero en TODAS las pestañas
+        row_found = None
+        ws_found = None
+        for ws_try in sh.worksheets():
+            try:
+                vals = ws_try.get_all_values()
+                if not vals or len(vals) < 2: continue
+                last_estado = ""
+                for idx in range(1, len(vals)):
+                    row = vals[idx]
+                    if len(row) < 2: continue
+                    est_raw = row[0] if len(row) > 0 else ""
+                    suc_raw = row[1] if len(row) > 1 else ""
+                    if est_raw and str(est_raw).strip():
+                        last_estado = est_raw
+                    est_cell = last_estado if last_estado else est_raw
+                    if not est_cell or not suc_raw: continue
+                    if clean_norm(est_cell) == clean_norm(estado) and clean_norm(suc_raw) == clean_norm(sucursal):
+                        row_found = idx + 1
+                        ws_found = ws_try
                         break
-                except: continue
-            if not row_found:
-                return False, f"No se encontro: {estado} / {sucursal}"
-            cur_rep = all_vals[row_found-1][col_rep_idx-1] if col_rep_idx and col_rep_idx-1 < len(all_vals[row_found-1]) else ""
-            cur_fec = all_vals[row_found-1][col_fec_idx-1] if col_fec_idx and col_fec_idx-1 < len(all_vals[row_found-1]) else ""
-            cur_falla = all_vals[row_found-1][col_falla_idx-1] if col_falla_idx and col_falla_idx-1 < len(all_vals[row_found-1]) else ""
-            cur_tel_falla = all_vals[row_found-1][col_tel_falla_idx-1] if col_tel_falla_idx and col_tel_falla_idx-1 < len(all_vals[row_found-1]) else ""
-            reps = split_multi_val(cur_rep)
-            fecs = split_multi_val(cur_fec)
-            fallas = split_multi_val(cur_falla)
-            tel_fallas = split_multi_val(cur_tel_falla)
-            if indice_a_borrar is None:
-                try: indice_a_borrar = next(i for i,r in enumerate(reps) if str(r).strip()==str(no_reporte_actual).strip())
-                except: indice_a_borrar = 0 if reps else None
-            if indice_a_borrar is not None and 0 <= indice_a_borrar < len(reps):
-                reps.pop(indice_a_borrar)
-                if indice_a_borrar < len(fecs): fecs.pop(indice_a_borrar)
-                if indice_a_borrar < len(fallas): fallas.pop(indice_a_borrar)
-                if indice_a_borrar < len(tel_fallas): tel_fallas.pop(indice_a_borrar)
-                if reps:
-                    ws_main.update_cell(row_found, col_rep_idx, join_multi_val(reps))
-                    if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, join_multi_val(fecs))
-                    if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, join_multi_val(fallas))
-                    if col_tel_falla_idx: ws_main.update_cell(row_found, col_tel_falla_idx, join_multi_val(tel_fallas))
-                else:
-                    ws_main.update_cell(row_found, col_rep_idx, "")
-                    if col_fec_idx: ws_main.update_cell(row_found, col_fec_idx, "")
-                    if col_falla_idx: ws_main.update_cell(row_found, col_falla_idx, "")
-                    if col_tel_falla_idx: ws_main.update_cell(row_found, col_tel_falla_idx, "")
-                return True, row_found
-            else: return False, "Indice no encontrado"
-        else: return True, "Modo demo"
-    except Exception as e: return False, str(e)
+                if row_found:
+                    break
+            except:
+                continue
+        
+        if not row_found or not ws_found:
+            return False, f"No se encontro {estado}/{sucursal} en ninguna pestaña de {sh.title}"
+        
+        # Borrar D,E,F,G
+        ws_found.update_cell(row_found, 4, "", value_input_option="USER_ENTERED")
+        ws_found.update_cell(row_found, 5, "", value_input_option="USER_ENTERED")
+        ws_found.update_cell(row_found, 6, "", value_input_option="USER_ENTERED")
+        ws_found.update_cell(row_found, 7, "", value_input_option="USER_ENTERED")
+        return True, f"{ws_found.title} fila {row_found}"
+    except Exception as e:
+        import traceback
+        return False, f"{e} {traceback.format_exc()}"
+
 
 lista_estados = sorted(df[COL_EST].dropna().unique()) if COL_EST in df.columns else []
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP and COL_REP in df.columns else pd.DataFrame()

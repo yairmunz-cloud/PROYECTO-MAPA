@@ -712,7 +712,8 @@ with c1:
     if b64_logo:
         st.markdown(f"""<div style="display:flex; align-items:center; gap:16px"><div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     else:
-        st.markdown(f"""<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div>""", unsafe_allow_html=True)
+        logo_html_fallback = '<div style="width:56px; height:56px; border-radius:14px; background:linear-gradient(135deg,#1e3a8a,#1e40af); display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:26px; box-shadow:0 2px 8px rgba(30,58,138,0.3);">A</div>'
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:16px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="primary", width='content'):
         st.session_state['show_case_pdf'] = True

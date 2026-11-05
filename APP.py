@@ -752,18 +752,49 @@ with c2:
             st.session_state["filtro_activo_sel"] = "-- Ver todas las sucursales --"
         sel_activo = st.selectbox("Filtro reporte activo", opciones_con_todos, key="filtro_activo_sel", label_visibility="collapsed", placeholder="🔍 Selecciona sucursal con reporte activo...")
     # --- FIX SYNC: Al seleccionar en Reportes Activos, sincronizar con Estado/Sucursal de abajo ---
+    # --- FIX SYNC ROBUSTO: Prioridad a seleccion manual abajo ---
     try:
+        # 1. Detectar si Estado o Sucursal de abajo cambiaron manualmente
+        curr_est = st.session_state.get('estado_real', '')
+        curr_suc = st.session_state.get('sucursal_real', '')
+        last_est = st.session_state.get('last_estado_real', '')
+        last_suc = st.session_state.get('last_sucursal_real', '')
+        
+        # Si Estado o Sucursal de abajo cambiaron manualmente, resetear filtro de arriba
+        bottom_changed = (curr_est != last_est) or (curr_suc != last_suc)
+        if bottom_changed and last_est and last_suc:
+            # Usuario cambio manual abajo, resetear filtro arriba
+            if st.session_state.get('filtro_activo_sel', '') != "-- Ver todas las sucursales --":
+                st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                st.session_state['last_filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                st.session_state['last_estado_real'] = curr_est
+                st.session_state['last_sucursal_real'] = curr_suc
+                try:
+                    st.cache_data.clear()
+                except:
+                    pass
+                st.rerun()
+        
+        # 2. Si filtro de arriba cambio, sincronizar abajo
         sel_filtro = st.session_state.get('filtro_activo_sel', '')
-        if sel_filtro and sel_filtro != "-- Ver todas las sucursales --" and sel_filtro in mapa_activos:
-            info_filtro = mapa_activos[sel_filtro]
-            est_f = info_filtro.get('estado', '')
-            suc_f = info_filtro.get('sucursal', '')
-            if est_f and suc_f:
-                if st.session_state.get('estado_real') != est_f or st.session_state.get('sucursal_real') != suc_f:
+        last_filtro = st.session_state.get('last_filtro_activo_sel', '-- Ver todas las sucursales --')
+        if sel_filtro != last_filtro:
+            st.session_state['last_filtro_activo_sel'] = sel_filtro
+            if sel_filtro and sel_filtro != "-- Ver todas las sucursales --" and sel_filtro in mapa_activos:
+                info_filtro = mapa_activos[sel_filtro]
+                est_f = info_filtro.get('estado', '')
+                suc_f = info_filtro.get('sucursal', '')
+                if est_f and suc_f:
                     st.session_state['estado_real'] = est_f
                     st.session_state['sucursal_real'] = suc_f
-                    # Forzar rerun para mostrar detalle con telefonos
-                    # st.rerun() - no hacer rerun infinito, solo setear
+                    st.session_state['last_estado_real'] = est_f
+                    st.session_state['last_sucursal_real'] = suc_f
+                    st.rerun()
+        
+        # Actualizar last values si no hubo cambio
+        if not bottom_changed:
+            st.session_state['last_estado_real'] = curr_est
+            st.session_state['last_sucursal_real'] = curr_suc
     except Exception as e_sync:
         pass
         last_filtro = st.session_state.get('last_filtro_activo_sel', '-- Ver todas las sucursales --')
@@ -821,24 +852,7 @@ if not es_modo_agregar:
         if "estado_real" not in st.session_state or st.session_state["estado_real"] not in lista_estados:
             st.session_state["estado_real"] = lista_estados[default_est_idx] if lista_estados else ""
         estado_actual = st.selectbox("Estado", lista_estados, key="estado_real", label_visibility="collapsed")
-    # --- FIX: Si cambias Estado abajo manualmente, resetear filtro de arriba ---
-    try:
-        if 'last_estado_real' not in st.session_state:
-            st.session_state['last_estado_real'] = st.session_state.get('estado_real', '')
-        curr_est = st.session_state.get('estado_real', '')
-        last_est = st.session_state.get('last_estado_real', '')
-        if curr_est != last_est:
-            st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
-            st.session_state['last_filtro_activo_sel'] = "-- Ver todas las sucursales --"
-            st.session_state['last_estado_real'] = curr_est
-            st.session_state['last_sucursal_real'] = ""
-            try:
-                st.cache_data.clear()
-            except:
-                pass
-            st.rerun()
-    except:
-        pass
+
         st.markdown('</div>', unsafe_allow_html=True)
     df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df
     lista_suc = sorted(df_estado[COL_SUC].dropna().unique()) if COL_SUC else []
@@ -848,22 +862,6 @@ if not es_modo_agregar:
             if default_suc and default_suc in lista_suc: st.session_state["sucursal_real"] = default_suc
             elif lista_suc: st.session_state["sucursal_real"] = lista_suc[0]
         sucursal_actual = st.selectbox("Sucursales", lista_suc, key="sucursal_real", label_visibility="collapsed")
-    # --- Si cambias Sucursal abajo manualmente, resetear filtro arriba ---
-    try:
-        if 'last_sucursal_real' not in st.session_state:
-            st.session_state['last_sucursal_real'] = st.session_state.get('sucursal_real', '')
-        if st.session_state.get('sucursal_real') != st.session_state.get('last_sucursal_real'):
-            # Solo resetear si no viene del sync de arriba
-            sel_f = st.session_state.get('filtro_activo_sel', '')
-            if sel_f != "-- Ver todas las sucursales --":
-                # Verificar si la sucursal seleccionada abajo no coincide con la del filtro arriba
-                if sel_f in mapa_activos:
-                    suc_filtro = mapa_activos[sel_f].get('sucursal', '')
-                    if suc_filtro != st.session_state.get('sucursal_real', ''):
-                        st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
-            st.session_state['last_sucursal_real'] = st.session_state.get('sucursal_real', '')
-    except:
-        pass
         st.markdown('</div>', unsafe_allow_html=True)
         # FIX: no resetear filtro
         pass

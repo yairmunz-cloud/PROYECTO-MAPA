@@ -26,6 +26,13 @@ import re
 import time
 import base64
 
+
+# --- FORZAR REFRESCO DE DATOS PARA MULTI-REPORTE ---
+try:
+    st.cache_data.clear()
+except:
+    pass
+
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
@@ -264,7 +271,6 @@ def norm(s):
     return str(s).strip().upper().replace("  "," ").replace("\n","").replace("\r","")
 
 # --- FIX 2: CACHE MAS CORTO Y LECTURA UNIFICADA ---
-@st.cache_data(ttl=0, show_spinner=False)
 def cargar_datos(sheet_id_override=None):
     df_privado = None
     try:

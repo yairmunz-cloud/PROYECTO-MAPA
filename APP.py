@@ -29,7 +29,11 @@ import base64
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
-SHEET_PRINCIPAL = "BDSUCURSALES2"
+SHEET_PRINCIPAL = "BDSUCURSALES"
+
+# FIX FINAL v7: URL del usuario
+USER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
+
 
 # --- FIX CRITICO PARA RESETEAR FILTRO SIN ERROR DE STREAMLIT ---
 if st.session_state.get('reset_filtro_pendiente'):
@@ -259,10 +263,9 @@ def norm(s):
     return str(s).strip().upper().replace("  "," ").replace("\n","").replace("\r","")
 
 # --- FIX 2: CACHE MAS CORTO Y LECTURA UNIFICADA ---
-@st.cache_data(ttl=10, show_spinner=False)
+@st.cache_data(ttl=0, show_spinner=False)
 def cargar_datos(sheet_id_override=None):
     df_privado = None
-    hoja_usada = "NINGUNA"
     try:
         if "gcp_service_account" in st.secrets:
             import gspread
@@ -272,63 +275,38 @@ def cargar_datos(sheet_id_override=None):
             sid = sheet_id_override or st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
             if sid:
                 sh = client.open_by_key(sid)
-                # V3: listar todas las hojas y elegir la que tiene mas reportes reales
-                best_ws = None
-                best_count = -1
-                for ws_try in sh.worksheets():
+                ws = None
+                # FIX: prioriza SHEET_PRINCIPAL y solo acepta si tiene datos
+                for name_try in [SHEET_PRINCIPAL, "BDSUCURSALES", "BDSUCURSALESPRO", "Hoja1", "Sheet1"]:
                     try:
-                        vals = ws_try.get_all_values()
-                        if not vals or len(vals) < 5: continue
-                        headers_u = [h.strip().upper() for h in vals[0]]
-                        # debe tener ESTADO y SUCURSAL y NO REPORTE
-                        if not any('ESTADO' in h or 'EDO' in h for h in headers_u): continue
-                        if not any('SUCURSAL' in h for h in headers_u): continue
-                        # contar cuantos reportes tienen
-                        count_rep = 0
-                        for r in vals[1:]:
-                            # busca col REPORTE (usualmente col D)
-                            for c in r:
-                                if c and c.strip() and c.strip().isdigit() and len(c.strip())>=5:
-                                    count_rep+=1
-                                    break
-                        # priorizar BDSUCURSALES2 y Copia de BDSUCURSALESPRO
-                        bonus = 0
-                        if "BDSUCURSALES2" in ws_try.title.upper(): bonus = 1000
-                        if "COPIA" in ws_try.title.upper() and "BDSUCURSALESPRO" in ws_try.title.upper(): bonus = 999
-                        if "BDSUCURSALES" in ws_try.title.upper(): bonus += 500
-                        if count_rep + bonus > best_count:
-                            best_count = count_rep + bonus
-                            best_ws = ws_try
+                        ws_try = sh.worksheet(name_try)
+                        vals_try = ws_try.get_all_values()
+                        if vals_try and len(vals_try) > 5:
+                            ws = ws_try
+                            break
                     except:
                         continue
-                if best_ws:
-                    hoja_usada = best_ws.title
-                    all_vals = best_ws.get_all_values()
-                    if all_vals and len(all_vals) > 1:
-                        headers = [h.strip().upper() for h in all_vals[0]]
-                        rows = all_vals[1:]
-                        df_tmp = pd.DataFrame(rows, columns=headers)
-                        df_tmp = df_tmp.replace('', pd.NA)
-                        df_tmp = df_tmp.dropna(how='all')
-                        df_tmp = df_tmp.fillna("")
-                        if len(df_tmp) >= 1:
-                            df_privado = df_tmp
-                            # guardar en session para usar en guardado/eliminado
-                            st.session_state['HOJA_REAL_USADA'] = hoja_usada
+                if not ws:
+                    try:
+                        ws = sh.worksheet(SHEET_PRINCIPAL)
+                    except:
+                        ws = sh.sheet1
+                all_vals = ws.get_all_values()
+                if all_vals and len(all_vals) > 1:
+                    headers = [h.strip().upper() for h in all_vals[0]]
+                    rows = all_vals[1:]
+                    df_tmp = pd.DataFrame(rows, columns=headers)
+                    df_tmp = df_tmp.replace('', pd.NA)
+                    df_tmp = df_tmp.dropna(how='all')
+                    df_tmp = df_tmp.fillna("")
+                    if len(df_tmp) >= 1:
+                        df_privado = df_tmp
     except Exception as e:
-        st.warning(f"Error cargando privado: {e}")
-    
-    # V3: SI hay service account, NUNCA usar CSV publico (es viejo)
-    if "gcp_service_account" in st.secrets:
-        if df_privado is not None and not df_privado.empty:
-            return df_privado
-        else:
-            # si falla privado, retornar vacio para no confundir con CSV viejo
-            return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
-    
-    # Solo si NO hay service account, usar CSV publico
+        pass
+    if df_privado is not None and not df_privado.empty and len(df_privado) > 5:
+        return df_privado
     try:
-        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTySrWdMEtPBo7u4r6df8shaedXk8783RUOdOPsjLwIh1xz4nLHdAdaheYFMB1-CLI2XtzpzLa7SQXm/pub?output=csv"
+        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
         url = f"{base_url}&cb={int(time.time())}"
         df = pd.read_csv(url, dtype=str)
         df.columns = df.columns.str.strip().str.upper()
@@ -577,15 +555,11 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=
             client = gspread.authorize(creds)
             sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
             sh = client.open_by_key(sheet_id)
-            # FIX V3: SIEMPRE MISMA HOJA QUE SE LEYÓ
-            hoja_real = st.session_state.get("HOJA_REAL_USADA", SHEET_PRINCIPAL)
+            # FIX: SIEMPRE BDSUCURSALES2
             try:
-                ws_main = sh.worksheet(hoja_real)
+                ws_main = sh.worksheet(SHEET_PRINCIPAL)
             except:
-                try:
-                    ws_main = sh.worksheet(SHEET_PRINCIPAL)
-                except:
-                    ws_main = sh.worksheet("BDSUCURSALES")
+                ws_main = sh.worksheet("BDSUCURSALES")
             headers = ws_main.row_values(1)
             headers_upper = [h.strip().upper() for h in headers]
             def find_idx(kws):
@@ -646,11 +620,6 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=
             else: return False, "Indice no encontrado"
         else: return True, "Modo demo"
     except Exception as e: return False, str(e)
-
-
-# --- DEBUG V3: mostrar que hoja real esta usando ---
-if 'HOJA_REAL_USADA' in st.session_state:
-    st.info(f"📄 Leyendo datos de pestaña: **{st.session_state['HOJA_REAL_USADA']}** | Si ves Guerrero en blanco aquí pero con reporte en la app, es que estás mirando otra pestaña diferente en Sheets")
 
 lista_estados = sorted(df[COL_EST].dropna().unique()) if COL_EST in df.columns else []
 df_reportes = df[df[COL_REP].apply(tiene_reporte)] if COL_REP and COL_REP in df.columns else pd.DataFrame()
@@ -967,12 +936,9 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         client = gspread.authorize(creds)
                         sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
                         sh = client.open_by_key(sheet_id)
-                        # FIX V3: usar la misma hoja que se leyó
-                        hoja_real = st.session_state.get("HOJA_REAL_USADA", SHEET_PRINCIPAL)
-                        try: ws_main = sh.worksheet(hoja_real)
-                        except:
-                            try: ws_main = sh.worksheet(SHEET_PRINCIPAL)
-                            except: ws_main = sh.worksheet("BDSUCURSALES")
+                        # FIX: SIEMPRE BDSUCURSALES2
+                        try: ws_main = sh.worksheet(SHEET_PRINCIPAL)
+                        except: ws_main = sh.worksheet("BDSUCURSALES")
                         headers = ws_main.row_values(1)
                         headers_upper = [h.strip().upper() for h in headers]
                         def find_idx(kws):

@@ -604,10 +604,10 @@ def eliminar_reporte_hoja1(estado, sucursal, no_reporte_actual, indice_a_borrar=
             return False, f"No se encontro {estado}/{sucursal} en ninguna pestaña de {sh.title}"
         
         # Borrar D,E,F,G
-        ws_found.update_cell(row_found, 4, "", value_input_option="USER_ENTERED")
-        ws_found.update_cell(row_found, 5, "", value_input_option="USER_ENTERED")
-        ws_found.update_cell(row_found, 6, "", value_input_option="USER_ENTERED")
-        ws_found.update_cell(row_found, 7, "", value_input_option="USER_ENTERED")
+        ws_found.update_cell(row_found, 4, "")
+        ws_found.update_cell(row_found, 5, "")
+        ws_found.update_cell(row_found, 6, "")
+        ws_found.update_cell(row_found, 7, "")
         return True, f"{ws_found.title} fila {row_found}"
     except Exception as e:
         import traceback

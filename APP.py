@@ -31,6 +31,12 @@ st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", l
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
 SHEET_PRINCIPAL = "BDSUCURSALES2"
 
+# --- FIX CRITICO PARA RESETEAR FILTRO SIN ERROR DE STREAMLIT ---
+if st.session_state.get('reset_filtro_pendiente'):
+    st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
+    st.session_state['last_filtro_activo_sel'] = "-- Ver todas las sucursales --"
+    st.session_state['reset_filtro_pendiente'] = False
+
 # --- SIDEBAR MENU PRINCIPAL - V42 GRIS ESTÉTICO FORZADO ---
 if 'pagina' not in st.session_state:
     st.session_state['pagina'] = "🏠 Reportes"
@@ -1004,17 +1010,16 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                                 if col_fec_idx: new_row[col_fec_idx-1] = r['fecha_reporte']
                                 if col_falla_idx: new_row[col_falla_idx-1] = r['obs']
                                 if col_tel_falla_idx: new_row[col_tel_falla_idx-1] = r['tel']
-                                ws_main.append_row(new_row)
+                                ws_main.append_row(new_row, value_input_option='USER_ENTERED')
                                 all_vals.append(new_row)
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
                         log_acceso(st.session_state['current_user'], f"Guardo lote PRUEBA {guardados} reportes")
                         st.success(f"✅ {guardados} reportes guardados en {SHEET_PRINCIPAL}")
                         st.session_state['batch_reportes'] = []
-                        # FIX 3: LIMPIAR CACHE Y RESETEAR BOX REPORTES ACTIVOS
+                        # FIX 3: LIMPIAR CACHE Y RESETEAR BOX REPORTES ACTIVOS SIN ERROR
                         st.cache_data.clear()
-                        st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
-                        st.session_state['last_filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                        st.session_state['reset_filtro_pendiente'] = True
                         st.balloons()
                         time.sleep(1.5)
                         st.session_state['admin_auth'] = False
@@ -1156,10 +1161,9 @@ if st.session_state.get('show_delete_confirm'):
                             st.session_state['show_delete_confirm'] = False
                             st.session_state['delete_target'] = None
                             st.session_state['show_delete_login'] = False
-                            # FIX: limpiar cache y resetear box
+                            # FIX: limpiar cache y resetear box SIN ERROR
                             st.cache_data.clear()
-                            st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
-                            st.session_state['last_filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                            st.session_state['reset_filtro_pendiente'] = True
                             st.rerun()
                         else: st.error(f"Error al cerrar: {msg}")
                 except Exception as e:

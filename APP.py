@@ -242,6 +242,31 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES').sort_values('MES_ANO')
             chart2 = alt.Chart(por_mes).mark_line(point=True, color='#0f172a').encode(x='MES_ANO:N', y='REPORTES:Q', tooltip=['MES_ANO','REPORTES']).properties(height=400)
             st.altair_chart(chart2, width='stretch')
+    
+    st.markdown("---")
+    st.subheader("🔍 Buscar Reporte Viejo Cerrado")
+    st.markdown("Busca por No. Reporte, Sucursal o Estado - Muestra todos los reportes cerrados en HISTORIAL_REPORTES")
+    col_search1, col_search2 = st.columns([3,1])
+    with col_search1:
+        search_rep = st.text_input("Buscar reporte (No. Reporte, Sucursal, Estado, Usuario)", placeholder="Ej: 945969 o GUADALAJARA o PUEBLA", key="search_old_rep")
+    with col_search2:
+        st.markdown(f"<div style='margin-top:28px; padding:8px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85rem;'><b>{len(df_f)} eventos</b> filtrados</div>", unsafe_allow_html=True)
+    
+    df_search = df_f.copy()
+    if search_rep:
+        search_lower = search_rep.lower().strip()
+        mask = pd.Series([False]*len(df_search))
+        for col in ['NO_REPORTE','SUCURSAL','ESTADO','USUARIO','FALLA_REPORTADA']:
+            if col in df_search.columns:
+                mask = mask | df_search[col].astype(str).str.lower().str.contains(search_lower, na=False)
+        df_search = df_search[mask]
+    
+    # Mostrar tabla con todos los reportes historicos
+    if not df_search.empty:
+        st.dataframe(df_search.sort_values('FECHA_REGISTRO' if 'FECHA_REGISTRO' in df_search.columns else df_search.columns[0], ascending=False).head(200), width='stretch', height=400)
+        st.markdown(f"<div style='font-size:0.75rem; color:#64748b; margin-top:8px;'>Mostrando {min(200, len(df_search))} de {len(df_search)} eventos (Total historico: {len(df_hist)}). Usa la busqueda para filtrar.</div>", unsafe_allow_html=True)
+    else:
+        st.info("No se encontraron reportes con ese criterio. Prueba con otro No. Reporte o sucursal.")
     st.stop()
 
 if st.session_state.get('pagina') != "🏠 Reportes":

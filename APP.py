@@ -160,7 +160,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                         sheet_id = SHEET_ID
                     except:
                         try:
-                            sheet_id = SHEET_ID_PRUEBAS
+                            sheet_id = SHEET_ID_PRUEBAS = st.secrets.get("sheet_id", "196glWN8Sfk0_ZC-WHbL0FDw-BRwK4XnCkS14gAaN9UE")
                         except:
                             sheet_id = None
                 if not sheet_id:
@@ -1418,7 +1418,11 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
 if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px">', unsafe_allow_html=True)
     st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}** - PRUEBAS REALES")
-    st.info(f"Hoja pruebas ID: {SHEET_ID_PRUEBAS[:20]}... | Modo lote: agrega N reportes y al final guarda todo")
+    
+    # CONTROL DE ERRORES: Si SHEET_ID_PRUEBAS tiene valor, saca el recorte; si no, muestra texto alternativo
+    id_display = SHEET_ID_PRUEBAS[:20] + "..." if SHEET_ID_PRUEBAS else "Cargado desde Streamlit Secrets"
+    st.info(f"Hoja pruebas ID: {id_display} | Modo lote: agrega N reportes y al final guarda todo")
+    
     st.markdown("#### 1⃣ Selecciona Estado y Sucursal")
     fc_sel1, fc_sel2 = st.columns(2)
     with fc_sel1:

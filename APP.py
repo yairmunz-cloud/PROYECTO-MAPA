@@ -384,26 +384,173 @@ if COL_SUC and not df.empty:
 def tiene_reporte(v):
     if pd.isna(v): return False
     return str(v).strip().lower() not in ["","0","0.0","sin reporte","none","nan","vacio","s/r"]
+def split_multi_val(v):
+    if pd.isna(v): return []
+    s = str(v).strip()
+    if not s or s.lower() in ["nan","none",""]: return []
+    import re as _re
+    if "|" in s: parts = _re.split(r"\s*\|\s*", s)
+    else: parts = [s]
+    cleaned = [p.strip() for p in parts if p.strip() and p.strip().lower() not in ["nan","none",""]]
+    return cleaned
+def join_multi_val(lst):
+    cleaned = [str(x).strip() for x in lst if str(x).strip()]
+    return " | ".join(cleaned)
+def dias_desde(fecha_str):
+    if not fecha_str or str(fecha_str).lower() in ['nan','none','']: return None, "Sin fecha"
+    dt = pd.to_datetime(fecha_str, errors='coerce', dayfirst=True)
+    if pd.isna(dt): return None, "Fecha invalida"
+    now_naive = now_mx()
+    try: now_naive = now_naive.replace(tzinfo=None)
+    except: pass
+    try:
+        if hasattr(dt, 'to_pydatetime'): dt = dt.to_pydatetime()
+        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None: dt = dt.replace(tzinfo=None)
+    except: pass
+    diff = (now_naive - dt).days
+    if diff < 0: return diff, "Fecha futura"
+    if diff == 0: return diff, "Hoy"
+    elif diff == 1: return diff, "1 dia"
+    elif diff <= 2: return diff, f"{diff} dias"
+    elif diff <= 5: return diff, f"{diff} dias"
+    else: return diff, f"{diff} dias - Critico"
+def split_tels(raw):
+    if pd.isna(raw) or str(raw).lower() in ['nan','none','']: return []
+    s = str(raw).strip()
+    s = re.sub(r'(\d{3})(\d{3}-\d{3}-\d{4})', r'\1,\2', s)
+    s = re.sub(r'(\d{4})(\d{3}-)', r'\1,\2', s)
+    partes = re.split(r'[\n,;/\s]+', s)
+    tels = []
+    for p in partes:
+        p = p.strip()
+        if not p or p.lower()=='nan': continue
+        if re.match(r'^\d{3}-\d{3}-\d{4}$', p): tels.append(p)
+        elif re.match(r'^\d{10}$', p): tels.append(f"{p[:3]}-{p[3:6]}-{p[6:]}")
+        elif '-' in p and len(p)>=7: tels.append(p)
+    if not tels:
+        raw_tels = [t.strip() for t in re.split(r'[\n,;/]+', str(raw)) if t.strip() and t.strip().lower()!='nan']
+        for item in raw_tels:
+            encontrados = re.findall(r'\d{3}[-\s]?\d{3}[-\s]?\d{4}|\d{10}', item)
+            if encontrados:
+                for e in encontrados:
+                    e = e.replace(' ', '-')
+                    if len(e)==10 and '-' not in e: e = f"{e[:3]}-{e[3:6]}-{e[6:]}"
+                    tels.append(e)
+            else: tels.append(item)
+    seen=set(); uniq=[]
+    for t in tels:
+        if t not in seen: seen.add(t); uniq.append(t)
+    return uniq
 
-def split_multi_val(val):
-    if val is None:
-        return []
-    val = str(val).strip()
-    if not val:
-        return []
-    for sep in [" | ", " |", "| ", "|"]:
-        if sep in val:
-            return [v.strip() for v in val.split(sep) if v.strip()]
-    return [val]
+import hashlib, hmac
+def _hash_pwd(p): return hashlib.sha256(p.encode()).hexdigest()
+def sanitize_sheets_input(v, max_len=500):
+    if v is None: return ""
+    s=str(v).strip()
+    if len(s)>max_len: s=s[:max_len]
+    if s and s[0] in ("=","+","-","@"): s="'"+s
+    return s
+USUARIOS = {}
+def check_login(user, pwd):
+    try:
+        if "users" not in st.secrets: return False
+        attempts = st.session_state.get('login_attempts',0)
+        if attempts >= 5:
+            last = st.session_state.get('last_failed_login')
+            if last:
+                try:
+                    diff = (now_mx().replace(tzinfo=None) - last.replace(tzinfo=None)).total_seconds()/60
+                    if diff < 10: return False
+                    else: st.session_state['login_attempts']=0
+                except: pass
+        users_secret = st.secrets["users"]
+        if user not in users_secret:
+            st.session_state['login_attempts']=st.session_state.get('login_attempts',0)+1
+            st.session_state['last_failed_login']=now_mx().replace(tzinfo=None)
+            import time as _t; _t.sleep(0.8)
+            return False
+        stored=str(users_secret[user]).strip()
+        pwd_input=str(pwd).strip()
+        ok=False
+        if len(stored)==64 and all(c in "0123456789abcdefABCDEF" for c in stored):
+            ok=_hash_pwd(pwd_input)==stored.lower()
+        else:
+            ok=hmac.compare_digest(stored,pwd_input)
+        if ok:
+            st.session_state['login_attempts']=0
+            st.session_state['last_activity']=now_mx().replace(tzinfo=None)
+        else:
+            st.session_state['login_attempts']=st.session_state.get('login_attempts',0)+1
+            st.session_state['last_failed_login']=now_mx().replace(tzinfo=None)
+        return ok
+    except: return False
+def log_acceso(usuario, accion="Login"):
+    now = now_mx(); fecha = now.strftime("%d/%m/%Y"); hora = now.strftime("%H:%M:%S")
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            client = gspread.authorize(creds)
+            try:
+                sh = client.open_by_key(ID_CORRECTO_SHEETS)
+            except:
+                sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+                sh = client.open_by_key(sheet_id)
+            try: ws = sh.worksheet("LOG_ACCESOS")
+            except:
+                ws = sh.add_worksheet(title="LOG_ACCESOS", rows=1000, cols=10)
+                ws.append_row(["FECHA", "HORA", "USUARIO", "ACCION", "DETALLE"])
+            ws.append_row([fecha, hora, usuario, accion, "Acceso desde app"])
+    except: pass
+def log_reporte_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, tel="", observaciones=""):
+    now = now_mx(); fecha_reg = now.strftime("%d/%m/%Y"); hora_reg = now.strftime("%H:%M:%S")
+    mes = now.strftime("%m"); anio = now.strftime("%Y"); dia = now.strftime("%d")
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            client = gspread.authorize(creds)
+            sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+            sh = client.open_by_key(sheet_id)
+            try: ws = sh.worksheet("HISTORIAL_REPORTES")
+            except:
+                ws = sh.add_worksheet(title="HISTORIAL_REPORTES", rows=5000, cols=15)
+                ws.append_row(["FECHA_REGISTRO", "HORA_REGISTRO", "DIA", "MES", "ANIO", "USUARIO", "ESTADO", "SUCURSAL", "NO_REPORTE", "FECHA_REPORTE", "TEL", "OBSERVACIONES"])
+            ws.append_row([fecha_reg, hora_reg, dia, mes, anio, usuario, estado, sucursal, no_reporte, fecha_reporte, tel, observaciones])
+            return True
+    except: return False
+    return True
+def log_eliminacion_historial(usuario, estado, sucursal, no_reporte, fecha_reporte, observaciones=""):
+    now = now_mx(); fecha_reg = now.strftime("%d/%m/%Y"); hora_reg = now.strftime("%H:%M:%S")
+    mes = now.strftime("%m"); anio = now.strftime("%Y"); dia = now.strftime("%d")
+    try:
+        if "gcp_service_account" in st.secrets:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            client = gspread.authorize(creds)
+            sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+            sh = client.open_by_key(sheet_id)
+            try: ws = sh.worksheet("HISTORIAL_REPORTES")
+            except:
+                ws = sh.add_worksheet(title="HISTORIAL_REPORTES", rows=5000, cols=15)
+                ws.append_row(["FECHA_REGISTRO", "HORA_REGISTRO", "DIA", "MES", "ANIO", "USUARIO", "ESTADO", "SUCURSAL", "NO_REPORTE", "FECHA_REPORTE", "TEL", "OBSERVACIONES"])
+            ws.append_row([fecha_reg, hora_reg, dia, mes, anio, usuario, estado, sucursal, f"ELIMINADO-{no_reporte}", fecha_reporte, "", f"ELIMINACION: {observaciones}"])
+            return True
+    except: return False
+    return True
+
 
 def eliminar_reporte_hoja1(estado, sucursal, reporte_a_borrar, fecha_a_borrar=None, falla_a_borrar=None):
-    """v16: Borra SOLO el reporte seleccionado, deja los demas con |"""
+    """v17: Borra SOLO el reporte seleccionado, deja los demas con |"""
     try:
         if "gcp_service_account" not in st.secrets:
             return True, "Demo"
         import gspread
         from google.oauth2.service_account import Credentials
-        import unicodedata, re
+        import unicodedata
         def clean_norm(s):
             s = str(s).strip()
             if not s: return ""
@@ -419,7 +566,6 @@ def eliminar_reporte_hoja1(estado, sucursal, reporte_a_borrar, fecha_a_borrar=No
         except:
             sh = client.open_by_key(ID_CORRECTO_SHEETS)
         
-        # Buscar fila en todas las hojas
         ws_found = None
         row_found = None
         for ws_try in sh.worksheets():
@@ -451,7 +597,6 @@ def eliminar_reporte_hoja1(estado, sucursal, reporte_a_borrar, fecha_a_borrar=No
         if not ws_found or not row_found:
             return False, f"No se encontro {estado} - {sucursal}"
         
-        # Leer valores actuales
         rep_actual = ws_found.cell(row_found, 4).value or ""
         fecha_actual = ws_found.cell(row_found, 5).value or ""
         falla_actual = ws_found.cell(row_found, 6).value or ""
@@ -462,7 +607,6 @@ def eliminar_reporte_hoja1(estado, sucursal, reporte_a_borrar, fecha_a_borrar=No
         fallas = split_multi_val(falla_actual)
         tels = split_multi_val(tel_actual)
         
-        # Encontrar indice a borrar por numero exacto
         idx_borrar = -1
         reporte_str = str(reporte_a_borrar).strip()
         for i, r in enumerate(reportes):
@@ -473,17 +617,22 @@ def eliminar_reporte_hoja1(estado, sucursal, reporte_a_borrar, fecha_a_borrar=No
         if idx_borrar == -1:
             return False, f"No se encontro REP {reporte_str} en {reportes}"
         
-        # Borrar solo ese indice
         nuevos_rep = [v for j, v in enumerate(reportes) if j != idx_borrar]
-        nuevas_fec = [v for j, v in enumerate(fechas) if j != idx_borrar] if len(fechas) > 1 else ( [] if len(reportes)==1 else fechas)
-        nuevas_fal = [v for j, v in enumerate(fallas) if j != idx_borrar] if len(fallas) > 1 else ( [] if len(reportes)==1 else fallas)
-        nuevos_tel = [v for j, v in enumerate(tels) if j != idx_borrar] if len(tels) > 1 else ( [] if len(reportes)==1 else tels)
-        
-        # Si solo habia 1 reporte, fechas/fallas/tels pueden tener 1 solo valor, deben borrarse tambien
         if len(reportes) == 1:
             nuevas_fec = []
             nuevas_fal = []
             nuevos_tel = []
+        else:
+            nuevas_fec = [v for j, v in enumerate(fechas) if j != idx_borrar] if len(fechas) > 1 else fechas
+            nuevas_fal = [v for j, v in enumerate(fallas) if j != idx_borrar] if len(fallas) > 1 else fallas
+            nuevos_tel = [v for j, v in enumerate(tels) if j != idx_borrar] if len(tels) > 1 else tels
+            # Si fechas/fallas tienen solo 1 valor pero reportes tenian varios, dejarlas como estan (no borrar)
+            if len(fechas) == 1 and len(reportes) > 1:
+                nuevas_fec = fechas
+            if len(fallas) == 1 and len(reportes) > 1:
+                nuevas_fal = fallas
+            if len(tels) == 1 and len(reportes) > 1:
+                nuevos_tel = tels
         
         ws_found.update_cell(row_found, 4, " | ".join(nuevos_rep) if nuevos_rep else "")
         ws_found.update_cell(row_found, 5, " | ".join(nuevas_fec) if nuevas_fec else "")
@@ -495,7 +644,6 @@ def eliminar_reporte_hoja1(estado, sucursal, reporte_a_borrar, fecha_a_borrar=No
     except Exception as e:
         import traceback
         return False, f"Error al cerrar: {e} {traceback.format_exc()}"
-
 
 
 lista_estados = sorted(df[COL_EST].dropna().unique()) if COL_EST in df.columns else []

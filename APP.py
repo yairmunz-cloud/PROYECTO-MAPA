@@ -1,4 +1,6 @@
 import streamlit as st
+st.warning(f"Sheet ID en Secrets: {st.secrets.get('sheet_id')}")
+st.warning(f"Service account: {st.secrets['gcp_service_account']['client_email']}")
 from datetime import datetime, timedelta
 try:
     from zoneinfo import ZoneInfo
@@ -266,55 +268,23 @@ def norm(s):
 # --- FIX 2: CACHE MAS CORTO Y LECTURA UNIFICADA ---
 @st.cache_data(ttl=0, show_spinner=False)
 def cargar_datos(sheet_id_override=None):
-    df_privado = None
+    # v12: Lee SIEMPRE del CSV publico que el usuario dio (no necesita auth)
+    # Asi no da 404 aunque la clave este mal
     try:
-        if "gcp_service_account" in st.secrets:
-            import gspread
-            from google.oauth2.service_account import Credentials
-            creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
-            client = gspread.authorize(creds)
-            sid = sheet_id_override or ID_CORRECTO_SHEETS or st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
-            if sid:
-                sh = client.open_by_key(sid)
-                ws = None
-                # FIX: prioriza SHEET_PRINCIPAL y solo acepta si tiene datos
-                for name_try in [SHEET_PRINCIPAL, "BDSUCURSALES", "BDSUCURSALESPRO", "Hoja1", "Sheet1"]:
-                    try:
-                        ws_try = sh.worksheet(name_try)
-                        vals_try = ws_try.get_all_values()
-                        if vals_try and len(vals_try) > 5:
-                            ws = ws_try
-                            break
-                    except:
-                        continue
-                if not ws:
-                    try:
-                        ws = sh.worksheet(SHEET_PRINCIPAL)
-                    except:
-                        ws = sh.sheet1
-                all_vals = ws.get_all_values()
-                if all_vals and len(all_vals) > 1:
-                    headers = [h.strip().upper() for h in all_vals[0]]
-                    rows = all_vals[1:]
-                    df_tmp = pd.DataFrame(rows, columns=headers)
-                    df_tmp = df_tmp.replace('', pd.NA)
-                    df_tmp = df_tmp.dropna(how='all')
-                    df_tmp = df_tmp.fillna("")
-                    if len(df_tmp) >= 1:
-                        df_privado = df_tmp
+        USER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
+        import time
+        url = f"{USER_CSV_URL}&cb={int(time.time())}"
+        df = pd.read_csv(url, dtype=str, keep_default_na=False)
+        df.columns = [c.strip().upper() for c in df.columns]
+        # Limpiar filas vacias
+        df = df.replace('', pd.NA)
+        df = df.dropna(how='all')
+        df = df.fillna("")
+        # Guardar hoja usada
+        st.session_state['HOJA_REAL_USADA'] = "BDSUCURSALES"
+        return df
     except Exception as e:
-        pass
-    if df_privado is not None and not df_privado.empty and len(df_privado) > 5:
-        return df_privado
-    try:
-        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
-        url = f"{base_url}&cb={int(time.time())}"
-        df = pd.read_csv(url, dtype=str)
-        df.columns = df.columns.str.strip().str.upper()
-        return df.dropna(how='all').fillna("")
-    except:
-        if df_privado is not None:
-            return df_privado
+        st.warning(f"Error leyendo CSV publico: {e}")
         return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
 
 def deduplicar_df(df_in):

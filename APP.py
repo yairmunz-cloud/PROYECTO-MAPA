@@ -697,17 +697,9 @@ if not df_reportes.empty:
         if count == 1: 
             label = f"{estado_val} - {suc_val} | REP: {reps_list[0]} | {txt_badge}"
         else: 
-            # Si tiene varios reportes, crear una entrada por cada reporte para que se puedan ver todos
-            for idx_rep, rep_single in enumerate(reps_list):
-                fec_single = fecs[idx_rep] if idx_rep < len(fecs) else fecs[0] if fecs else ""
-                d_single, txt_single = dias_desde(fec_single) if fec_single else (None, "Sin fecha")
-                label_single = f"{estado_val} - {suc_val} | REP: {rep_single} | {txt_single} ({idx_rep+1}/{count})"
-                opciones_activas.append(label_single)
-                mapa_activos[label_single] = {"estado": estado_val, "sucursal": suc_val, "count": count, "reps": [rep_single], "rep_idx": idx_rep, "reps_all": reps_list, "row": row_base, "fec": fec_single}
-            continue
             label = f"{estado_val} - {suc_val} | {count} REPORTES | {txt_badge} ({count} activos)"
         opciones_activas.append(label)
-        mapa_activos[label] = {"estado": estado_val, "sucursal": suc_val, "count": count, "reps": reps_list, "row": row_base}
+        mapa_activos[label] = {"estado": estado_val, "sucursal": suc_val, "count": count, "reps": reps_list, "reps_all": reps_list, "row": row_base, "fec": fecs[0] if fecs else "", "fec_all": fecs}
     opciones_activas = sorted(opciones_activas)
     mapa_activos_global = mapa_activos
 else: total_reps_global = 0
@@ -1201,7 +1193,13 @@ if st.session_state.get('show_delete_confirm'):
                             st.session_state['show_delete_confirm'] = False
                             st.session_state['delete_target'] = None
                             st.session_state['show_delete_login'] = False
-                            # FIX: limpiar cache y resetear box SIN ERROR
+                            # FIX: limpiar cache y resetear box SIN ERROR - v26
+                            try:
+                                st.cache_data.clear()
+                            except:
+                                pass
+                            st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                            st.rerun()
                             st.cache_data.clear()
                             st.session_state['reset_filtro_pendiente'] = True
                             st.rerun()

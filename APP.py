@@ -1,5 +1,11 @@
 import streamlit as st
+import pandas as pd
 from datetime import datetime, timedelta
+import re
+import time
+import base64
+import json
+
 try:
     from zoneinfo import ZoneInfo
     TZ_MX = ZoneInfo("America/Mexico_City")
@@ -22,18 +28,57 @@ def now_mx():
     # Fallback manual: UTC-6 (CDMX sin horario de verano desde 2022)
     return datetime.utcnow() - timedelta(hours=6)
 
-import pandas as pd
-from datetime import datetime
-import re
-import time
-import base64
-
-
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
+# ==============================================================================
+# --- SISTEMA DE CONTROL DE ACCESO (LOGIN) ---
+# ==============================================================================
+if 'autenticado' not in st.session_state:
+    st.session_state['autenticado'] = False
 
+def login():
+    """Muestra la interfaz de inicio de sesión"""
+    st.markdown("<h2 style='text-align: center;'>🔐 Control de Acceso - Seguros Atlas</h2>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        with st.form("formulario_login"):
+            usuario_input = st.text_input("Usuario", placeholder="Introduce tu usuario")
+            password_input = st.text_input("Contraseña", type="password", placeholder="Introduce tu contraseña")
+            boton_ingresar = st.form_submit_button("Ingresar al Sistema", use_container_width=True)
+            
+            if boton_ingresar:
+                # Verificamos si existen los usuarios definidos de forma segura en Streamlit Secrets
+                if "usuarios" in st.secrets:
+                    usuarios_validos = st.secrets["usuarios"] # Es un diccionario {"admin": "clave123", "usuario2": "clave456"}
+                    if usuario_input in usuarios_validos and password_input == usuarios_validos[usuario_input]:
+                        st.session_state['autenticado'] = True
+                        st.session_state['usuario_actual'] = usuario_input
+                        st.success(f"¡Bienvenido, {usuario_input}!")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("❌ Usuario o contraseña incorrectos.")
+                else:
+                    st.error("⚠️ Error de configuración: No se encontraron usuarios definidos en Secrets.")
 
+# Detener la ejecución del resto de la app si el usuario no se ha autenticado
+if not st.session_state['autenticado']:
+    login()
+    st.stop()
+
+# Botón para cerrar sesión en la barra lateral
+with st.sidebar:
+    st.markdown(f"**Usuario:** `{st.session_state.get('usuario_actual', 'Anónimo')}`")
+    if st.button("🚪 Cerrar Sesión", use_container_width=True):
+        st.session_state['autenticado'] = False
+        st.session_state['usuario_actual'] = None
+        st.rerun()
+    st.markdown("---")
+
+# ==============================================================================
 # --- SIDEBAR MENU PRINCIPAL - V42 GRIS ESTÉTICO FORZADO ---
+# ==============================================================================
 if 'pagina' not in st.session_state:
     st.session_state['pagina'] = "🏠 Reportes"
 
@@ -119,10 +164,9 @@ with st.sidebar:
     else:
         st.session_state['pagina'] = "📊 Dashboard Analítica"
 
-# --- DASHBOARD ANALÍTICA ---
-# --- DASHBOARD ANALÍTICA ---
-# --- DASHBOARD ANALÍTICA ---
-# --- DASHBOARD ANALÍTICA ---
+# ==============================================================================
+# --- DASHBOARD ANALÍTICA (CONEXIÓN SEGURA CORREGIDA) ---
+# ==============================================================================
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
     
@@ -133,65 +177,56 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     def cargar_historial_dashboard():
         df_hist = None
         try:
-            if "gcp_service_account" in st.secrets:
+            # MÉTODO ULTRA SEGURO: Carga todo el JSON de credenciales comprimido en una sola llave
+            if "GOOGLE_JSON_KEY" in st.secrets:
                 import gspread
                 from google.oauth2.service_account import Credentials
-                creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets","https://www.googleapis.com/auth/drive"])
+                
+                # Leemos la estructura JSON directo desde el string
+                creds_dict = json.loads(st.secrets["GOOGLE_JSON_KEY"])
+                
+                creds = Credentials.from_service_account_info(
+                    creds_dict, 
+                    scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+                )
                 client = gspread.authorize(creds)
-                # Buscar sheet_id de forma robusta
-                sheet_id = None
-                try:
-                    sheet_id = st.secrets.get("sheet_id")
-                except:
-                    pass
+                
+                # Obtención robusta del ID de la hoja de cálculo
+                sheet_id = st.secrets.get("sheet_id") or st.secrets.get("GOOGLE_SHEET_ID") or st.secrets.get("SHEET_ID")
+                
                 if not sheet_id:
-                    try:
-                        sheet_id = st.secrets.get("GOOGLE_SHEET_ID")
-                    except:
-                        pass
-                if not sheet_id:
-                    try:
-                        sheet_id = st.secrets["SHEET_ID"]
-                    except:
-                        pass
-                if not sheet_id:
-                    # Fallback a variables globales del archivo original
-                    try:
-                        sheet_id = SHEET_ID
-                    except:
-                        try:
-                            sheet_id = SHEET_ID_PRUEBAS
-                        except:
-                            sheet_id = None
-                if not sheet_id:
-                    st.error("No se encontró sheet_id en secrets (sheet_id, GOOGLE_SHEET_ID, SHEET_ID)")
+                    st.error("No se encontró sheet_id en los secrets de Streamlit.")
                     return None
+                    
                 sh = client.open_by_key(sheet_id)
-                for name in ["HISTORIAL_REPORTES","BDSUCURSALES2","BDSUCURSALES"]:
+                for name in ["HISTORIAL_REPORTES", "BDSUCURSALES2", "BDSUCURSALES"]:
                     try:
                         ws = sh.worksheet(name)
                         vals = ws.get_all_values()
-                        if vals and len(vals)>1:
+                        if vals and len(vals) > 1:
                             headers = [h.strip().upper() for h in vals[0]]
                             df_tmp = pd.DataFrame(vals[1:], columns=headers)
                             if len(headers) < 8:
                                 continue
                             df_hist = df_tmp
                             break
-                    except Exception as e:
+                    except Exception:
                         continue
+            else:
+                st.error("Falta la configuración 'GOOGLE_JSON_KEY' en Streamlit Secrets.")
         except Exception as e:
-            st.error(f"Error cargando historial: {e}")
+            st.error(f"Error cargando historial desde Google Sheets: {e}")
         return df_hist
 
     df_hist = cargar_historial_dashboard()
     
     if df_hist is None or df_hist.empty:
-        st.warning("No se encontró HISTORIAL_REPORTES.")
+        st.warning("No se encontró HISTORIAL_REPORTES o las credenciales no son válidas.")
         st.stop()
     
     df_hist.columns = [c.strip().upper() for c in df_hist.columns]
     
+    # El resto de tu código de gráficos y KPIs continúa abajo sin cambios... 
     # KPIs - FIX: sin truncation, sin usuarios activos, full width
     st.markdown("### 📌 KPIs Generales")
     total_ev = len(df_hist)

@@ -51,7 +51,7 @@ SHEET_PRINCIPAL = "BDSUCURSALES"
 ID_CORRECTO_SHEETS = "196gIWN8Sfk0_ZC-WHbL0FDw-BRwK4XnCkS14gAaN9UE"
 
 # FIX FINAL v7: URL del usuario
-USER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
+# FIX SEGURIDAD V41: Se elimino USER_CSV_URL publico - exponia datos sin auth. No usar CSV publicado.
 
 
 # --- FIX CRITICO PARA RESETEAR FILTRO SIN ERROR DE STREAMLIT ---
@@ -249,6 +249,17 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
 
 # --- BUSCAR REPORTES - PRIVADO Y COMPACTO ---
 if st.session_state.get('pagina') == "🔒 Buscar Reportes":
+    # FIX SEGURIDAD V41: Timeout 30 min - si paso mucho tiempo, cerrar sesion
+    try:
+        last_act = st.session_state.get('last_activity')
+        if last_act and st.session_state.get('admin_auth'):
+            diff_min = (now_mx().replace(tzinfo=None) - last_act).total_seconds()/60
+            if diff_min > 30:
+                st.session_state['admin_auth'] = False
+                st.session_state['current_user'] = None
+                st.warning("Sesión expirada por inactividad (30 min). Vuelve a ingresar.")
+    except:
+        pass
     if not st.session_state.get('admin_auth'):
         st.title("🔒 Buscar Reportes - Acceso Privado")
         st.warning("Esta sección es privada. Ingresa credenciales para buscar reportes viejos cerrados.")
@@ -258,13 +269,15 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
         with col_b2:
             pass_b = st.text_input("Contraseña", type="password", key="buscar_pass", placeholder="Contraseña")
         if st.button("🔓 Ingresar a Buscar Reportes", key="btn_buscar_login", type="primary"):
-            if user_b.strip() and pass_b.strip():
+            if check_login(user_b.strip().lower(), pass_b):
                 st.session_state['admin_auth'] = True
-                st.session_state['current_user'] = user_b.strip()
+                st.session_state['current_user'] = user_b.strip().lower()
+                st.session_state['last_activity'] = now_mx().replace(tzinfo=None)
+                log_acceso(user_b.strip().lower(), "Login Buscar Reportes")
                 st.success("Acceso concedido")
                 st.rerun()
             else:
-                st.error("Ingresa usuario y contraseña")
+                st.error("Usuario o contraseña incorrectos")
         st.stop()
     # Si ya esta autenticado, mostrar buscador compacto
     st.title("🔒 Buscar Reportes Viejos")
@@ -942,6 +955,7 @@ if st.session_state.get('show_delete_confirm'):
                             # FIX V40: Al cerrar reporte, cerrar sesion privada para que Buscar Reportes vuelva a pedir credenciales
                             st.session_state['admin_auth'] = False
                             st.session_state['current_user'] = None
+                            st.session_state['last_activity'] = None
                             st.session_state['show_login'] = False
                             # FIX: limpiar cache y resetear box SIN ERROR - v26
                             try:

@@ -1,5 +1,8 @@
 import streamlit as st
 from datetime import datetime, timedelta
+import hashlib
+import hmac
+def _hash_pwd(p): return hashlib.sha256(p.encode()).hexdigest()
 try:
     from zoneinfo import ZoneInfo
     TZ_MX = ZoneInfo("America/Mexico_City")

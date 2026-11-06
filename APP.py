@@ -366,7 +366,8 @@ def cargar_datos(sheet_id_override=None):
             from google.oauth2.service_account import Credentials
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
             client = gspread.authorize(creds)
-            sid = sheet_id_override or ID_CORRECTO_SHEETS or st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+            # FIX V39: Secrets primero - produccion 12uBz... debe ganar sobre test 196...
+            sid = sheet_id_override or st.secrets.get("sheet_id") or ID_CORRECTO_SHEETS
             if sid:
                 sh = client.open_by_key(sid)
                 ws = None
@@ -399,16 +400,13 @@ def cargar_datos(sheet_id_override=None):
         pass
     if df_privado is not None and not df_privado.empty and len(df_privado) > 5:
         return df_privado
-    try:
-        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
-        url = f"{base_url}&cb={int(time.time())}"
-        df = pd.read_csv(url, dtype=str)
-        df.columns = df.columns.str.strip().str.upper()
-        return df.dropna(how='all').fillna("")
-    except:
-        if df_privado is not None:
-            return df_privado
-        return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
+    # FIX V39: No usar CSV de pruebas como fallback en produccion - mostraria datos equivocados
+    # Si gspread fallo (ej: Invalid JWT), mostrar error en vez de datos de pruebas
+    if df_privado is not None and not df_privado.empty:
+        return df_privado
+    # Si no hay datos privados, retornar vacio para que se vea que no cargo produccion
+    st.error("No se pudo cargar el Sheet de producción. Revisa Secrets: sheet_id debe ser 12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4 y private_key debe ser la nueva.")
+    return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
 
 def deduplicar_df(df_in):
     try:

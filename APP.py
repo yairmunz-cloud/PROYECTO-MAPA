@@ -886,6 +886,77 @@ with c2:
                     st.rerun()
 
 
+
+# --- V36: LOGIN Y CONFIRMAR CIERRE ARRIBA - Para no hacer scroll ---
+if st.session_state.get('show_delete_login') and not st.session_state.get('admin_auth'):
+    st.markdown('<div class="glass" style="border:2px solid #dc2626; padding:24px; margin-top:16px; background:rgba(254,242,242,0.95) !important;">', unsafe_allow_html=True)
+    st.markdown("### 🔒 Login para CERRAR REPORTE")
+    target = st.session_state.get('delete_target', {})
+    st.markdown(f"""<div style="background:#fef2f2; border:1px solid #fecaca; border-left:5px solid #dc2626; padding:12px 16px; border-radius:8px; margin:10px 0;"><b style="color:#991b1b;">⚠ ADVERTENCIA: Vas a CERRAR un reporte activo</b><br><b>Sucursal:</b> {target.get('sucursal','')} - {target.get('estado','')}<br><b>No. REPORTE:</b> {target.get('rep','')}<br></div>""", unsafe_allow_html=True)
+    u_del = st.text_input("Usuario Administrador", key="delete_login_user", placeholder="Ingresa tu usuario")
+    p_del = st.text_input("Contraseña", type="password", key="delete_login_pwd", placeholder="Ingresa tu contraseña")
+    cd1, cd2 = st.columns(2)
+    with cd1:
+        if st.button("❌ Cancelar", key="cancel_delete_login", width='stretch'):
+            st.session_state['show_delete_login'] = False
+            st.session_state['delete_target'] = None
+            st.rerun()
+    with cd2:
+        if st.button("🔐 Ingresar y Continuar", key="confirm_delete_login", type="primary", width='stretch'):
+            if check_login(u_del, p_del):
+                st.session_state['admin_auth'] = True
+                st.session_state['current_user'] = u_del
+                st.session_state['show_delete_login'] = False
+                st.session_state['show_delete_confirm'] = True
+                log_acceso(u_del, f"Login para CERRAR REPORTE {target.get('rep','')} {target.get('sucursal','')}")
+                st.rerun()
+            else: st.error("Usuario o contraseña incorrectos")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+if st.session_state.get('show_delete_confirm'):
+    target = st.session_state.get('delete_target', {})
+    if target:
+        st.markdown('<div class="glass" style="border:2px solid #ef4444; background:rgba(254,242,242,0.8) !important; padding:24px; margin-top:16px;">', unsafe_allow_html=True)
+        st.markdown(f"### ✅ Confirmar Cierre de Reporte")
+        st.markdown(f"""<div style="background:white; border:1px solid #fecaca; border-left:5px solid #ef4444; padding:16px; border-radius:10px; margin:12px 0;"><b>Estado:</b> {target.get('estado')}<br><b>Sucursal:</b> {target.get('sucursal')}<br><b>No. REPORTE:</b> {target.get('rep')}<br><b>Fecha:</b> {target.get('fec')}<br><b>Falla:</b> {target.get('obs','')[:250]}<br><br><div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;"><b style="color:#b91c1c;">⚠ ADVERTENCIA - ACCIÓN EN {SHEET_PRINCIPAL}</b><br><div style="font-size:0.85rem; color:#7f1d1d; margin-top:6px;">Se limpiará NO. REPORTE, FECHA y FALLA en {SHEET_PRINCIPAL} y se guardará cierre en HISTORIAL_REPORTES</div></div></div>""", unsafe_allow_html=True)
+        cc1, cc2 = st.columns(2)
+        with cc1:
+            if st.button("❌ No, Cancelar", key="cancel_delete_final", width='stretch'):
+                st.session_state['show_delete_confirm'] = False
+                st.session_state['delete_target'] = None
+                st.session_state['show_delete_login'] = False
+                st.rerun()
+        with cc2:
+            if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", width='stretch'):
+                try:
+                    with st.spinner(f"Cerrando reporte en {SHEET_PRINCIPAL}..."):
+                        ok, msg = eliminar_reporte_hoja1(target['estado'], target['sucursal'], target['rep'], target.get('indice', None))
+                        if ok:
+                            log_eliminacion_historial(st.session_state.get('current_user','sistema'), target['estado'], target['sucursal'], target['rep'], target['fec'], target['obs'])
+                            log_acceso(st.session_state.get('current_user','sistema'), f"CERRO REPORTE {target['rep']} {target['sucursal']} - {target['estado']}")
+                            st.success(f"✅ Reporte {target['rep']} CERRADO correctamente en {SHEET_PRINCIPAL}.")
+                            st.balloons()
+                            time.sleep(1.5)
+                            st.session_state['show_delete_confirm'] = False
+                            st.session_state['delete_target'] = None
+                            st.session_state['show_delete_login'] = False
+                            # FIX: limpiar cache y resetear box SIN ERROR - v26
+                            try:
+                                st.cache_data.clear()
+                            except:
+                                pass
+                            st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                            st.rerun()
+                            st.cache_data.clear()
+                            st.session_state['reset_filtro_pendiente'] = True
+                            st.rerun()
+                        else: st.error(f"Error al cerrar: {msg}")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                    import traceback
+            
+
 if st.session_state.get('show_case_pdf'):
     st.markdown('<div class="glass" style="border:2px solid #1e40af; padding:18px; margin-top:12px; background:white;">', unsafe_allow_html=True)
     st.markdown("### 📞 Telefonos CASE NACIONAL - Soporte Empresarial 24H 365 días")
@@ -1301,71 +1372,6 @@ if not st.session_state.get('show_add_form', False):
                                     else:
                                         st.markdown(f"""<div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; gap:10px; margin-bottom:10px;"><div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center;">📞</div><div style="font-weight:600; font-size:0.9rem;">{t}</div></div>""", unsafe_allow_html=True)
 
-if st.session_state.get('show_delete_login') and not st.session_state.get('admin_auth'):
-    st.markdown('<div class="glass" style="border:2px solid #dc2626; padding:24px; margin-top:16px; background:rgba(254,242,242,0.95) !important;">', unsafe_allow_html=True)
-    st.markdown("### 🔒 Login para CERRAR REPORTE")
-    target = st.session_state.get('delete_target', {})
-    st.markdown(f"""<div style="background:#fef2f2; border:1px solid #fecaca; border-left:5px solid #dc2626; padding:12px 16px; border-radius:8px; margin:10px 0;"><b style="color:#991b1b;">⚠ ADVERTENCIA: Vas a CERRAR un reporte activo</b><br><b>Sucursal:</b> {target.get('sucursal','')} - {target.get('estado','')}<br><b>No. REPORTE:</b> {target.get('rep','')}<br></div>""", unsafe_allow_html=True)
-    u_del = st.text_input("Usuario Administrador", key="delete_login_user", placeholder="Ingresa tu usuario")
-    p_del = st.text_input("Contraseña", type="password", key="delete_login_pwd", placeholder="Ingresa tu contraseña")
-    cd1, cd2 = st.columns(2)
-    with cd1:
-        if st.button("❌ Cancelar", key="cancel_delete_login", width='stretch'):
-            st.session_state['show_delete_login'] = False
-            st.session_state['delete_target'] = None
-            st.rerun()
-    with cd2:
-        if st.button("🔐 Ingresar y Continuar", key="confirm_delete_login", type="primary", width='stretch'):
-            if check_login(u_del, p_del):
-                st.session_state['admin_auth'] = True
-                st.session_state['current_user'] = u_del
-                st.session_state['show_delete_login'] = False
-                st.session_state['show_delete_confirm'] = True
-                log_acceso(u_del, f"Login para CERRAR REPORTE {target.get('rep','')} {target.get('sucursal','')}")
-                st.rerun()
-            else: st.error("Usuario o contraseña incorrectos")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-if st.session_state.get('show_delete_confirm'):
-    target = st.session_state.get('delete_target', {})
-    if target:
-        st.markdown('<div class="glass" style="border:2px solid #ef4444; background:rgba(254,242,242,0.8) !important; padding:24px; margin-top:16px;">', unsafe_allow_html=True)
-        st.markdown(f"### ✅ Confirmar Cierre de Reporte")
-        st.markdown(f"""<div style="background:white; border:1px solid #fecaca; border-left:5px solid #ef4444; padding:16px; border-radius:10px; margin:12px 0;"><b>Estado:</b> {target.get('estado')}<br><b>Sucursal:</b> {target.get('sucursal')}<br><b>No. REPORTE:</b> {target.get('rep')}<br><b>Fecha:</b> {target.get('fec')}<br><b>Falla:</b> {target.get('obs','')[:250]}<br><br><div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;"><b style="color:#b91c1c;">⚠ ADVERTENCIA - ACCIÓN EN {SHEET_PRINCIPAL}</b><br><div style="font-size:0.85rem; color:#7f1d1d; margin-top:6px;">Se limpiará NO. REPORTE, FECHA y FALLA en {SHEET_PRINCIPAL} y se guardará cierre en HISTORIAL_REPORTES</div></div></div>""", unsafe_allow_html=True)
-        cc1, cc2 = st.columns(2)
-        with cc1:
-            if st.button("❌ No, Cancelar", key="cancel_delete_final", width='stretch'):
-                st.session_state['show_delete_confirm'] = False
-                st.session_state['delete_target'] = None
-                st.session_state['show_delete_login'] = False
-                st.rerun()
-        with cc2:
-            if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", width='stretch'):
-                try:
-                    with st.spinner(f"Cerrando reporte en {SHEET_PRINCIPAL}..."):
-                        ok, msg = eliminar_reporte_hoja1(target['estado'], target['sucursal'], target['rep'], target.get('indice', None))
-                        if ok:
-                            log_eliminacion_historial(st.session_state.get('current_user','sistema'), target['estado'], target['sucursal'], target['rep'], target['fec'], target['obs'])
-                            log_acceso(st.session_state.get('current_user','sistema'), f"CERRO REPORTE {target['rep']} {target['sucursal']} - {target['estado']}")
-                            st.success(f"✅ Reporte {target['rep']} CERRADO correctamente en {SHEET_PRINCIPAL}.")
-                            st.balloons()
-                            time.sleep(1.5)
-                            st.session_state['show_delete_confirm'] = False
-                            st.session_state['delete_target'] = None
-                            st.session_state['show_delete_login'] = False
-                            # FIX: limpiar cache y resetear box SIN ERROR - v26
-                            try:
-                                st.cache_data.clear()
-                            except:
-                                pass
-                            st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
-                            st.rerun()
-                            st.cache_data.clear()
-                            st.session_state['reset_filtro_pendiente'] = True
-                            st.rerun()
-                        else: st.error(f"Error al cerrar: {msg}")
-                except Exception as e:
-                    st.error(f"Error: {e}")
-                    import traceback
-                    st.code(traceback.format_exc())
+# [MOVED TO TOP v36]
+        st.code(traceback.format_exc())
         st.markdown('</div>', unsafe_allow_html=True)

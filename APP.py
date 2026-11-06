@@ -180,12 +180,19 @@ with st.sidebar:
         key="menu_pagina_v42",
         label_visibility="collapsed"
     )
+    # FIX V45: Al salir de Buscar a Mapa/Dashboard, cerrar sesion privada automaticamente
+    _pagina_prev = st.session_state.get('pagina')
     if "Mapa" in pagina:
         st.session_state['pagina'] = "🏠 Reportes"
     elif "Buscar" in pagina:
         st.session_state['pagina'] = "🔒 Buscar Reportes"
     else:
         st.session_state['pagina'] = "📊 Dashboard Analítica"
+    if _pagina_prev == "🔒 Buscar Reportes" and st.session_state.get('pagina') != "🔒 Buscar Reportes":
+        st.session_state['admin_auth'] = False
+        st.session_state['current_user'] = None
+        st.session_state['last_activity'] = None
+        st.session_state['show_login'] = False
 
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":

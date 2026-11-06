@@ -841,7 +841,7 @@ with c2:
         if bottom_changed and last_est and last_suc:
             # Usuario cambio manual abajo, resetear filtro arriba
             if st.session_state.get('filtro_activo_sel', '') != "-- Ver todas las sucursales --":
-                st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                st.session_state['reset_filtro_pendiente'] = True  # FIX: no asignar directo despues del widget
                 st.session_state['last_filtro_activo_sel'] = "-- Ver todas las sucursales --"
                 st.session_state['last_estado_real'] = curr_est
                 st.session_state['last_sucursal_real'] = curr_suc
@@ -946,7 +946,7 @@ if st.session_state.get('show_delete_confirm'):
                                 st.cache_data.clear()
                             except:
                                 pass
-                            st.session_state['filtro_activo_sel'] = "-- Ver todas las sucursales --"
+                            st.session_state['reset_filtro_pendiente'] = True  # FIX: no asignar directo despues del widget
                             st.rerun()
                             st.cache_data.clear()
                             st.session_state['reset_filtro_pendiente'] = True
@@ -1374,4 +1374,3 @@ if not st.session_state.get('show_add_form', False):
                                         st.markdown(f"""<div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; gap:10px; margin-bottom:10px;"><div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center;">📞</div><div style="font-weight:600; font-size:0.9rem;">{t}</div></div>""", unsafe_allow_html=True)
 
 # [MOVED TO TOP v36 - limpio]
-

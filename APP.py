@@ -136,17 +136,19 @@ with st.sidebar:
     
     pagina = st.radio(
         "navegacion", 
-        ["🗺 Mapa Reportes", "📈 Analítica Dashboard"], 
-        index=0 if "Mapa" in st.session_state['pagina'] or "Reportes" in st.session_state['pagina'] else 1, 
+        ["🗺 Mapa Reportes", "📈 Analítica Dashboard", "🔒 Buscar Reportes"], 
+        index=0 if "Mapa" in st.session_state['pagina'] or "Reportes" in st.session_state['pagina'] else 1 if "Dashboard" in st.session_state['pagina'] else 2 if "Buscar" in st.session_state['pagina'] else 0, 
         key="menu_pagina_v42",
         label_visibility="collapsed"
     )
     if "Mapa" in pagina:
         st.session_state['pagina'] = "🏠 Reportes"
+    elif "Buscar" in pagina:
+        st.session_state['pagina'] = "🔒 Buscar Reportes"
     else:
         st.session_state['pagina'] = "📊 Dashboard Analítica"
 
-# --- DASHBOARD ANALÍTICA ---
+# --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
     st.title("📊 Dashboard Analítica - Sucursales")
@@ -243,30 +245,79 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             chart2 = alt.Chart(por_mes).mark_line(point=True, color='#0f172a').encode(x='MES_ANO:N', y='REPORTES:Q', tooltip=['MES_ANO','REPORTES']).properties(height=400)
             st.altair_chart(chart2, width='stretch')
     
-    st.markdown("---")
-    st.subheader("🔍 Buscar Reporte Viejo Cerrado")
-    st.markdown("Busca por No. Reporte, Sucursal o Estado - Muestra todos los reportes cerrados en HISTORIAL_REPORTES")
-    col_search1, col_search2 = st.columns([3,1])
-    with col_search1:
-        search_rep = st.text_input("Buscar reporte (No. Reporte, Sucursal, Estado, Usuario)", placeholder="Ej: 945969 o GUADALAJARA o PUEBLA", key="search_old_rep")
-    with col_search2:
-        st.markdown(f"<div style='margin-top:28px; padding:8px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85rem;'><b>{len(df_f)} eventos</b> filtrados</div>", unsafe_allow_html=True)
-    
-    df_search = df_f.copy()
-    if search_rep:
-        search_lower = search_rep.lower().strip()
-        mask = pd.Series([False]*len(df_search))
-        for col in ['NO_REPORTE','SUCURSAL','ESTADO','USUARIO','FALLA_REPORTADA']:
-            if col in df_search.columns:
-                mask = mask | df_search[col].astype(str).str.lower().str.contains(search_lower, na=False)
-        df_search = df_search[mask]
-    
-    # Mostrar tabla con todos los reportes historicos
-    if not df_search.empty:
-        st.dataframe(df_search.sort_values('FECHA_REGISTRO' if 'FECHA_REGISTRO' in df_search.columns else df_search.columns[0], ascending=False).head(200), width='stretch', height=400)
-        st.markdown(f"<div style='font-size:0.75rem; color:#64748b; margin-top:8px;'>Mostrando {min(200, len(df_search))} de {len(df_search)} eventos (Total historico: {len(df_hist)}). Usa la busqueda para filtrar.</div>", unsafe_allow_html=True)
+    st.stop()
+
+# --- BUSCAR REPORTES - PRIVADO Y COMPACTO ---
+if st.session_state.get('pagina') == "🔒 Buscar Reportes":
+    if not st.session_state.get('admin_auth'):
+        st.title("🔒 Buscar Reportes - Acceso Privado")
+        st.warning("Esta sección es privada. Ingresa credenciales para buscar reportes viejos cerrados.")
+        col_b1, col_b2 = st.columns(2)
+        with col_b1:
+            user_b = st.text_input("Usuario", key="buscar_user", placeholder="Usuario admin")
+        with col_b2:
+            pass_b = st.text_input("Contraseña", type="password", key="buscar_pass", placeholder="Contraseña")
+        if st.button("🔓 Ingresar a Buscar Reportes", key="btn_buscar_login", type="primary"):
+            if user_b.strip() and pass_b.strip():
+                st.session_state['admin_auth'] = True
+                st.session_state['current_user'] = user_b.strip()
+                st.success("Acceso concedido")
+                st.rerun()
+            else:
+                st.error("Ingresa usuario y contraseña")
+        st.stop()
+    # Si ya esta autenticado, mostrar buscador compacto
+    st.title("🔒 Buscar Reportes Viejos")
+    st.caption("Busca por No. Reporte, Sucursal o Estado - Solo usuarios autorizados")
+    import altair as alt
+    @st.cache_data(ttl=60)
+    def cargar_historial_buscar():
+        df_h = None
+        try:
+            if "gcp_service_account" in st.secrets:
+                import gspread
+                from google.oauth2.service_account import Credentials
+                creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
+                client = gspread.authorize(creds)
+                sid = st.secrets.get("sheet_id", ID_CORRECTO_SHEETS)
+                sh = client.open_by_key(sid)
+                ws = sh.worksheet("HISTORIAL_REPORTES")
+                vals = ws.get_all_values()
+                if vals and len(vals)>1:
+                    headers = [h.strip().upper() for h in vals[0]]
+                    df_h = pd.DataFrame(vals[1:], columns=headers)
+        except Exception as e:
+            st.error(f"Error cargando historial: {e}")
+        return df_h
+    df_hist_b = cargar_historial_buscar()
+    if df_hist_b is None or df_hist_b.empty:
+        st.warning("No se encontró HISTORIAL_REPORTES.")
+        st.stop()
+    df_hist_b.columns = [c.strip().upper() for c in df_hist_b.columns]
+    # Buscador compacto
+    col_s1, col_s2 = st.columns([3,1])
+    with col_s1:
+        search_b = st.text_input("Buscar reporte (No. Reporte, Sucursal, Estado)", placeholder="Ej: 945969 o GUADALAJARA o PUEBLA", key="search_buscar_compact")
+    with col_s2:
+        st.markdown(f"<div style='margin-top:28px; padding:8px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85rem;'><b>{len(df_hist_b)} eventos</b></div>", unsafe_allow_html=True)
+    df_f_b = df_hist_b.copy()
+    if search_b:
+        sl = search_b.lower().strip()
+        mask_b = pd.Series([False]*len(df_f_b))
+        for col_b in ['NO_REPORTE','SUCURSAL','ESTADO','USUARIO']:
+            if col_b in df_f_b.columns:
+                mask_b = mask_b | df_f_b[col_b].astype(str).str.lower().str.contains(sl, na=False)
+        df_f_b = df_f_b[mask_b]
+    # Tabla compacta - solo columnas clave, altura pequeña
+    cols_mostrar = [c for c in ['FECHA_REGISTRO','ESTADO','SUCURSAL','NO_REPORTE','FECHA_REPORTE','USUARIO'] if c in df_f_b.columns]
+    if not df_f_b.empty:
+        st.dataframe(df_f_b[cols_mostrar].sort_values('FECHA_REGISTRO' if 'FECHA_REGISTRO' in cols_mostrar else cols_mostrar[0], ascending=False).head(50), width='stretch', height=250)
+        st.caption(f"Mostrando {min(50, len(df_f_b))} de {len(df_f_b)} eventos (Total: {len(df_hist_b)}). Tabla compacta para no ocupar mucho espacio.")
     else:
-        st.info("No se encontraron reportes con ese criterio. Prueba con otro No. Reporte o sucursal.")
+        st.info("No se encontraron reportes con ese criterio.")
+    if st.button("🔓 Cerrar sesión privada", key="btn_logout_buscar"):
+        st.session_state['admin_auth'] = False
+        st.rerun()
     st.stop()
 
 if st.session_state.get('pagina') != "🏠 Reportes":

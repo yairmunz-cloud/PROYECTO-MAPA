@@ -939,6 +939,10 @@ if st.session_state.get('show_delete_confirm'):
                             st.session_state['show_delete_confirm'] = False
                             st.session_state['delete_target'] = None
                             st.session_state['show_delete_login'] = False
+                            # FIX V40: Al cerrar reporte, cerrar sesion privada para que Buscar Reportes vuelva a pedir credenciales
+                            st.session_state['admin_auth'] = False
+                            st.session_state['current_user'] = None
+                            st.session_state['show_login'] = False
                             # FIX: limpiar cache y resetear box SIN ERROR - v26
                             try:
                                 st.cache_data.clear()

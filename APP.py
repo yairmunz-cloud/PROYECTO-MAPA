@@ -87,7 +87,7 @@ st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", l
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
 SHEET_PRINCIPAL = "BDSUCURSALES"
-ID_CORRECTO_SHEETS = "196gIWN8Sfk0_ZC-WHbL0FDw-BRwK4XnCkS14gAaN9UE"
+ID_CORRECTO_SHEETS = None  # FIX V46: No hardcodear ID - debe venir de st.secrets["sheet_id"]
 
 # FIX FINAL v7: URL del usuario
 # FIX SEGURIDAD V41: Se elimino USER_CSV_URL publico - exponia datos sin auth. No usar CSV publicado.
@@ -220,7 +220,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 if not sheet_id:
                     try: sheet_id = SHEET_ID
                     except:
-                        try: sheet_id = SHEET_ID_PRUEBAS = st.secrets.get("sheet_id", "196glWN8Sfk0_ZC-WHbL0FDw-BRwK4XnCkS14gAaN9UE")
+                        try: sheet_id = SHEET_ID_PRUEBAS = st.secrets.get("sheet_id")  # FIX V46: sin fallback a test
                         except: sheet_id = None
                 if not sheet_id:
                     st.error("No se encontró sheet_id en secrets")
@@ -468,7 +468,7 @@ def cargar_datos(sheet_id_override=None):
     if df_privado is not None and not df_privado.empty:
         return df_privado
     # Si no hay datos privados, retornar vacio para que se vea que no cargo produccion
-    st.error("No se pudo cargar el Sheet de producción. Revisa Secrets: sheet_id debe ser 12uBzVEE5ZqO7V6OIKSlCTB7BdSQWk_3sn12LhFdMWg4 y private_key debe ser la nueva.")
+    st.error("No se pudo cargar el Sheet de producción. Revisa Secrets: sheet_id y private_key deben ser los de producción.")
     return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
 
 def deduplicar_df(df_in):

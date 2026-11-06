@@ -20,6 +20,42 @@ def now_mx():
         pass
     return datetime.utcnow() - timedelta(hours=6)
 
+# FIX V42: check_login temprano - Buscar lo usa antes de su definicion original
+def check_login(user, pwd):
+    try:
+        if "users" not in st.secrets: return False
+        attempts = st.session_state.get('login_attempts',0)
+        if attempts >= 5:
+            last = st.session_state.get('last_failed_login')
+            if last:
+                try:
+                    diff = (now_mx().replace(tzinfo=None) - last.replace(tzinfo=None)).total_seconds()/60
+                    if diff < 10: return False
+                    else: st.session_state['login_attempts']=0
+                except: pass
+        users_secret = st.secrets["users"]
+        if user not in users_secret:
+            st.session_state['login_attempts']=st.session_state.get('login_attempts',0)+1
+            st.session_state['last_failed_login']=now_mx().replace(tzinfo=None)
+            import time as _t; _t.sleep(0.8)
+            return False
+        stored=str(users_secret[user]).strip()
+        pwd_input=str(pwd).strip()
+        ok=False
+        if len(stored)==64 and all(c in "0123456789abcdefABCDEF" for c in stored):
+            ok=_hash_pwd(pwd_input)==stored.lower()
+        else:
+            ok=hmac.compare_digest(stored,pwd_input)
+        if ok:
+            st.session_state['login_attempts']=0
+            st.session_state['last_activity']=now_mx().replace(tzinfo=None)
+        else:
+            st.session_state['login_attempts']=st.session_state.get('login_attempts',0)+1
+            st.session_state['last_failed_login']=now_mx().replace(tzinfo=None)
+        return ok
+    except: return False
+
+
 import pandas as pd
 from datetime import datetime
 import re

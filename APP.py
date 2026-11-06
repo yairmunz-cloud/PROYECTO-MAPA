@@ -955,7 +955,8 @@ if st.session_state.get('show_delete_confirm'):
                 except Exception as e:
                     st.error(f"Error: {e}")
                     import traceback
-            
+                    st.code(traceback.format_exc())
+        st.markdown('</div>', unsafe_allow_html=True)
 
 if st.session_state.get('show_case_pdf'):
     st.markdown('<div class="glass" style="border:2px solid #1e40af; padding:18px; margin-top:12px; background:white;">', unsafe_allow_html=True)
@@ -1372,6 +1373,5 @@ if not st.session_state.get('show_add_form', False):
                                     else:
                                         st.markdown(f"""<div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:10px 14px; display:flex; gap:10px; margin-bottom:10px;"><div style="width:28px; height:28px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center;">📞</div><div style="font-weight:600; font-size:0.9rem;">{t}</div></div>""", unsafe_allow_html=True)
 
-# [MOVED TO TOP v36]
-        st.code(traceback.format_exc())
-        st.markdown('</div>', unsafe_allow_html=True)
+# [MOVED TO TOP v36 - limpio]
+

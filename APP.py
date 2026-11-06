@@ -312,7 +312,11 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
                 st.session_state['admin_auth'] = True
                 st.session_state['current_user'] = user_b.strip().lower()
                 st.session_state['last_activity'] = now_mx().replace(tzinfo=None)
-                log_acceso(user_b.strip().lower(), "Login Buscar Reportes")
+                # FIX V44: log_acceso esta definido mas abajo, no debe tumbar el login si aun no existe
+                try:
+                    log_acceso(user_b.strip().lower(), "Login Buscar Reportes")
+                except:
+                    pass
                 st.success("Acceso concedido")
                 st.rerun()
             else:

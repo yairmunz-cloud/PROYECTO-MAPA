@@ -86,7 +86,7 @@ except:
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V55 LOGO GRANDE • Todo más chiquito y junto • Si ves este banner, sí cargó la V55 logo grande • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V56 TEXTO GRANDE • Todo más chiquito y junto • Si ves este banner, sí cargó la V56 texto grande • Producción sigue en v48</div>""", unsafe_allow_html=True)
 # V55: Separar boton CASE del titulo
 st.markdown("""<style>div[data-testid="stButton"] button[kind="secondary"] { margin-top: 10px !important; }</style>""", unsafe_allow_html=True)
 
@@ -104,7 +104,7 @@ h2 { font-size: 1.05rem !important; line-height: 1.2 !important; margin: 0.3rem 
 h3 { font-size: 0.95rem !important; line-height: 1.2 !important; margin: 0.25rem 0 0.2rem 0 !important; }
 p, div, label, span { font-size: 12.5px !important; line-height: 1.35 !important; }
 /* V55: Logo Atlas grande otra vez, no compacto */
-div[style*="font-size:1.75rem"] { font-size: 1.65rem !important; line-height: 1.15 !important; }
+div[style*="font-size:1.75rem"] { font-size: 2.25rem !important; line-height: 1.15 !important; }
 /* KPIs: de 120px altos a 68px, compactos */
 .glass, div[class*="kpi"] { padding: 8px 10px !important; border-radius: 10px !important; }
 /* Botones y selects mas chicos */
@@ -235,7 +235,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V55 LOGO GRANDE]")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V56 TEXTO GRANDE]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():
@@ -320,7 +320,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     top_edo_num = int(top_edo_count.iloc[0]) if not top_edo_count.empty else 0
     k1, k2, k3 = st.columns([1,2,1])
     with k1:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:68px;"><div style="font-size:13px; color:#64748b; font-weight:600;">📋 Total eventos</div><div style="font-size:32px; font-weight:800; color:#0f172a; margin-top:4px;">{total_ev}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:68px;"><div style="font-size:13px; color:#64748b; font-weight:600;">📋 Total eventos</div><div style="font-size:38px; font-weight:800; color:#0f172a; margin-top:4px;">{total_ev}</div></div>""", unsafe_allow_html=True)
     with k2:
         st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #ef4444; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:68px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🏆 Sucursal con más eventos</div><div style="font-size:18px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word; line-height:1.2;">{top_suc}</div><div style="font-size:12px; color:#16a34a; background:#dcfce7; display:inline-block; padding:2px 8px; border-radius:99px; margin-top:4px;">↗ {top_suc_num} eventos</div></div>""", unsafe_allow_html=True)
     with k3:
@@ -1070,10 +1070,10 @@ opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
     if b64_logo:
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px"><div style="width:64px; height:64px; border-radius:16px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:14px"><div style="width:78px; height:78px; border-radius:18px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:2.25rem; font-weight:900; letter-spacing:-0.8px; line-height:1.05">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     else:
-        logo_html_fallback = '<div style="width:68px; height:68px; border-radius:16px; background:linear-gradient(135deg,#dc2626,#b91c1c); display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:32px; box-shadow:0 2px 8px rgba(30,58,138,0.3);">A</div>'
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+        logo_html_fallback = '<div style="width:78px; height:78px; border-radius:18px; background:linear-gradient(135deg,#dc2626,#b91c1c); display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:38px; box-shadow:0 2px 8px rgba(30,58,138,0.3);">A</div>'
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:14px;">{logo_html_fallback}<div style="font-size:2.25rem; font-weight:900; line-height:1.05">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
     if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="secondary", width='content'):

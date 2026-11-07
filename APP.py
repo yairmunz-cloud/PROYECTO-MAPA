@@ -86,7 +86,36 @@ except:
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V49 ESTÉTICA NUEVA • Si ves este banner azul, sí cargó la v49 • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V50 COMPACTO • Todo más chiquito y junto • Si ves este banner, sí cargó la V50 compacta • Producción sigue en v48</div>""", unsafe_allow_html=True)
+
+# --- V50 COMPACTO: todo mas chiquito y junto, estilo zoom 67% sin tocar el navegador ---
+st.markdown("""<style>
+/* Contenedor general mas pegado y sin tanto aire */
+.block-container { padding-top: 0.6rem !important; padding-bottom: 0.6rem !important; padding-left: 1.2rem !important; padding-right: 1.2rem !important; max-width: 1350px !important; }
+/* Quitar espacios gigantes entre secciones */
+div[data-testid="stVerticalBlock"] { gap: 0.35rem !important; }
+div[data-testid="stHorizontalBlock"] { gap: 0.5rem !important; }
+/* Titulos mas chicos */
+h1 { font-size: 1.25rem !important; line-height: 1.2 !important; margin: 0.2rem 0 !important; }
+h2 { font-size: 1.05rem !important; line-height: 1.2 !important; margin: 0.3rem 0 0.2rem 0 !important; }
+h3 { font-size: 0.95rem !important; line-height: 1.2 !important; margin: 0.25rem 0 0.2rem 0 !important; }
+p, div, label, span { font-size: 12.5px !important; line-height: 1.35 !important; }
+/* Header principal mas compacto - logo 48px -> 32px */
+div[style*="font-size:1.75rem"] { font-size: 1.15rem !important; line-height: 1.15 !important; }
+/* KPIs: de 120px altos a 68px, compactos */
+.glass, div[class*="kpi"] { padding: 8px 10px !important; border-radius: 10px !important; }
+/* Botones y selects mas chicos */
+button { padding: 4px 10px !important; font-size: 12px !important; min-height: 28px !important; border-radius: 8px !important; }
+div[data-testid="stSelectbox"] > div > div { min-height: 30px !important; font-size: 12px !important; }
+input { font-size: 12px !important; min-height: 30px !important; }
+/* Tablas y dataframes mas densos */
+div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th { padding: 3px 6px !important; font-size: 11.5px !important; }
+/* Graficas: menos alto por defecto */
+div[data-testid="stPlotlyChart"], div[data-testid="stAltairChart"] { margin: 0 !important; }
+/* Tarjetas de sucursal mas pegadas */
+div[class*="glass-dark"] { padding: 8px 10px !important; }
+</style>""", unsafe_allow_html=True)
+
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
 SHEET_PRINCIPAL = "BDSUCURSALES"
@@ -200,7 +229,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V49 ESTÉTICA]")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V50 COMPACTO]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():
@@ -258,11 +287,11 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     top_edo_num = int(top_edo_count.iloc[0]) if not top_edo_count.empty else 0
     k1, k2, k3 = st.columns([1,2,1])
     with k1:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:120px;"><div style="font-size:13px; color:#64748b; font-weight:600;">📋 Total eventos</div><div style="font-size:32px; font-weight:800; color:#0f172a; margin-top:4px;">{total_ev}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:68px;"><div style="font-size:13px; color:#64748b; font-weight:600;">📋 Total eventos</div><div style="font-size:32px; font-weight:800; color:#0f172a; margin-top:4px;">{total_ev}</div></div>""", unsafe_allow_html=True)
     with k2:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #ef4444; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:120px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🏆 Sucursal con más eventos</div><div style="font-size:18px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word; line-height:1.2;">{top_suc}</div><div style="font-size:12px; color:#16a34a; background:#dcfce7; display:inline-block; padding:2px 8px; border-radius:99px; margin-top:4px;">↗ {top_suc_num} eventos</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #ef4444; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:68px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🏆 Sucursal con más eventos</div><div style="font-size:18px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word; line-height:1.2;">{top_suc}</div><div style="font-size:12px; color:#16a34a; background:#dcfce7; display:inline-block; padding:2px 8px; border-radius:99px; margin-top:4px;">↗ {top_suc_num} eventos</div></div>""", unsafe_allow_html=True)
     with k3:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #3b82f6; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:120px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🗺 Estado con más fallas</div><div style="font-size:22px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word;">{top_edo}</div><div style="font-size:12px; color:#64748b; margin-top:4px;">{top_edo_num} eventos</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #3b82f6; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:68px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🗺 Estado con más fallas</div><div style="font-size:22px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word;">{top_edo}</div><div style="font-size:12px; color:#64748b; margin-top:4px;">{top_edo_num} eventos</div></div>""", unsafe_allow_html=True)
     st.markdown("---")
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
@@ -284,14 +313,14 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         if 'SUCURSAL' in df_f.columns:
             top10 = df_f['SUCURSAL'].value_counts().head(10).reset_index()
             top10.columns = ['SUCURSAL','REPORTES']
-            chart = alt.Chart(top10).mark_bar(color='#1e40af').encode(x='REPORTES:Q', y=alt.Y('SUCURSAL:N', sort='-x'), tooltip=['SUCURSAL','REPORTES']).properties(height=400)
+            chart = alt.Chart(top10).mark_bar(color='#1e40af').encode(x='REPORTES:Q', y=alt.Y('SUCURSAL:N', sort='-x'), tooltip=['SUCURSAL','REPORTES']).properties(height=260)
             st.altair_chart(chart, width='stretch')
     with c2:
         st.subheader("📅 Reportes por Mes / Año")
         if 'MES' in df_f.columns and 'ANO' in df_f.columns:
             df_f['MES_ANO'] = df_f['ANO'].astype(str) + "-" + df_f['MES'].astype(str).str.zfill(2)
             por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES').sort_values('MES_ANO')
-            chart2 = alt.Chart(por_mes).mark_line(point=True, color='#0f172a').encode(x='MES_ANO:N', y='REPORTES:Q', tooltip=['MES_ANO','REPORTES']).properties(height=400)
+            chart2 = alt.Chart(por_mes).mark_line(point=True, color='#0f172a').encode(x='MES_ANO:N', y='REPORTES:Q', tooltip=['MES_ANO','REPORTES']).properties(height=260)
             st.altair_chart(chart2, width='stretch')
     # --- RESTAURADO V47: Graficas que se perdieron en v39-v46 al recortar Dashboard ---
     c3, c4 = st.columns(2)
@@ -310,7 +339,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
                 tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
                 order=alt.Order('REPORTES:Q', sort='descending')
-            ).properties(height=420, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
+            ).properties(height=280, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
             st.altair_chart(chart3, width='stretch')
     with c4:
         def mes_a_letra(m):
@@ -329,14 +358,14 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         if vista == "DIA del mes" and 'DIA' in df_f.columns:
             data = df_f['DIA'].value_counts().sort_index().reset_index()
             data.columns = ['DIA','REPORTES']
-            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('DIA:O', title='Día del mes'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['DIA','REPORTES']).properties(height=380)
+            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('DIA:O', title='Día del mes'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['DIA','REPORTES']).properties(height=250)
             st.altair_chart(chart4, width='stretch')
         elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
             try:
                 df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
                 data = df_f['_HORA'].value_counts().sort_index().reset_index()
                 data.columns = ['HORA','REPORTES']
-                chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(x=alt.X('HORA:O', title='Hora del día'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['HORA','REPORTES']).properties(height=380)
+                chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(x=alt.X('HORA:O', title='Hora del día'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['HORA','REPORTES']).properties(height=250)
                 st.altair_chart(chart4, width='stretch')
             except Exception as e: st.error(str(e))
         elif vista == "MES" and 'MES' in df_f.columns:
@@ -347,7 +376,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 data['MES_NUM'] = pd.to_numeric(data['MES'], errors='coerce')
                 data = data.sort_values('MES_NUM')
             except: pass
-            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('MES_LETRA:O', title='Mes', sort=None), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=[alt.Tooltip('MES_LETRA:N', title='Mes'), alt.Tooltip('REPORTES:Q', title='Reportes')]).properties(height=380)
+            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('MES_LETRA:O', title='Mes', sort=None), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=[alt.Tooltip('MES_LETRA:N', title='Mes'), alt.Tooltip('REPORTES:Q', title='Reportes')]).properties(height=250)
             st.altair_chart(chart4, width='stretch')
     st.markdown("---")
     st.subheader("⏱ Tiempo de reparación / Cierre")
@@ -410,7 +439,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 c_line1, c_line2 = st.columns([1.5,1.5])
                 with c_line1:
                     chart_df = df_lineas.head(10).copy()
-                    chart_line = alt.Chart(chart_df).mark_bar(color='#1e40af').encode(x='FALLAS:Q', y=alt.Y('LINEA:N', sort='-x', title='LINEA'), tooltip=['LINEA','FALLAS','SUCURSAL(ES)','ESTADO']).properties(height=450)
+                    chart_line = alt.Chart(chart_df).mark_bar(color='#1e40af').encode(x='FALLAS:Q', y=alt.Y('LINEA:N', sort='-x', title='LINEA'), tooltip=['LINEA','FALLAS','SUCURSAL(ES)','ESTADO']).properties(height=280)
                     st.altair_chart(chart_line, width='stretch')
                 with c_line2:
                     st.markdown("**Detalle con sucursal:**")

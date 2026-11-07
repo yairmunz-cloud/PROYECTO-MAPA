@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V80 FIX CELULAR REAL • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V81 FIX SELECTORES • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,13 +95,13 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V80 FIX CELULAR REAL: Telefono clicable sin boton copiar --- */
+/* --- V81 FIX SELECTORES: Telefono clicable sin boton copiar --- */
 a[href^="tel:"] { color: #1e40af !important; font-weight: 800 !important; font-size: 14px !important; text-decoration: none !important; }
 a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !important; }
 .v78-orden { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; color: #1e40af; display: inline-block; margin-bottom: 10px; }
 
 
-/* --- V80 FIX CELULAR REAL: alto contraste + sin encimados --- */
+/* --- V81 FIX SELECTORES: alto contraste + sin encimados --- */
 @media (max-width: 768px) {
   /* Forzar fondo claro y texto oscuro, aunque el celular este en modo oscuro */
   .block-container, .main, [data-testid="stAppViewContainer"] { background: #f8fafc !important; color: #111827 !important; }
@@ -140,6 +140,34 @@ a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !i
   /* Tarjeta de reporte: texto oscuro */
   .badge { color: white !important; }
 }
+
+
+/* --- V81 FIX SELECTORES: menu desplegable siempre blanco con letra negra, nunca negro sobre negro --- */
+/* Caja cerrada: fondo blanco, letra negra, flecha negra */
+div[data-testid="stSelectbox"] > div > div,
+div[data-testid="stSelectbox"] div[data-baseweb="select"],
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+  background: white !important; color: #111827 !important; border-color: #d1d5db !important;
+}
+div[data-testid="stSelectbox"] input { color: #111827 !important; }
+div[data-testid="stSelectbox"] svg { fill: #111827 !important; color: #111827 !important; }
+div[data-testid="stSelectbox"] span { color: #111827 !important; }
+/* Menu abierto: fondo blanco, opciones negras - ESTE era el que salia todo negro */
+div[data-baseweb="popover"], div[data-baseweb="menu"], div[role="listbox"], ul[role="listbox"] {
+  background: white !important; color: #111827 !important; border: 1px solid #d1d5db !important;
+}
+div[role="option"], li[role="option"], div[data-baseweb="menu"] li, div[data-baseweb="menu"] div {
+  background: white !important; color: #111827 !important; opacity: 1 !important;
+}
+div[role="option"][aria-selected="true"], li[role="option"][aria-selected="true"] {
+  background: #dbeafe !important; color: #1e40af !important; font-weight: 700 !important;
+}
+div[role="option"]:hover, li[role="option"]:hover { background: #eff6ff !important; color: #111827 !important; }
+/* El input de buscar dentro del selector cuando escribes */
+div[data-testid="stSelectbox"] input[placeholder] { color: #111827 !important; }
+/* --- V81 FIX: circulo Sin reporte verde clarito = letra verde oscuro, no blanca --- */
+div[style*="background:#dcfce7"] { color: #166534 !important; }
+div[style*="background: #dcfce7"] { color: #166534 !important; }
 
 </style>""", unsafe_allow_html=True)
 
@@ -1129,7 +1157,7 @@ if not df_reportes.empty:
     mapa_activos_global = mapa_activos
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
-# --- V80 FIX CELULAR REAL: Ordenar por mas criticos primero (sin boton copiar) ---
+# --- V81 FIX SELECTORES: Ordenar por mas criticos primero (sin boton copiar) ---
 # Si el usuario activa este toggle, la lista de opciones se ordena por dias descendente, no por A-Z
 _orden_crit = st.toggle("🔴 Ordenar: Más críticos primero", value=False, key="orden_criticos_v78")
 if _orden_crit and not df_reportes.empty:

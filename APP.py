@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V85 SOLO 2 COSAS • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V86 NEGRO + LETRAS BLANCAS • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,13 +95,13 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V85 SOLO 2 COSAS: Telefono clicable sin boton copiar --- */
+/* --- V86 NEGRO + LETRAS BLANCAS: Telefono clicable sin boton copiar --- */
 a[href^="tel:"] { color: #1e40af !important; font-weight: 800 !important; font-size: 14px !important; text-decoration: none !important; }
 a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !important; }
 .v78-orden { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; color: #1e40af; display: inline-block; margin-bottom: 10px; }
 
 
-/* --- V85 SOLO 2 COSAS: alto contraste + sin encimados --- */
+/* --- V86 NEGRO + LETRAS BLANCAS: alto contraste + sin encimados --- */
 @media (max-width: 768px) {
   /* Forzar fondo claro y texto oscuro, aunque el celular este en modo oscuro */
   .block-container, .main, [data-testid="stAppViewContainer"] { background: #f8fafc !important; color: #111827 !important; }
@@ -147,7 +147,7 @@ a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !i
 }
 
 
-/* --- V85 SOLO 2 COSAS: menu desplegable siempre blanco con letra negra, nunca negro sobre negro --- */
+/* --- V86 NEGRO + LETRAS BLANCAS: menu desplegable siempre blanco con letra negra, nunca negro sobre negro --- */
 /* Caja cerrada: fondo blanco, letra negra, flecha negra */
 div[data-testid="stSelectbox"] > div > div,
 div[data-testid="stSelectbox"] div[data-baseweb="select"],
@@ -213,17 +213,17 @@ section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checke
 section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p { color: white !important; }
 
 
-/* --- V85 FIX SOLO 2 COSAS: Observaciones + Boton Cerrar formulario --- */
-/* Solo dentro del formulario de Agregar Reporte, no todo el app */
+/* --- V86 FIX: Box Observaciones NEGRO como estaba, solo letras BLANCAS --- */
 div[data-testid="stForm"] textarea {
-  background: white !important; color: #111827 !important; -webkit-text-fill-color: #111827 !important; caret-color: #111827 !important;
+  background: #0f172a !important; color: white !important; -webkit-text-fill-color: white !important; caret-color: white !important;
+  border: 1.5px solid #334155 !important;
 }
-div[data-testid="stForm"] textarea::placeholder { color: #6b7280 !important; -webkit-text-fill-color: #6b7280 !important; opacity: 1 !important; }
-/* Boton Cerrar formulario (el de Cancelar): fondo blanco, letra azul, nunca negro sobre negro */
+div[data-testid="stForm"] textarea::placeholder { color: #94a3b8 !important; -webkit-text-fill-color: #94a3b8 !important; opacity: 1 !important; }
+/* Boton Cerrar formulario: NEGRO como estaba, solo letras BLANCAS */
 div[data-testid="stForm"] button:not([kind="primary"]) {
-  background: white !important; color: #1e40af !important; border: 1.5px solid #1e40af !important;
+  background: #0f172a !important; color: white !important; border: 1.5px solid #0f172a !important;
 }
-div[data-testid="stForm"] button:not([kind="primary"]) p { color: #1e40af !important; }
+div[data-testid="stForm"] button:not([kind="primary"]) p { color: white !important; }
 
 </style>""", unsafe_allow_html=True)
 
@@ -1213,7 +1213,7 @@ if not df_reportes.empty:
     mapa_activos_global = mapa_activos
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
-# --- V85 SOLO 2 COSAS: Ordenar por mas criticos primero (sin boton copiar) ---
+# --- V86 NEGRO + LETRAS BLANCAS: Ordenar por mas criticos primero (sin boton copiar) ---
 # Si el usuario activa este toggle, la lista de opciones se ordena por dias descendente, no por A-Z
 _orden_crit = st.toggle("🔴 Ordenar: Más críticos primero", value=False, key="orden_criticos_v78")
 if _orden_crit and not df_reportes.empty:

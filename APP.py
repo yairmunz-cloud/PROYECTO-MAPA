@@ -368,7 +368,10 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 df_f['MES_ANO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
             por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES').sort_values('MES_ANO')
             if not por_mes.empty:
-                chart2 = alt.Chart(por_mes).mark_line(point=True, color='#0f172a').encode(x='MES_ANO:N', y='REPORTES:Q', tooltip=['MES_ANO','REPORTES']).properties(height=260)
+                # V67: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
+                _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES_ANO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES_ANO','REPORTES']).properties(height=260)
+                _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES_ANO:N', y='REPORTES:Q', text='REPORTES:Q')
+                chart2 = _bar + _txt
                 st.altair_chart(chart2, width='stretch')
             else:
                 st.info("Sin datos para Mes/Año con el filtro actual")

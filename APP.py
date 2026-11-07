@@ -83,9 +83,9 @@ try:
 except:
     pass
 
-st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/prueba-buscador/atlas_favicon.png", initial_sidebar_state="expanded")
+st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V68 BUSCADOR • No es producción • Producción sigue en V68 PRUEBA BUSCADOR</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V69 PROFESIONAL • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V69 PRUEBA PROFESIONAL</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -94,7 +94,23 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"] { background: rgba(220,38,38,0.12) !important; border: 1.5px solid #dc2626 !important; color: #b91c1c !important; }
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
-    div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }</style>""", unsafe_allow_html=True)
+    div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
+/* --- V69 PROFESIONAL: Responsive celular + estados vacios + semaforo --- */
+@media (max-width: 768px) {
+  .block-container { padding-left: 8px !important; padding-right: 8px !important; padding-top: 1rem !important; }
+  div[data-testid="stColumns"] { flex-direction: column !important; }
+  div[data-testid="stColumns"] > div { width: 100% !important; min-width: 100% !important; }
+  h1, .titulo-principal { font-size: 1.35rem !important; line-height: 1.2 !important; }
+  div[data-testid="stMetric"] { padding: 8px !important; }
+  iframe { height: 320px !important; }
+}
+.semaforo-verde { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
+.semaforo-amarillo { background: #fef9c3 !important; color: #854d0e !important; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
+.semaforo-rojo { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
+.estado-vacio { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 18px; text-align: center; color: #166534; font-weight: 700; }
+.barra-estado { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 8px 14px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; font-weight: 600; color: #1e40af; margin-bottom: 12px; }
+
+</style>""", unsafe_allow_html=True)
 
 # V55: Separar boton CASE del titulo
 st.markdown("""<style>/* V64 FIX: Quitado margin-top global que bajaba Cancelar - CASE ya tiene su spacer de 10px */</style>""", unsafe_allow_html=True)
@@ -137,8 +153,8 @@ div[class*="glass-dark"] { padding: 8px 10px !important; }
 
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
-SHEET_PRINCIPAL = "BDSUCURSALES"
-ID_CORRECTO_SHEETS = None  # FIX V46: No hardcodear ID - debe venir de st.secrets["sheet_id"]
+Datos = "BDSUCURSALES"
+ID_SHEETS = None  # FIX V46: No hardcodear ID - debe venir de st.secrets["sheet_id"]
 
 # FIX FINAL v7: URL del usuario
 # FIX SEGURIDAD V41: Se elimino USER_CSV_URL publico - exponia datos sin auth. No usar CSV publicado.
@@ -365,14 +381,14 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         st.subheader("📅 Reportes por Mes / Año")
         if 'MES' in df_f.columns:
             if 'ANO' in df_f.columns and df_f['ANO'].notna().any():
-                df_f['MES_ANO'] = df_f['ANO'].astype('Int64').astype(str) + "-" + df_f['MES'].astype('Int64').astype(str).str.zfill(2)
+                df_f['MES / AÑO'] = df_f['ANO'].astype('Int64').astype(str) + "-" + df_f['MES'].astype('Int64').astype(str).str.zfill(2)
             else:
-                df_f['MES_ANO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
-            por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES').sort_values('MES_ANO')
+                df_f['MES / AÑO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
+            por_mes = df_f.groupby('MES / AÑO').size().reset_index(name='REPORTES').sort_values('MES / AÑO')
             if not por_mes.empty:
-                # V68 PRUEBA BUSCADOR: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
-                _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES_ANO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES_ANO','REPORTES']).properties(height=260)
-                _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES_ANO:N', y='REPORTES:Q', text='REPORTES:Q')
+                # V69 PRUEBA PROFESIONAL: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
+                _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES / AÑO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES / AÑO','REPORTES']).properties(height=260)
+                _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES / AÑO:N', y='REPORTES:Q', text='REPORTES:Q')
                 chart2 = _bar + _txt
                 st.altair_chart(chart2, width='stretch')
             else:
@@ -572,7 +588,7 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
                 from google.oauth2.service_account import Credentials
                 creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
                 client = gspread.authorize(creds)
-                sid = st.secrets.get("sheet_id", ID_CORRECTO_SHEETS)
+                sid = st.secrets.get("sheet_id", ID_SHEETS)
                 sh = client.open_by_key(sid)
                 ws = sh.worksheet("HISTORIAL_REPORTES")
                 vals = ws.get_all_values()
@@ -660,12 +676,12 @@ def cargar_datos(sheet_id_override=None):
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
             client = gspread.authorize(creds)
             # FIX V39: Secrets primero - produccion 12uBz... debe ganar sobre test 196...
-            sid = sheet_id_override or st.secrets.get("sheet_id") or ID_CORRECTO_SHEETS
+            sid = sheet_id_override or st.secrets.get("sheet_id") or ID_SHEETS
             if sid:
                 sh = client.open_by_key(sid)
                 ws = None
-                # FIX: prioriza SHEET_PRINCIPAL y solo acepta si tiene datos
-                for name_try in [SHEET_PRINCIPAL, "BDSUCURSALES", "BDSUCURSALESPRO", "Hoja1", "Sheet1"]:
+                # FIX: prioriza Datos y solo acepta si tiene datos
+                for name_try in [Datos, "BDSUCURSALES", "BDSUCURSALESPRO", "Hoja1", "Sheet1"]:
                     try:
                         ws_try = sh.worksheet(name_try)
                         vals_try = ws_try.get_all_values()
@@ -676,7 +692,7 @@ def cargar_datos(sheet_id_override=None):
                         continue
                 if not ws:
                     try:
-                        ws = sh.worksheet(SHEET_PRINCIPAL)
+                        ws = sh.worksheet(Datos)
                     except:
                         ws = sh.sheet1
                 all_vals = ws.get_all_values()
@@ -877,7 +893,7 @@ def log_acceso(usuario, accion="Login"):
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
             client = gspread.authorize(creds)
             try:
-                sh = client.open_by_key(ID_CORRECTO_SHEETS)
+                sh = client.open_by_key(ID_SHEETS)
             except:
                 sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
                 sh = client.open_by_key(sheet_id)
@@ -944,11 +960,11 @@ def eliminar_reporte_hoja1(estado, sucursal, reporte_a_borrar, fecha_a_borrar=No
             return s.strip()
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
         client = gspread.authorize(creds)
-        sheet_id = st.secrets.get("sheet_id", ID_CORRECTO_SHEETS)
+        sheet_id = st.secrets.get("sheet_id", ID_SHEETS)
         try:
             sh = client.open_by_key(sheet_id)
         except:
-            sh = client.open_by_key(ID_CORRECTO_SHEETS)
+            sh = client.open_by_key(ID_SHEETS)
         
         ws_found = None
         row_found = None
@@ -1083,6 +1099,29 @@ if not df_reportes.empty:
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 
+# --- V69 PROFESIONAL: Barra de estado + Buscador + Semafaro ---
+try:
+    _hoy = pd.to_datetime("today").normalize()
+    _nuevos_hoy = 0
+    _cerrados_hoy = 0
+    _mas_critico_txt = "Sin reportes activos"
+    _mas_critico_dias = 0
+    if not df_reportes.empty and 'FECHA' in df_reportes.columns:
+        _f = pd.to_datetime(df_reportes['FECHA'], errors='coerce')
+        _nuevos_hoy = int((_f.dt.normalize() == _hoy).sum())
+        _dias = (_hoy - _f.dt.normalize()).dt.days.fillna(0)
+        if len(_dias) > 0:
+            _idx = _dias.idxmax()
+            _r = df_reportes.loc[_idx]
+            _mas_critico_dias = int(_dias.max())
+            _mas_critico_txt = f"{str(_r.get('SUCURSAL',''))} • {_mas_critico_dias} días"
+    if 'df_historial' in locals() and not df_historial.empty and 'FECHA_CIERRE' in df_historial.columns:
+        _fc = pd.to_datetime(df_historial['FECHA_CIERRE'], errors='coerce')
+        _cerrados_hoy = int((_fc.dt.normalize() == _hoy).sum())
+    st.markdown(f"<div class='barra-estado'>📊 Hoy: <b>{_nuevos_hoy} nuevos</b> &nbsp;•&nbsp; ✅ Cerrados hoy: <b>{_cerrados_hoy}</b> &nbsp;•&nbsp; 🚨 Más crítico: <b>{_mas_critico_txt}</b></div>", unsafe_allow_html=True)
+except:
+    pass
+
 # --- V68 PRUEBA: Buscador global por No. Reporte / Sucursal / Falla ---
 st.markdown("### 🔍 Buscar reporte")
 _q_buscar = st.text_input("Buscar por No. Reporte, Sucursal o Falla", key="buscar_global_q", placeholder="Ej: 945969, GUADALAJARA, INTERNET...", label_visibility="collapsed")
@@ -1098,7 +1137,12 @@ if _q_buscar and _q_buscar.strip():
     if _res:
         st.success(f"✅ Encontrados {len(_res)} reporte(s) con '{_q_buscar}'")
         for _r in _res[:5]:
-            st.info(f"📍 {str(_r.get('ESTADO',''))} - {str(_r.get('SUCURSAL',''))} | Reporte: {str(_r.get('NO. REPORTE',''))} | Falla: {str(_r.get('FALLA',''))[:80]}")
+            _dias_r = 0
+            try:
+                _dias_r = int((pd.to_datetime('today').normalize() - pd.to_datetime(_r.get('FECHA'), errors='coerce')).days)
+            except: _dias_r = 0
+            _color = "🟢" if _dias_r < 15 else ("🟡" if _dias_r <= 30 else "🔴")
+            st.info(f"{_color} {_dias_r} días • 📍 {str(_r.get('ESTADO',''))} - {str(_r.get('SUCURSAL',''))} | Reporte: {str(_r.get('NO. REPORTE',''))} | Falla: {str(_r.get('FALLA',''))[:80]}")
     else:
         st.warning(f"❌ No se encontró nada con '{_q_buscar}' en reportes activos")
     st.markdown("---")
@@ -1233,7 +1277,7 @@ if st.session_state.get('show_delete_confirm'):
     if target:
         st.markdown('<div class="glass" style="border:2px solid #ef4444; background:rgba(254,242,242,0.8) !important; padding:24px; margin-top:16px;">', unsafe_allow_html=True)
         st.markdown(f"### ✅ Confirmar Cierre de Reporte")
-        st.markdown(f"""<div style="background:white; border:1px solid #fecaca; border-left:5px solid #ef4444; padding:16px; border-radius:10px; margin:12px 0;"><b>Estado:</b> {target.get('estado')}<br><b>Sucursal:</b> {target.get('sucursal')}<br><b>No. REPORTE:</b> {target.get('rep')}<br><b>Fecha:</b> {target.get('fec')}<br><b>Falla:</b> {target.get('obs','')[:250]}<br><br><div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;"><b style="color:#b91c1c;">⚠ ADVERTENCIA - ACCIÓN EN {SHEET_PRINCIPAL}</b><br><div style="font-size:0.85rem; color:#7f1d1d; margin-top:6px;">Se limpiará NO. REPORTE, FECHA y FALLA en {SHEET_PRINCIPAL} y se guardará cierre en HISTORIAL_REPORTES</div></div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; border:1px solid #fecaca; border-left:5px solid #ef4444; padding:16px; border-radius:10px; margin:12px 0;"><b>Estado:</b> {target.get('estado')}<br><b>Sucursal:</b> {target.get('sucursal')}<br><b>No. REPORTE:</b> {target.get('rep')}<br><b>Fecha:</b> {target.get('fec')}<br><b>Falla:</b> {target.get('obs','')[:250]}<br><br><div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;"><b style="color:#b91c1c;">⚠ ADVERTENCIA - ACCIÓN EN {Datos}</b><br><div style="font-size:0.85rem; color:#7f1d1d; margin-top:6px;">Se limpiará NO. REPORTE, FECHA y FALLA en {Datos} y se guardará cierre en HISTORIAL_REPORTES</div></div></div>""", unsafe_allow_html=True)
         cc1, cc2 = st.columns(2)
         with cc1:
             if st.button("❌ No, Cancelar", key="cancel_delete_final", width='stretch'):
@@ -1244,12 +1288,12 @@ if st.session_state.get('show_delete_confirm'):
         with cc2:
             if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", width='stretch'):
                 try:
-                    with st.spinner(f"Cerrando reporte en {SHEET_PRINCIPAL}..."):
+                    with st.spinner(f"Cerrando reporte en {Datos}..."):
                         ok, msg = eliminar_reporte_hoja1(target['estado'], target['sucursal'], target['rep'], target.get('indice', None))
                         if ok:
                             log_eliminacion_historial(st.session_state.get('current_user','sistema'), target['estado'], target['sucursal'], target['rep'], target['fec'], target['obs'])
                             log_acceso(st.session_state.get('current_user','sistema'), f"CERRO REPORTE {target['rep']} {target['sucursal']} - {target['estado']}")
-                            st.success(f"✅ Reporte {target['rep']} CERRADO correctamente en {SHEET_PRINCIPAL}.")
+                            st.success(f"✅ Reporte {target['rep']} CERRADO correctamente en {Datos}.")
                             st.balloons()
                             time.sleep(1.5)
                             st.session_state['show_delete_confirm'] = False
@@ -1489,12 +1533,12 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
                         client = gspread.authorize(creds)
                         try:
-                            sh = client.open_by_key(ID_CORRECTO_SHEETS)
+                            sh = client.open_by_key(ID_SHEETS)
                         except:
                             sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
                             sh = client.open_by_key(sheet_id)
                         # FIX: SIEMPRE BDSUCURSALES2
-                        try: ws_main = sh.worksheet(SHEET_PRINCIPAL)
+                        try: ws_main = sh.worksheet(Datos)
                         except: ws_main = sh.worksheet("BDSUCURSALES")
                         headers = ws_main.row_values(1)
                         headers_upper = [h.strip().upper() for h in headers]
@@ -1572,7 +1616,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
                         log_acceso(st.session_state['current_user'], f"Guardo lote PRUEBA {guardados} reportes")
-                        st.success(f"✅ {guardados} reportes guardados en {SHEET_PRINCIPAL}")
+                        st.success(f"✅ {guardados} reportes guardados en {Datos}")
                         st.session_state['batch_reportes'] = []
                         # FIX 3: LIMPIAR CACHE Y RESETEAR BOX REPORTES ACTIVOS SIN ERROR
                         st.cache_data.clear()

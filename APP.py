@@ -86,7 +86,7 @@ except:
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/multi-reporte/atlas_favicon.png", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V61 FAVICON URL • Todo más chiquito y junto • Si ves este banner, sí cargó la V61 favicon url • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V62 SEPARADO • Todo más chiquito y junto • Si ves este banner, sí cargó la V62 separado • Producción sigue en v48</div>""", unsafe_allow_html=True)
 # V55: Separar boton CASE del titulo
 st.markdown("""<style>div[data-testid="stButton"] button[kind="secondary"] { margin-top: 10px !important; }</style>""", unsafe_allow_html=True)
 
@@ -121,7 +121,7 @@ div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th { padding: 
 div[data-testid="stPlotlyChart"], div[data-testid="stAltairChart"] { margin: 0 !important; }
 /* V54 FIX: Bajar un poco el header para que no se corte el borde superior */
 div[data-testid="stHorizontalBlock"] { padding-top: 6px !important; }
-.glass-dark { margin-top: 4px !important; }
+.glass-dark { margin-top: 4px !important; margin-bottom: 14px !important; }
 /* Tarjetas de sucursal mas pegadas */
 div[class*="glass-dark"] { padding: 8px 10px !important; }
 </style>""", unsafe_allow_html=True)
@@ -239,7 +239,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V61 FAVICON URL]")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V62 SEPARADO]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():
@@ -1092,11 +1092,11 @@ with c1:
 </style>
     """, unsafe_allow_html=True)
 with c2:
-    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="glass-dark" style="margin-bottom:14px;"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
     
     if not df_reportes.empty:
         st.markdown(f"""
-        <div class="glass" style="margin-top:10px; padding:10px 14px; border-left:4px solid #ef4444; background:white !important; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+        <div class="glass" style="margin-top:14px; margin-bottom:8px; padding:10px 14px; border-left:4px solid #ef4444; background:white !important; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <div style="width:18px; height:18px; background:#ef4444; border-radius:5px; display:flex; align-items:center; justify-content:center; color:white; font-size:10px;">🚨</div>

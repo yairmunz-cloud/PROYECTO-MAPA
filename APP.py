@@ -83,13 +83,12 @@ try:
 except:
     pass
 
-st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/multi-reporte/atlas_favicon.png", initial_sidebar_state="expanded")
+st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/main/atlas_favicon.png", initial_sidebar_state="expanded")
 
-# --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V65 ROJO TRANSLUCIDO • Todo más chiquito y junto • Si ves este banner, sí cargó la V65 rojo translucido • Producción sigue en v48</div>""", unsafe_allow_html=True)
+# --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
 st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !important; min-height: 40px !important; padding: 0 16px !important; border-radius: 999px !important; font-weight: 700 !important; }
-    /* V65: Ingresar = rojo translucido, no solido, para no confundir */
+    /* V65 PRODUCCION: Ingresar = rojo translucido, no solido, para no confundir */
     div[data-testid="stButton"] button[kind="primary"] { background: rgba(220,38,38,0.12) !important; border: 1.5px solid #dc2626 !important; color: #b91c1c !important; }
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
@@ -247,7 +246,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V65 ROJO TRANSLUCIDO]")
+    st.title("📊 Dashboard Analítica - Sucursales ")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():

@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V77 LIMPIA • Como producción + Buscador + Indicador rojo seleccionado</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V78 PRÁCTICA • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,10 +95,10 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V77 LIMPIA: indicador seleccionado rojo translucido --- */
-.v77-selected { background: rgba(220,38,38,0.12) !important; border: 1.5px solid #dc2626 !important; color: #b91c1c !important; font-weight: 800 !important; }
-.v77-selected-box { border: 2px solid #dc2626 !important; background: rgba(220,38,38,0.08) !important; box-shadow: 0 0 0 3px rgba(220,38,38,0.12) !important; border-radius: 12px !important; }
-div[data-testid="stSelectbox"] > div[data-baseweb="select"] > div { transition: all 0.2s; }
+/* --- V78 PRACTICA: Telefono clicable sin boton copiar --- */
+a[href^="tel:"] { color: #1e40af !important; font-weight: 800 !important; font-size: 14px !important; text-decoration: none !important; }
+a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !important; }
+.v78-orden { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; color: #1e40af; display: inline-block; margin-bottom: 10px; }
 
 </style>""", unsafe_allow_html=True)
 
@@ -1088,32 +1088,31 @@ if not df_reportes.empty:
     mapa_activos_global = mapa_activos
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
-# --- V77 LIMPIA: Buscador integrado compacto, no bloque nuevo ---
-st.markdown("### 🔍 Buscar reporte")
-_q77 = st.text_input("Buscar reporte", key="buscar_v77", placeholder="Ej: 945969, GUADALAJARA, INTERNET...", label_visibility="collapsed")
-if _q77 and _q77.strip():
-    _q = _q77.strip().lower()
-    _res77 = []
+# --- V78 PRACTICA: Ordenar por mas criticos primero (sin boton copiar) ---
+# Si el usuario activa este toggle, la lista de opciones se ordena por dias descendente, no por A-Z
+_orden_crit = st.toggle("🔴 Ordenar: Más críticos primero", value=False, key="orden_criticos_v78")
+if _orden_crit and not df_reportes.empty:
+    # Reordenar opciones_activas por dias descendente usando dias_desde
     try:
-        for _, _r77 in df_reportes.iterrows():
-            _hay77 = " ".join([str(_r77.get(c,'')) for c in df_reportes.columns]).lower()
-            if _q in _hay77:
-                _res77.append(_r77)
+        _con_dias = []
+        for _lbl in opciones_activas:
+            _dmax = 0
+            # Buscar la fila de esa sucursal para sacar sus dias
+            for _, _rr in df_reportes.iterrows():
+                _lbl_check = f"{str(_rr.get('ESTADO',''))} - {str(_rr.get('SUCURSAL',''))}"
+                if _lbl_check in _lbl:
+                    _fr = str(_rr.get(COL_FEC, "")) if COL_FEC else ""
+                    _fcs = split_multi_val(_fr) if _fr else []
+                    for _ff in (_fcs if _fcs else [_fr]):
+                        _d,_t = dias_desde(_ff) if _ff else (None,"")
+                        if _d is not None and _d > _dmax: _dmax = _d
+                    break
+            _con_dias.append((_dmax, _lbl))
+        _con_dias = sorted(_con_dias, key=lambda x: x[0], reverse=True)
+        opciones_activas = [x[1] for x in _con_dias]
+        opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
+        st.markdown(f"<div class='v78-orden'>🔴 Ordenado por más críticos primero — primero lo más viejo</div>", unsafe_allow_html=True)
     except: pass
-    if _res77:
-        st.markdown(f"<div class='v77-selected-box' style='padding:10px 12px; margin-bottom:10px'><b style='color:#b91c1c'>✅ Filtrado por: '{_q77}' — {len(_res77)} reporte(s) — esto es lo que estás viendo</b></div>", unsafe_allow_html=True)
-        for _r77 in _res77[:5]:
-            _fec77 = str(_r77.get(COL_FEC, "")) if COL_FEC else ""
-            _fcs77 = split_multi_val(_fec77) if _fec77 else []
-            _max77 = 0
-            for _ff77 in (_fcs77 if _fcs77 else [_fec77]):
-                _d77,_t77 = dias_desde(_ff77) if _ff77 else (None,"")
-                if _d77 is not None and _d77 > _max77: _max77 = _d77
-            _col77 = "🟢" if _max77 < 15 else ("🟡" if _max77 <= 30 else "🔴")
-            st.info(f"{_col77} {_max77} días • 📍 {str(_r77.get('ESTADO',''))} - {str(_r77.get('SUCURSAL',''))} | Reporte: {str(_r77.get(COL_REP,''))} | Falla: {str(_r77.get('FALLA',''))[:80]}")
-    else:
-        st.markdown(f"<div class='v77-selected-box' style='padding:10px 12px; margin-bottom:10px'><b style='color:#b91c1c'>❌ Sin resultados para '{_q77}' — no hay nada seleccionado</b></div>", unsafe_allow_html=True)
-    st.markdown("---")
 
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
@@ -1153,11 +1152,7 @@ with c2:
         if "filtro_activo_sel" not in st.session_state or st.session_state["filtro_activo_sel"] not in opciones_con_todos:
             st.session_state["filtro_activo_sel"] = "-- Ver todas las sucursales --"
         st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)  # V63: Separar VER SOLO del selector
-        # V77: Indicador rojo translucido cuando hay algo seleccionado en VER SOLO
-    _sel_prev = st.session_state.get("filtro_activo_sel", "-- Ver todas las sucursales --")
-    if _sel_prev != "-- Ver todas las sucursales --":
-        st.markdown(f"<div style='background: rgba(220,38,38,0.12); border: 1.5px solid #dc2626; color: #b91c1c; font-weight: 800; padding: 7px 12px; border-radius: 999px; font-size: 12.5px; margin-bottom: 8px;'>🔴 Seleccionado: {_sel_prev} — esto es lo que estás viendo</div>", unsafe_allow_html=True)
-    sel_activo = st.selectbox("Filtro reporte activo", opciones_con_todos, key="filtro_activo_sel", label_visibility="collapsed", placeholder="🔍 Selecciona sucursal con reporte activo...")
+        sel_activo = st.selectbox("Filtro reporte activo", opciones_con_todos, key="filtro_activo_sel", label_visibility="collapsed", placeholder="🔍 Selecciona sucursal con reporte activo...")
     # --- FIX SYNC: Al seleccionar en Reportes Activos, sincronizar con Estado/Sucursal de abajo ---
     # --- FIX SYNC ROBUSTO: Prioridad a seleccion manual abajo ---
     try:

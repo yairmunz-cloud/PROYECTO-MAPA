@@ -101,7 +101,7 @@ st.markdown("""<style>/* V64 FIX: Quitado margin-top global que bajaba Cancelar 
 # --- V50 COMPACTO: todo mas chiquito y junto, estilo zoom 67% sin tocar el navegador ---
 st.markdown("""<style>
 /* Contenedor general mas pegado y sin tanto aire */
-.block-container { padding-top: 1.1rem !important; padding-bottom: 0.6rem !important; padding-left: 1.2rem !important; padding-right: 1.2rem !important; max-width: 1350px !important; }
+.block-container { padding-top: 2.4rem !important; padding-bottom: 0.6rem !important; padding-left: 1.2rem !important; padding-right: 1.2rem !important; max-width: 1350px !important; }
 /* Quitar espacios gigantes entre secciones */
 div[data-testid="stVerticalBlock"] { gap: 0.35rem !important; }
 div[data-testid="stHorizontalBlock"] { gap: 0.5rem !important; }
@@ -1081,10 +1081,10 @@ opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
     if b64_logo:
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px"><div style="width:48px; height:48px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px; margin-top:8px; padding-top:4px;"><div style="width:48px; height:48px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.18; padding-top:4px;">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     else:
         logo_html_fallback = '<div style="width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,#dc2626,#b91c1c); display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:26px; box-shadow:0 2px 8px rgba(30,58,138,0.3);">A</div>'
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.18; padding-top:4px;">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
     if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="secondary", width='content'):

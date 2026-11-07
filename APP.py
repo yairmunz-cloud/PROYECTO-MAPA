@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V75 HERO INTEGRADO SIN DUPLICADO • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V75 HERO INTEGRADO SIN DUPLICADO</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V76 HEADER COMO PRODUCCION • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V76 HEADER COMO PRODUCCION</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,7 +95,7 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V75 HERO INTEGRADO SIN DUPLICADO: Responsive celular + estados vacios + semaforo --- */
+/* --- V76 HEADER COMO PRODUCCION: Responsive celular + estados vacios + semaforo --- */
 @media (max-width: 768px) {
   .block-container { padding-left: 8px !important; padding-right: 8px !important; padding-top: 1rem !important; }
   div[data-testid="stColumns"] { flex-direction: column !important; }
@@ -111,11 +111,11 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
 .barra-estado { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 8px 14px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; font-weight: 600; color: #1e40af; margin-bottom: 12px; }
 
 
-/* --- V75 HERO INTEGRADO SIN DUPLICADO --- */
-.v72-hero { background: linear-gradient(135deg,#0f2a6b 0%, #1e40af 55%, #3b82f6 100%); color:white; border-radius:18px; padding:20px 22px; margin-bottom:14px; box-shadow:0 8px 24px rgba(30,64,175,.25); display:flex; gap:18px; align-items:center; }
-.v72-hero h1 { color:white !important; font-size:2.15rem !important; line-height:1.02 !important; margin:0 !important; font-weight:900 !important; letter-spacing:-0.6px !important; }
-.v72-hero p { color:#dbeafe !important; font-size:13.5px !important; margin:6px 0 0 0 !important; font-weight:600 !important; }
-.v72-hero img { width:64px !important; height:64px !important; border-radius:16px !important; object-fit:cover !important; background:white !important; padding:3px !important; box-shadow:0 4px 12px rgba(0,0,0,.2) !important; flex-shrink:0; }
+/* --- V76 HEADER COMO PRODUCCION --- */
+.v72-hero { background:white !important; color:#111827 !important; border-radius:0 !important; padding:0 !important; margin-bottom:8px !important; box-shadow:none !important; display:flex; gap:12px; align-items:center; }
+.v72-hero h1 { color:#111827 !important; font-size:1.75rem !important; line-height:1.18 !important; margin:0 !important; font-weight:900 !important; letter-spacing:-0.8px !important; }
+.v72-hero p { color:#6b7280 !important; font-size:12.5px !important; margin:4px 0 0 0 !important; font-weight:600 !important; }
+.v72-hero img { width:48px !important; height:48px !important; border-radius:14px !important; object-fit:cover !important; background:white !important; padding:0 !important; box-shadow:none !important; flex-shrink:0; }
 .v72-kpi { background:white; border:1px solid #e5e7eb; border-radius:16px; padding:14px 16px; box-shadow:0 2px 12px rgba(0,0,0,.06); }
 .v72-kpi b { font-size:26px !important; line-height:1 !important; color:#111827 !important; }
 .v72-kpi span { font-size:11px !important; text-transform:uppercase; letter-spacing:.8px; color:#6b7280 !important; font-weight:700; }
@@ -398,7 +398,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 df_f['MES / AÑO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
             por_mes = df_f.groupby('MES / AÑO').size().reset_index(name='REPORTES').sort_values('MES / AÑO')
             if not por_mes.empty:
-                # V75 HERO INTEGRADO SIN DUPLICADO: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
+                # V76 HEADER COMO PRODUCCION: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
                 _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES / AÑO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES / AÑO','REPORTES']).properties(height=260)
                 _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES / AÑO:N', y='REPORTES:Q', text='REPORTES:Q')
                 chart2 = _bar + _txt
@@ -1111,7 +1111,7 @@ if not df_reportes.empty:
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 
-# --- V75 HERO INTEGRADO SIN DUPLICADO: Barra de estado + Buscador + Semafaro ---
+# --- V76 HEADER COMO PRODUCCION: Barra de estado + Buscador + Semafaro ---
 try:
     _hoy = pd.to_datetime("today").normalize()
     _nuevos_hoy = 0
@@ -1184,7 +1184,7 @@ try:
                 if _d is not None and _d > 30: _crit += 1
     except: pass
     # V74: Logo + titulo del proyecto DENTRO del hero azul, para no duplicar abajo
-    _logo_html = f"<img src='data:image/png;base64,{b64_logo}' style='width:64px;height:64px;border-radius:16px;object-fit:cover;background:white;padding:3px;box-shadow:0 4px 12px rgba(0,0,0,.2);flex-shrink:0'>" if 'b64_logo' in locals() and b64_logo else "<div style='width:64px;height:64px;border-radius:16px;background:white;color:#dc2626;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:32px;flex-shrink:0;box-shadow:0 4px 12px rgba(0,0,0,.2)'>A</div>"
+    _logo_html = f"<img src='data:image/png;base64,{b64_logo}' style='width:48px;height:48px;border-radius:14px;object-fit:cover;background:white;flex-shrink:0'>" if 'b64_logo' in locals() and b64_logo else "<div style='width:48px;height:48px;border-radius:14px;background:#dc2626;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:26px;flex-shrink:0'>A</div>"
     st.markdown(f"<div class='v72-hero'><div>{_logo_html}</div><div style='flex:1'><h1>REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</h1><p>Mapa en vivo • {_total_act} reportes activos en {len(df_reportes) if not df_reportes.empty else 0} sucursales • {_crit} en crítico (+30 días) • Actualizado hoy</p></div></div>", unsafe_allow_html=True)
     # V74: KPIs como BOTONES que filtran, no solo muestran
     if 'filtro_kpi' not in st.session_state: st.session_state.filtro_kpi = "Todos"

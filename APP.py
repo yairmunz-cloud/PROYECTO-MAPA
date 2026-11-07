@@ -85,6 +85,9 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
+# --- BANNER V49 PRUEBA - MUY VISIBLE ---
+st.markdown("""<div style="background:#1e40af; color:white; padding:10px 16px; border-radius:10px; text-align:center; font-weight:800; font-size:14px; margin-bottom:12px;">✨ MODO PRUEBA V49 ESTÉTICA NUEVA • Si ves este banner azul, sí cargó la v49 • Producción sigue en v48</div>""", unsafe_allow_html=True)
+
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
 SHEET_PRINCIPAL = "BDSUCURSALES"
 ID_CORRECTO_SHEETS = None  # FIX V46: No hardcodear ID - debe venir de st.secrets["sheet_id"]
@@ -1000,11 +1003,11 @@ with c1:
         logo_html_fallback = '<div style="width:56px; height:56px; border-radius:14px; background:linear-gradient(135deg,#dc2626,#b91c1c); display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:26px; box-shadow:0 2px 8px rgba(30,58,138,0.3);">A</div>'
         st.markdown(f"""<div style="display:flex; align-items:center; gap:12px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-    if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="primary", width='content'):
+    if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="secondary", width='content'):
         st.session_state['show_case_pdf'] = True
     st.markdown("""
     <style>
-    div[data-testid="stButton"] button[kind="primary"][id="btn_case_nacional"] {
+    div[data-testid="stButton"] button[kind="secondary"] {
         background: #1e40af !important; border: 1px solid #1e40af !important; color: white !important; font-weight: 800 !important; border-radius: 10px !important; padding: 8px 18px !important;
     }
     </style>

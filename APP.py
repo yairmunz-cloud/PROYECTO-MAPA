@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V78 PRÁCTICA • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V79 FIX CELULAR • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,10 +95,43 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V78 PRACTICA: Telefono clicable sin boton copiar --- */
+/* --- V79 FIX CELULAR: Telefono clicable sin boton copiar --- */
 a[href^="tel:"] { color: #1e40af !important; font-weight: 800 !important; font-size: 14px !important; text-decoration: none !important; }
 a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !important; }
 .v78-orden { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; color: #1e40af; display: inline-block; margin-bottom: 10px; }
+
+
+/* --- V79 FIX CELULAR: alto contraste + sin encimados --- */
+@media (max-width: 768px) {
+  /* Forzar fondo claro y texto oscuro, aunque el celular este en modo oscuro */
+  .block-container, .main, [data-testid="stAppViewContainer"] { background: #f8fafc !important; color: #111827 !important; }
+  /* Todas las columnas se apilan, no se enciman */
+  div[data-testid="stColumns"] { flex-direction: column !important; gap: 10px !important; }
+  div[data-testid="stColumns"] > div { width: 100% !important; min-width: 100% !important; max-width: 100% !important; flex: none !important; }
+  /* Tarjetas KPI y glass: sin corte, sin encimado, texto oscuro */
+  .glass, .glass-dark, .v72-kpi, .v72-card-reporte, div[data-testid="stMetric"] {
+    width: 100% !important; max-width: 100% !important; overflow: visible !important;
+    background: white !important; color: #111827 !important; border: 1px solid #e5e7eb !important;
+    border-radius: 14px !important; padding: 14px !important; margin-bottom: 10px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06) !important;
+  }
+  .glass *, .glass-dark *, .v72-kpi *, div[data-testid="stMetric"] * { color: #111827 !important; opacity: 1 !important; }
+  /* Titulo y textos: negro, no gris clarito */
+  h1, h2, h3, h4, p, div, label, span { color: #111827 !important; }
+  h1 { font-size: 1.45rem !important; line-height: 1.15 !important; font-weight: 900 !important; }
+  /* Botones: alto 44px minimo, texto visible, no vacios */
+  div[data-testid="stButton"] button { min-height: 44px !important; font-size: 14px !important; font-weight: 700 !important; color: #1e40af !important; background: white !important; border: 1.5px solid #1e40af !important; width: 100% !important; white-space: normal !important; }
+  div[data-testid="stButton"] button[kind="primary"] { background: #dc2626 !important; color: white !important; border-color: #dc2626 !important; }
+  /* Selects y inputs: fondo blanco, texto oscuro */
+  div[data-testid="stSelectbox"] > div, div[data-testid="stTextInput"] > div { background: white !important; color: #111827 !important; }
+  /* Menu lateral: texto oscuro sobre blanco */
+  section[data-testid="stSidebar"] { background: white !important; }
+  section[data-testid="stSidebar"] * { color: #111827 !important; }
+  /* Numeros de telefono y lineas: negro, no gris clarito */
+  a[href^="tel:"] { color: #111827 !important; font-size: 15px !important; font-weight: 800 !important; }
+  /* Tarjeta de reporte: texto oscuro */
+  .badge { color: white !important; }
+}
 
 </style>""", unsafe_allow_html=True)
 
@@ -1088,7 +1121,7 @@ if not df_reportes.empty:
     mapa_activos_global = mapa_activos
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
-# --- V78 PRACTICA: Ordenar por mas criticos primero (sin boton copiar) ---
+# --- V79 FIX CELULAR: Ordenar por mas criticos primero (sin boton copiar) ---
 # Si el usuario activa este toggle, la lista de opciones se ordena por dias descendente, no por A-Z
 _orden_crit = st.toggle("🔴 Ordenar: Más críticos primero", value=False, key="orden_criticos_v78")
 if _orden_crit and not df_reportes.empty:

@@ -86,7 +86,7 @@ except:
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V58 SOLO TEXTO • Todo más chiquito y junto • Si ves este banner, sí cargó la V58 solo texto • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V59 COMO PRODUCCION • Todo más chiquito y junto • Si ves este banner, sí cargó la V59 como produccion • Producción sigue en v48</div>""", unsafe_allow_html=True)
 # V55: Separar boton CASE del titulo
 st.markdown("""<style>div[data-testid="stButton"] button[kind="secondary"] { margin-top: 10px !important; }</style>""", unsafe_allow_html=True)
 
@@ -102,12 +102,13 @@ div[data-testid="stHorizontalBlock"] { gap: 0.5rem !important; }
 h1 { font-size: 1.25rem !important; line-height: 1.2 !important; margin: 0.2rem 0 !important; }
 h2 { font-size: 1.05rem !important; line-height: 1.2 !important; margin: 0.3rem 0 0.2rem 0 !important; }
 h3 { font-size: 0.95rem !important; line-height: 1.2 !important; margin: 0.25rem 0 0.2rem 0 !important; }
-p, div, label, span { font-size: 12.5px !important; line-height: 1.35 !important; }
-/* V57 FIX: El titulo NO se achica con lo compacto - va bien grandote */
-div[style*="font-size:3.2rem"] { font-size: 3.2rem !important; line-height: 1.0 !important; }
-div[style*="font-size:2.25rem"] { font-size: 3.2rem !important; line-height: 1.0 !important; }
+/* V59 FIX: Quitada regla que achicaba el titulo - produccion usa 1.75rem sin esta regla */
+label, span { font-size: 12.5px; line-height: 1.35; }
+/* V59: Titulo como produccion */
+/* titulo en tamano produccion 1.75rem */
+
 /* V55: Logo Atlas grande otra vez, no compacto */
-div[style*="font-size:1.75rem"] { font-size: 2.25rem !important; line-height: 1.15 !important; }
+div[style*="font-size:1.75rem"] { font-size: 1.75rem !important; line-height: 1.15 !important; }
 /* KPIs: de 120px altos a 68px, compactos */
 .glass, div[class*="kpi"] { padding: 8px 10px !important; border-radius: 10px !important; }
 /* Botones y selects mas chicos */
@@ -238,7 +239,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V58 SOLO TEXTO]")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V59 COMO PRODUCCION]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():
@@ -1073,10 +1074,10 @@ opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
     if b64_logo:
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px"><div style="width:48px; height:48px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:3.2rem; font-weight:900; letter-spacing:-0.8px; line-height:1.0">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px"><div style="width:48px; height:48px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     else:
         logo_html_fallback = '<div style="width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,#dc2626,#b91c1c); display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:26px; box-shadow:0 2px 8px rgba(30,58,138,0.3);">A</div>'
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px;">{logo_html_fallback}<div style="font-size:3.2rem; font-weight:900; line-height:1.0">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
     if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="secondary", width='content'):

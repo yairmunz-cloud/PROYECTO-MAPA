@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V71 SIN DISCREPANCIA • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V71 SIN DISCREPANCIA</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V72 REDISEÑO VISIBLE • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V72 REDISEÑO VISIBLE</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,7 +95,7 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V71 SIN DISCREPANCIA: Responsive celular + estados vacios + semaforo --- */
+/* --- V72 REDISEÑO VISIBLE: Responsive celular + estados vacios + semaforo --- */
 @media (max-width: 768px) {
   .block-container { padding-left: 8px !important; padding-right: 8px !important; padding-top: 1rem !important; }
   div[data-testid="stColumns"] { flex-direction: column !important; }
@@ -109,6 +109,17 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
 .semaforo-rojo { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
 .estado-vacio { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 18px; text-align: center; color: #166534; font-weight: 700; }
 .barra-estado { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 8px 14px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; font-weight: 600; color: #1e40af; margin-bottom: 12px; }
+
+
+/* --- V72 REDISEÑO VISIBLE --- */
+.v72-hero { background: linear-gradient(135deg,#0f2a6b 0%, #1e40af 55%, #3b82f6 100%); color:white; border-radius:18px; padding:18px 20px; margin-bottom:14px; box-shadow:0 8px 24px rgba(30,64,175,.25); }
+.v72-hero h1 { color:white !important; font-size:1.9rem !important; line-height:1.1 !important; margin:0 !important; }
+.v72-hero p { color:#dbeafe !important; font-size:13px !important; margin:4px 0 0 0 !important; }
+.v72-kpi { background:white; border:1px solid #e5e7eb; border-radius:16px; padding:14px 16px; box-shadow:0 2px 12px rgba(0,0,0,.06); }
+.v72-kpi b { font-size:26px !important; line-height:1 !important; color:#111827 !important; }
+.v72-kpi span { font-size:11px !important; text-transform:uppercase; letter-spacing:.8px; color:#6b7280 !important; font-weight:700; }
+.v72-card-reporte { background:white; border-radius:16px; border:1px solid #e5e7eb; box-shadow:0 4px 16px rgba(0,0,0,.07); padding:14px 16px; }
+.v72-filtros { background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:12px; }
 
 </style>""", unsafe_allow_html=True)
 
@@ -386,7 +397,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 df_f['MES / AÑO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
             por_mes = df_f.groupby('MES / AÑO').size().reset_index(name='REPORTES').sort_values('MES / AÑO')
             if not por_mes.empty:
-                # V71 SIN DISCREPANCIA: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
+                # V72 REDISEÑO VISIBLE: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
                 _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES / AÑO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES / AÑO','REPORTES']).properties(height=260)
                 _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES / AÑO:N', y='REPORTES:Q', text='REPORTES:Q')
                 chart2 = _bar + _txt
@@ -1099,7 +1110,7 @@ if not df_reportes.empty:
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 
-# --- V71 SIN DISCREPANCIA: Barra de estado + Buscador + Semafaro ---
+# --- V72 REDISEÑO VISIBLE: Barra de estado + Buscador + Semafaro ---
 try:
     _hoy = pd.to_datetime("today").normalize()
     _nuevos_hoy = 0
@@ -1146,6 +1157,27 @@ try:
     st.markdown(f"<div class='barra-estado'>📊 Hoy: <b>{_nuevos_hoy} nuevos</b> &nbsp;•&nbsp; ✅ Cerrados hoy: <b>{_cerrados_hoy}</b> &nbsp;•&nbsp; 🚨 Más crítico: <b>{_mas_critico_txt}</b></div>", unsafe_allow_html=True)
 except Exception as _e:
     pass
+
+# --- V72 VISIBLE: Hero + KPIs grandes ---
+try:
+    _total_act = len(df_reportes) if not df_reportes.empty else 0
+    _crit = 0
+    try:
+        for _, _rr in df_reportes.iterrows():
+            _fr = str(_rr.get(COL_FEC, "")) if COL_FEC else ""
+            _fcs = split_multi_val(_fr) if _fr else []
+            for _ff in (_fcs if _fcs else [_fr]):
+                _d,_t = dias_desde(_ff) if _ff else (None,"")
+                if _d is not None and _d > 30: _crit += 1; break
+    except: pass
+    st.markdown(f"<div class='v72-hero'><h1>📍 Reportes y Consultas — Seguros Atlas</h1><p>Mapa en vivo • {_total_act} reportes activos • {_crit} en crítico (+30 días) • Actualizado hoy</p></div>", unsafe_allow_html=True)
+    cK1,cK2,cK3,cK4 = st.columns(4)
+    with cK1: st.markdown(f"<div class='v72-kpi'><span>📊 Activos</span><br><b>{_total_act}</b><div style='font-size:12px;color:#6b7280'>requieren atención</div></div>", unsafe_allow_html=True)
+    with cK2: st.markdown(f"<div class='v72-kpi'><span>🔴 Críticos +30d</span><br><b style='color:#dc2626 !important'>{_crit}</b><div style='font-size:12px;color:#6b7280'>prioridad máxima</div></div>", unsafe_allow_html=True)
+    with cK3: st.markdown(f"<div class='v72-kpi'><span>📅 Hoy</span><br><b>{_nuevos_hoy}</b><div style='font-size:12px;color:#6b7280'>nuevos hoy</div></div>", unsafe_allow_html=True)
+    with cK4: st.markdown(f"<div class='v72-kpi'><span>✅ Cerrados hoy</span><br><b>{_cerrados_hoy}</b><div style='font-size:12px;color:#6b7280'>cerrados hoy</div></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+except: pass
 
 # --- V68 PRUEBA: Buscador global por No. Reporte / Sucursal / Falla ---
 st.markdown("### 🔍 Buscar reporte")

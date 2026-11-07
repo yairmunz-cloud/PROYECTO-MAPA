@@ -85,6 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/main/atlas_favicon.png", initial_sidebar_state="expanded")
 
+
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
 st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !important; min-height: 40px !important; padding: 0 16px !important; border-radius: 999px !important; font-weight: 700 !important; }
@@ -92,7 +93,138 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"] { background: rgba(220,38,38,0.12) !important; border: 1.5px solid #dc2626 !important; color: #b91c1c !important; }
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
-    div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }</style>""", unsafe_allow_html=True)
+    div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
+/* --- V86 FINAL PRODUCCION: Telefono clicable sin boton copiar --- */
+a[href^="tel:"] { color: #1e40af !important; font-weight: 800 !important; font-size: 14px !important; text-decoration: none !important; }
+a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !important; }
+.v78-orden { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; color: #1e40af; display: inline-block; margin-bottom: 10px; }
+
+
+/* --- V86 FINAL PRODUCCION: alto contraste + sin encimados --- */
+@media (max-width: 768px) {
+  /* Forzar fondo claro y texto oscuro, aunque el celular este en modo oscuro */
+  .block-container, .main, [data-testid="stAppViewContainer"] { background: #f8fafc !important; color: #111827 !important; }
+  /* Todas las columnas se apilan, no se enciman */
+  div[data-testid="stColumns"] { flex-direction: column !important; gap: 10px !important; }
+  div[data-testid="stColumns"] > div { width: 100% !important; min-width: 100% !important; max-width: 100% !important; flex: none !important; }
+  /* Tarjetas KPI y glass: sin corte, sin encimado, texto oscuro */
+  /* V80 FIX: glass CLARO = texto negro, glass-dark OSCURO = texto blanco, no al reves */
+  .glass, .v72-kpi, .v72-card-reporte, div[data-testid="stMetric"] {
+    width: 100% !important; max-width: 100% !important; overflow: visible !important;
+    background: white !important; color: #111827 !important; border: 1px solid #e5e7eb !important;
+    border-radius: 14px !important; padding: 14px !important; margin-bottom: 10px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06) !important;
+  }
+  .glass *, .v72-kpi *, div[data-testid="stMetric"] * { color: #111827 !important; opacity: 1 !important; }
+  .glass-dark { background: #0f172a !important; color: white !important; border: none !important; }
+  .glass-dark * { color: white !important; opacity: 1 !important; }
+  .glass-dark div[style*="opacity:0.7"] { color: #cbd5e1 !important; opacity: 1 !important; }
+  /* Pill VER SOLO: fondo rosita = texto rojo oscuro, no blanco */
+  .badge, span[class*="badge"] { color: #991b1b !important; background: #fee2e2 !important; }
+  /* Badge verde Sin reporte: texto oscuro sobre verde clarito */
+  /* V82: circulito como estaba, sin override */
+  /* Titulo y textos: negro, no gris clarito */
+  /* V82 FIX: NO forzar todo span a negro - eso hacia invisible el texto blanco dentro del cuadrito negro */
+  h1, h2, h3, h4, p, label { color: #111827 !important; }
+  /* El cuadrito negro 📍 AGUASCALIENTES y badges si llevan letra blanca */
+  .rep-box, .rep-box *, .glass-dark *, .badge { color: inherit !important; }
+  .rep-box { background: #0f172a !important; color: white !important; }
+  .rep-box * { color: white !important; }
+  h1 { font-size: 1.45rem !important; line-height: 1.15 !important; font-weight: 900 !important; }
+  /* Botones: alto 44px minimo, texto visible, no vacios */
+  div[data-testid="stButton"] button { min-height: 44px !important; font-size: 14px !important; font-weight: 700 !important; color: #1e40af !important; background: white !important; border: 1.5px solid #1e40af !important; width: 100% !important; white-space: normal !important; }
+  div[data-testid="stButton"] button[kind="primary"] { background: #dc2626 !important; color: white !important; border-color: #dc2626 !important; }
+  /* Selects y inputs: fondo blanco, texto oscuro */
+  div[data-testid="stSelectbox"] > div, div[data-testid="stTextInput"] > div { background: white !important; color: #111827 !important; }
+  /* Menu lateral: texto oscuro sobre blanco */
+  section[data-testid="stSidebar"] { background: white !important; }
+  section[data-testid="stSidebar"] * { color: #111827 !important; }
+  /* Numeros de telefono y lineas: negro, no gris clarito */
+  a[href^="tel:"] { color: #111827 !important; font-size: 15px !important; font-weight: 800 !important; }
+  /* Tarjeta de reporte: texto oscuro */
+  .badge { color: white !important; }
+}
+
+
+/* --- V86 FINAL PRODUCCION: menu desplegable siempre blanco con letra negra, nunca negro sobre negro --- */
+/* Caja cerrada: fondo blanco, letra negra, flecha negra */
+div[data-testid="stSelectbox"] > div > div,
+div[data-testid="stSelectbox"] div[data-baseweb="select"],
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+  background: white !important; color: #111827 !important; border-color: #d1d5db !important;
+}
+div[data-testid="stSelectbox"] input { color: #111827 !important; }
+div[data-testid="stSelectbox"] svg { fill: #111827 !important; color: #111827 !important; }
+div[data-testid="stSelectbox"] span { color: #111827 !important; }
+/* Menu abierto: fondo blanco, opciones negras - ESTE era el que salia todo negro */
+div[data-baseweb="popover"], div[data-baseweb="menu"], div[role="listbox"], ul[role="listbox"] {
+  background: white !important; color: #111827 !important; border: 1px solid #d1d5db !important;
+}
+div[role="option"], li[role="option"], div[data-baseweb="menu"] li, div[data-baseweb="menu"] div {
+  background: white !important; color: #111827 !important; opacity: 1 !important;
+}
+div[role="option"][aria-selected="true"], li[role="option"][aria-selected="true"] {
+  background: #dbeafe !important; color: #1e40af !important; font-weight: 700 !important;
+}
+div[role="option"]:hover, li[role="option"]:hover { background: #eff6ff !important; color: #111827 !important; }
+/* El input de buscar dentro del selector cuando escribes */
+div[data-testid="stSelectbox"] input[placeholder] { color: #111827 !important; }
+/* V82: CIRCULITO como estaba originalmente, sin tocarlo */
+
+
+
+/* --- V82 FIX SIDEBAR: boton para desplegar visible en celular --- */
+header[data-testid="stHeader"] { background: white !important; color: #111827 !important; }
+header[data-testid="stHeader"] button, div[data-testid="collapsedControl"] button {
+  background: white !important; color: #111827 !important; border: 1.5px solid #111827 !important;
+  min-width: 44px !important; min-height: 44px !important; border-radius: 10px !important;
+  display: flex !important; visibility: visible !important; opacity: 1 !important;
+}
+header[data-testid="stHeader"] button svg, div[data-testid="collapsedControl"] svg { fill: #111827 !important; color: #111827 !important; width: 22px !important; height: 22px !important; }
+div[data-testid="collapsedControl"] { display: block !important; visibility: visible !important; color: #111827 !important; }
+
+
+/* --- V83 FIX SIDEBAR SUAVE: no blanco puro que lastima, flechas visibles --- */
+/* Boton >> para desplegar: fondo oscuro + flecha blanca fuerte, no gris clarito */
+div[data-testid="collapsedControl"] button, header[data-testid="stHeader"] button[data-testid="collapsedControl"] {
+  background: #0f172a !important; color: white !important; border: 2px solid #0f172a !important;
+  min-width: 48px !important; min-height: 44px !important; border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25) !important;
+}
+div[data-testid="collapsedControl"] button svg, div[data-testid="collapsedControl"] button span,
+header[data-testid="stHeader"] button svg {
+  fill: white !important; color: white !important; stroke: white !important;
+  width: 26px !important; height: 26px !important; opacity: 1 !important; font-weight: 900 !important;
+}
+div[data-testid="collapsedControl"] { background: transparent !important; }
+/* Sidebar desplegado: gris suavecito #eef2f7, no blanco puro #ffffff que encandila */
+section[data-testid="stSidebar"] { background: #eef2f7 !important; }
+section[data-testid="stSidebar"] > div { background: #eef2f7 !important; }
+section[data-testid="stSidebar"] * { color: #0f172a !important; }
+section[data-testid="stSidebar"] div[role="radiogroup"] > label {
+  background: white !important; border: 1px solid #dbe2ec !important; border-radius: 12px !important;
+  padding: 10px 12px !important; margin-bottom: 8px !important;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] > label p { color: #0f172a !important; font-size: 14px !important; font-weight: 700 !important; }
+section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) {
+  background: #1e40af !important; border-color: #1e40af !important;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p { color: white !important; }
+
+
+/* --- V86 FINAL: Box Observaciones NEGRO como estaba, solo letras BLANCAS --- */
+div[data-testid="stForm"] textarea {
+  background: #0f172a !important; color: white !important; -webkit-text-fill-color: white !important; caret-color: white !important;
+  border: 1.5px solid #334155 !important;
+}
+div[data-testid="stForm"] textarea::placeholder { color: #94a3b8 !important; -webkit-text-fill-color: #94a3b8 !important; opacity: 1 !important; }
+/* Boton Cerrar formulario: NEGRO como estaba, solo letras BLANCAS */
+div[data-testid="stForm"] button:not([kind="primary"]) {
+  background: #0f172a !important; color: white !important; border: 1.5px solid #0f172a !important;
+}
+div[data-testid="stForm"] button:not([kind="primary"]) p { color: white !important; }
+
+</style>""", unsafe_allow_html=True)
 
 # V55: Separar boton CASE del titulo
 st.markdown("""<style>/* V64 FIX: Quitado margin-top global que bajaba Cancelar - CASE ya tiene su spacer de 10px */</style>""", unsafe_allow_html=True)
@@ -331,11 +463,11 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     top_edo_num = int(top_edo_count.iloc[0]) if not top_edo_count.empty else 0
     k1, k2, k3 = st.columns([1,2,1])
     with k1:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:68px;"><div style="font-size:13px; color:#64748b; font-weight:600;">📋 Total eventos</div><div style="font-size:26px; font-weight:800; color:#0f172a; margin-top:4px;">{total_ev}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:auto !important; min-height:92px; overflow:visible !important;"><div style="font-size:13px; color:#64748b; font-weight:600;">📋 Total eventos</div><div style="font-size:26px; font-weight:800; color:#0f172a; margin-top:4px;">{total_ev}</div></div>""", unsafe_allow_html=True)
     with k2:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #ef4444; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:68px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🏆 Sucursal con más eventos</div><div style="font-size:18px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word; line-height:1.2;">{top_suc}</div><div style="font-size:12px; color:#16a34a; background:#dcfce7; display:inline-block; padding:2px 8px; border-radius:99px; margin-top:4px;">↗ {top_suc_num} eventos</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #ef4444; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:auto !important; min-height:92px; overflow:visible !important;"><div style="font-size:13px; color:#64748b; font-weight:600;">🏆 Sucursal con más eventos</div><div style="font-size:18px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word; line-height:1.2;">{top_suc}</div><div style="font-size:12px; color:#16a34a; background:#dcfce7; display:inline-block; padding:2px 8px; border-radius:99px; margin-top:4px;">↗ {top_suc_num} eventos</div></div>""", unsafe_allow_html=True)
     with k3:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #3b82f6; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:68px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🗺 Estado con más fallas</div><div style="font-size:22px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word;">{top_edo}</div><div style="font-size:12px; color:#64748b; margin-top:4px;">{top_edo_num} eventos</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #3b82f6; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:auto !important; min-height:92px; overflow:visible !important;"><div style="font-size:13px; color:#64748b; font-weight:600;">🗺 Estado con más fallas</div><div style="font-size:22px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word;">{top_edo}</div><div style="font-size:12px; color:#64748b; margin-top:4px;">{top_edo_num} eventos</div></div>""", unsafe_allow_html=True)
     st.markdown("---")
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
@@ -1080,6 +1212,31 @@ if not df_reportes.empty:
     mapa_activos_global = mapa_activos
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
+# --- V86 FINAL PRODUCCION: Ordenar por mas criticos primero (sin boton copiar) ---
+# Si el usuario activa este toggle, la lista de opciones se ordena por dias descendente, no por A-Z
+_orden_crit = st.toggle("🔴 Ordenar: Más críticos primero", value=False, key="orden_criticos_v78")
+if _orden_crit and not df_reportes.empty:
+    # Reordenar opciones_activas por dias descendente usando dias_desde
+    try:
+        _con_dias = []
+        for _lbl in opciones_activas:
+            _dmax = 0
+            # Buscar la fila de esa sucursal para sacar sus dias
+            for _, _rr in df_reportes.iterrows():
+                _lbl_check = f"{str(_rr.get('ESTADO',''))} - {str(_rr.get('SUCURSAL',''))}"
+                if _lbl_check in _lbl:
+                    _fr = str(_rr.get(COL_FEC, "")) if COL_FEC else ""
+                    _fcs = split_multi_val(_fr) if _fr else []
+                    for _ff in (_fcs if _fcs else [_fr]):
+                        _d,_t = dias_desde(_ff) if _ff else (None,"")
+                        if _d is not None and _d > _dmax: _dmax = _d
+                    break
+            _con_dias.append((_dmax, _lbl))
+        _con_dias = sorted(_con_dias, key=lambda x: x[0], reverse=True)
+        opciones_activas = [x[1] for x in _con_dias]
+        opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
+        st.markdown(f"<div class='v78-orden'>🔴 Ordenado por más críticos primero — primero lo más viejo</div>", unsafe_allow_html=True)
+    except: pass
 
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
@@ -1356,9 +1513,9 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
 
 if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px">', unsafe_allow_html=True)
-    st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}** - PRUEBAS REALES")
+    st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}**")
     id_display = SHEET_ID_PRUEBAS[:20] + "..." if SHEET_ID_PRUEBAS else "Cargado desde Streamlit Secrets"
-    st.info(f"Hoja pruebas ID: {id_display} | Modo lote: agrega N reportes y al final guarda todo")
+    st.info(f"Hoja ID: {id_display} | Modo lote: agrega N reportes y al final guarda todo")
     st.markdown("#### 1⃣ Selecciona Estado y Sucursal")
     fc_sel1, fc_sel2 = st.columns(2)
     with fc_sel1:

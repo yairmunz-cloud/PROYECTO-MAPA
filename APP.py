@@ -86,12 +86,12 @@ except:
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V53 COMPACTO • Todo más chiquito y junto • Si ves este banner, sí cargó la V53 compacta • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V54 SIN CORTE • Todo más chiquito y junto • Si ves este banner, sí cargó la V54 sin corte • Producción sigue en v48</div>""", unsafe_allow_html=True)
 
 # --- V50 COMPACTO: todo mas chiquito y junto, estilo zoom 67% sin tocar el navegador ---
 st.markdown("""<style>
 /* Contenedor general mas pegado y sin tanto aire */
-.block-container { padding-top: 0.6rem !important; padding-bottom: 0.6rem !important; padding-left: 1.2rem !important; padding-right: 1.2rem !important; max-width: 1350px !important; }
+.block-container { padding-top: 1.1rem !important; padding-bottom: 0.6rem !important; padding-left: 1.2rem !important; padding-right: 1.2rem !important; max-width: 1350px !important; }
 /* Quitar espacios gigantes entre secciones */
 div[data-testid="stVerticalBlock"] { gap: 0.35rem !important; }
 div[data-testid="stHorizontalBlock"] { gap: 0.5rem !important; }
@@ -112,6 +112,9 @@ input { font-size: 12px !important; min-height: 30px !important; }
 div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th { padding: 3px 6px !important; font-size: 11.5px !important; }
 /* Graficas: menos alto por defecto */
 div[data-testid="stPlotlyChart"], div[data-testid="stAltairChart"] { margin: 0 !important; }
+/* V54 FIX: Bajar un poco el header para que no se corte el borde superior */
+div[data-testid="stHorizontalBlock"] { padding-top: 6px !important; }
+.glass-dark { margin-top: 4px !important; }
 /* Tarjetas de sucursal mas pegadas */
 div[class*="glass-dark"] { padding: 8px 10px !important; }
 </style>""", unsafe_allow_html=True)
@@ -229,7 +232,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V53 COMPACTO]")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V54 SIN CORTE]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():

@@ -83,10 +83,10 @@ try:
 except:
     pass
 
-st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
+st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="atlas_favicon.png", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V59 COMO PRODUCCION • Todo más chiquito y junto • Si ves este banner, sí cargó la V59 como produccion • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V60 FAVICON ATLAS • Todo más chiquito y junto • Si ves este banner, sí cargó la V60 favicon atlas • Producción sigue en v48</div>""", unsafe_allow_html=True)
 # V55: Separar boton CASE del titulo
 st.markdown("""<style>div[data-testid="stButton"] button[kind="secondary"] { margin-top: 10px !important; }</style>""", unsafe_allow_html=True)
 
@@ -239,7 +239,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V59 COMO PRODUCCION]")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V60 FAVICON ATLAS]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():

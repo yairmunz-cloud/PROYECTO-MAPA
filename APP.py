@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V76 HEADER COMO PRODUCCION • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V76 HEADER COMO PRODUCCION</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V77 LIMPIA • Como producción + Buscador + Indicador rojo seleccionado</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,32 +95,10 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V76 HEADER COMO PRODUCCION: Responsive celular + estados vacios + semaforo --- */
-@media (max-width: 768px) {
-  .block-container { padding-left: 8px !important; padding-right: 8px !important; padding-top: 1rem !important; }
-  div[data-testid="stColumns"] { flex-direction: column !important; }
-  div[data-testid="stColumns"] > div { width: 100% !important; min-width: 100% !important; }
-  h1, .titulo-principal { font-size: 1.35rem !important; line-height: 1.2 !important; }
-  div[data-testid="stMetric"] { padding: 8px !important; }
-  iframe { height: 320px !important; }
-}
-.semaforo-verde { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
-.semaforo-amarillo { background: #fef9c3 !important; color: #854d0e !important; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
-.semaforo-rojo { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
-.estado-vacio { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 18px; text-align: center; color: #166534; font-weight: 700; }
-.barra-estado { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 8px 14px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; font-weight: 600; color: #1e40af; margin-bottom: 12px; }
-
-
-/* --- V76 HEADER COMO PRODUCCION --- */
-.v72-hero { background:white !important; color:#111827 !important; border-radius:0 !important; padding:0 !important; margin-bottom:8px !important; box-shadow:none !important; display:flex; gap:12px; align-items:center; }
-.v72-hero h1 { color:#111827 !important; font-size:1.75rem !important; line-height:1.18 !important; margin:0 !important; font-weight:900 !important; letter-spacing:-0.8px !important; }
-.v72-hero p { color:#6b7280 !important; font-size:12.5px !important; margin:4px 0 0 0 !important; font-weight:600 !important; }
-.v72-hero img { width:48px !important; height:48px !important; border-radius:14px !important; object-fit:cover !important; background:white !important; padding:0 !important; box-shadow:none !important; flex-shrink:0; }
-.v72-kpi { background:white; border:1px solid #e5e7eb; border-radius:16px; padding:14px 16px; box-shadow:0 2px 12px rgba(0,0,0,.06); }
-.v72-kpi b { font-size:26px !important; line-height:1 !important; color:#111827 !important; }
-.v72-kpi span { font-size:11px !important; text-transform:uppercase; letter-spacing:.8px; color:#6b7280 !important; font-weight:700; }
-.v72-card-reporte { background:white; border-radius:16px; border:1px solid #e5e7eb; box-shadow:0 4px 16px rgba(0,0,0,.07); padding:14px 16px; }
-.v72-filtros { background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:12px; }
+/* --- V77 LIMPIA: indicador seleccionado rojo translucido --- */
+.v77-selected { background: rgba(220,38,38,0.12) !important; border: 1.5px solid #dc2626 !important; color: #b91c1c !important; font-weight: 800 !important; }
+.v77-selected-box { border: 2px solid #dc2626 !important; background: rgba(220,38,38,0.08) !important; box-shadow: 0 0 0 3px rgba(220,38,38,0.12) !important; border-radius: 12px !important; }
+div[data-testid="stSelectbox"] > div[data-baseweb="select"] > div { transition: all 0.2s; }
 
 </style>""", unsafe_allow_html=True)
 
@@ -165,8 +143,8 @@ div[class*="glass-dark"] { padding: 8px 10px !important; }
 
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
-Datos = "BDSUCURSALES"
-ID_SHEETS = None  # FIX V46: No hardcodear ID - debe venir de st.secrets["sheet_id"]
+SHEET_PRINCIPAL = "BDSUCURSALES"
+ID_CORRECTO_SHEETS = None  # FIX V46: No hardcodear ID - debe venir de st.secrets["sheet_id"]
 
 # FIX FINAL v7: URL del usuario
 # FIX SEGURIDAD V41: Se elimino USER_CSV_URL publico - exponia datos sin auth. No usar CSV publicado.
@@ -393,14 +371,14 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         st.subheader("📅 Reportes por Mes / Año")
         if 'MES' in df_f.columns:
             if 'ANO' in df_f.columns and df_f['ANO'].notna().any():
-                df_f['MES / AÑO'] = df_f['ANO'].astype('Int64').astype(str) + "-" + df_f['MES'].astype('Int64').astype(str).str.zfill(2)
+                df_f['MES_ANO'] = df_f['ANO'].astype('Int64').astype(str) + "-" + df_f['MES'].astype('Int64').astype(str).str.zfill(2)
             else:
-                df_f['MES / AÑO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
-            por_mes = df_f.groupby('MES / AÑO').size().reset_index(name='REPORTES').sort_values('MES / AÑO')
+                df_f['MES_ANO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
+            por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES').sort_values('MES_ANO')
             if not por_mes.empty:
-                # V76 HEADER COMO PRODUCCION: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
-                _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES / AÑO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES / AÑO','REPORTES']).properties(height=260)
-                _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES / AÑO:N', y='REPORTES:Q', text='REPORTES:Q')
+                # V67: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
+                _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES_ANO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES_ANO','REPORTES']).properties(height=260)
+                _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES_ANO:N', y='REPORTES:Q', text='REPORTES:Q')
                 chart2 = _bar + _txt
                 st.altair_chart(chart2, width='stretch')
             else:
@@ -600,7 +578,7 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
                 from google.oauth2.service_account import Credentials
                 creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
                 client = gspread.authorize(creds)
-                sid = st.secrets.get("sheet_id", ID_SHEETS)
+                sid = st.secrets.get("sheet_id", ID_CORRECTO_SHEETS)
                 sh = client.open_by_key(sid)
                 ws = sh.worksheet("HISTORIAL_REPORTES")
                 vals = ws.get_all_values()
@@ -688,12 +666,12 @@ def cargar_datos(sheet_id_override=None):
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
             client = gspread.authorize(creds)
             # FIX V39: Secrets primero - produccion 12uBz... debe ganar sobre test 196...
-            sid = sheet_id_override or st.secrets.get("sheet_id") or ID_SHEETS
+            sid = sheet_id_override or st.secrets.get("sheet_id") or ID_CORRECTO_SHEETS
             if sid:
                 sh = client.open_by_key(sid)
                 ws = None
-                # FIX: prioriza Datos y solo acepta si tiene datos
-                for name_try in [Datos, "BDSUCURSALES", "BDSUCURSALESPRO", "Hoja1", "Sheet1"]:
+                # FIX: prioriza SHEET_PRINCIPAL y solo acepta si tiene datos
+                for name_try in [SHEET_PRINCIPAL, "BDSUCURSALES", "BDSUCURSALESPRO", "Hoja1", "Sheet1"]:
                     try:
                         ws_try = sh.worksheet(name_try)
                         vals_try = ws_try.get_all_values()
@@ -704,7 +682,7 @@ def cargar_datos(sheet_id_override=None):
                         continue
                 if not ws:
                     try:
-                        ws = sh.worksheet(Datos)
+                        ws = sh.worksheet(SHEET_PRINCIPAL)
                     except:
                         ws = sh.sheet1
                 all_vals = ws.get_all_values()
@@ -905,7 +883,7 @@ def log_acceso(usuario, accion="Login"):
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
             client = gspread.authorize(creds)
             try:
-                sh = client.open_by_key(ID_SHEETS)
+                sh = client.open_by_key(ID_CORRECTO_SHEETS)
             except:
                 sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
                 sh = client.open_by_key(sheet_id)
@@ -972,11 +950,11 @@ def eliminar_reporte_hoja1(estado, sucursal, reporte_a_borrar, fecha_a_borrar=No
             return s.strip()
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
         client = gspread.authorize(creds)
-        sheet_id = st.secrets.get("sheet_id", ID_SHEETS)
+        sheet_id = st.secrets.get("sheet_id", ID_CORRECTO_SHEETS)
         try:
             sh = client.open_by_key(sheet_id)
         except:
-            sh = client.open_by_key(ID_SHEETS)
+            sh = client.open_by_key(ID_CORRECTO_SHEETS)
         
         ws_found = None
         row_found = None
@@ -1110,163 +1088,40 @@ if not df_reportes.empty:
     mapa_activos_global = mapa_activos
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
-
-# --- V76 HEADER COMO PRODUCCION: Barra de estado + Buscador + Semafaro ---
-try:
-    _hoy = pd.to_datetime("today").normalize()
-    _nuevos_hoy = 0
-    _cerrados_hoy = 0
-    _mas_critico_txt = "Sin reportes activos"
-    _mas_critico_dias = 0
-    # V70 FIX: buscar columna de fecha real: FECHA, FECHA_REPORTE, FECHA_REGISTRO, FECHA_ALTA
-    # V71: usar COL_FEC + dias_desde (misma que tarjeta) para que no haya discrepancia
-    _max_dias = 0
-    _r_crit = None
-    if not df_reportes.empty and COL_FEC:
-        for _, _rr in df_reportes.iterrows():
-            _fr = str(_rr.get(COL_FEC, ""))
-            _fcs = split_multi_val(_fr) if _fr else []
-            for _ff in (_fcs if _fcs else [_fr]):
-                _d, _t = dias_desde(_ff) if _ff else (None, "")
-                if _d is not None and _d > _max_dias:
-                    _max_dias = _d
-                    _r_crit = _rr
-                # Nuevos hoy: si la fecha es hoy
-                try:
-                    _dt = pd.to_datetime(_ff, errors='coerce', dayfirst=True)
-                    if pd.notna(_dt) and _dt.normalize() == _hoy:
-                        _nuevos_hoy += 1
-                except: pass
-        if _r_crit is not None:
-            _mas_critico_dias = int(_max_dias)
-            _mas_critico_txt = f"{str(_r_crit.get('SUCURSAL',''))} • {_mas_critico_dias} días"
-        elif not df_reportes.empty:
-            _r0 = df_reportes.iloc[0]
-            _mas_critico_txt = f"{str(_r0.get('SUCURSAL',''))} • {len(df_reportes)} activos"
-    # Cerrados hoy: buscar en historial con varias columnas posibles
-    try:
-        if 'df_historial' in locals() and df_historial is not None and not df_historial.empty:
-            _col_cierre = None
-            for _cc in ['FECHA_CIERRE','FECHA_CIERRE_REPORTE','FECHA','FECHA_REGISTRO']:
-                if _cc in df_historial.columns:
-                    _col_cierre = _cc
-                    break
-            if _col_cierre:
-                _fc = pd.to_datetime(df_historial[_col_cierre], errors='coerce')
-                _cerrados_hoy = int((_fc.dt.normalize() == _hoy).sum())
-    except: pass
-    # V75: Barra delgadita ELIMINADA - ya esta en Hero + KPIs, no duplicar
-except Exception as _e:
-    pass
-
-# --- V72 VISIBLE: Hero + KPIs grandes ---
-try:
-    # V73 FIX: Contar REPORTES, no SUCURSALES - Guadalajara tiene 2 reportes en 1 fila (945969 | 987654)
-    # total_reps_global ya cuenta por REP separado por |, no por fila
-    _total_act = int(total_reps_global) if 'total_reps_global' in locals() else 0
-    if _total_act == 0 and not df_reportes.empty:
-        # Fallback si total aun no existe: contar por REP
-        _total_act = 0
-        for _, _rr in df_reportes.iterrows():
-            _reps = split_multi_val(str(_rr.get(COL_REP, ""))) if COL_REP else []
-            _total_act += len([r for r in _reps if tiene_reporte(r)]) if _reps else 0
-    _crit = 0
-    try:
-        # Criticos por REP, no por fila: cada REP con su fecha correspondiente
-        for _, _rr in df_reportes.iterrows():
-            _reps = split_multi_val(str(_rr.get(COL_REP, ""))) if COL_REP else []
-            _fecs = split_multi_val(str(_rr.get(COL_FEC, ""))) if COL_FEC else []
-            for _i, _rep in enumerate(_reps):
-                if not tiene_reporte(_rep): continue
-                # Fecha de ese REP: si hay misma cantidad, usar la de su posicion, si no usar la maxima
-                _ff = _fecs[_i] if _i < len(_fecs) else (_fecs[0] if _fecs else "")
-                _d,_t = dias_desde(_ff) if _ff else (None,"")
-                if _d is not None and _d > 30: _crit += 1
-    except: pass
-    # V74: Logo + titulo del proyecto DENTRO del hero azul, para no duplicar abajo
-    _logo_html = f"<img src='data:image/png;base64,{b64_logo}' style='width:48px;height:48px;border-radius:14px;object-fit:cover;background:white;flex-shrink:0'>" if 'b64_logo' in locals() and b64_logo else "<div style='width:48px;height:48px;border-radius:14px;background:#dc2626;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:26px;flex-shrink:0'>A</div>"
-    st.markdown(f"<div class='v72-hero'><div>{_logo_html}</div><div style='flex:1'><h1>REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</h1><p>Mapa en vivo • {_total_act} reportes activos en {len(df_reportes) if not df_reportes.empty else 0} sucursales • {_crit} en crítico (+30 días) • Actualizado hoy</p></div></div>", unsafe_allow_html=True)
-    # V74: KPIs como BOTONES que filtran, no solo muestran
-    if 'filtro_kpi' not in st.session_state: st.session_state.filtro_kpi = "Todos"
-    cK1,cK2,cK3,cK4 = st.columns(4)
-    with cK1:
-        st.markdown(f"<div class='v72-kpi' style='text-align:center'><span>📊 Activos</span><br><b>{_total_act}</b><div style='font-size:12px;color:#6b7280'>requieren atención</div></div>", unsafe_allow_html=True)
-        if st.button("Ver activos", key="kpi_activos", use_container_width=True): st.session_state.filtro_kpi = "Activos"
-    with cK2:
-        st.markdown(f"<div class='v72-kpi' style='text-align:center'><span>🔴 Críticos +30d</span><br><b style='color:#dc2626 !important'>{_crit}</b><div style='font-size:12px;color:#6b7280'>prioridad máxima</div></div>", unsafe_allow_html=True)
-        if st.button("Ver críticos", key="kpi_criticos", use_container_width=True): st.session_state.filtro_kpi = "Criticos"
-    with cK3:
-        st.markdown(f"<div class='v72-kpi' style='text-align:center'><span>📅 Hoy</span><br><b>{_nuevos_hoy}</b><div style='font-size:12px;color:#6b7280'>nuevos hoy</div></div>", unsafe_allow_html=True)
-        if st.button("Ver hoy", key="kpi_hoy", use_container_width=True): st.session_state.filtro_kpi = "Hoy"
-    with cK4:
-        st.markdown(f"<div class='v72-kpi' style='text-align:center'><span>✅ Cerrados hoy</span><br><b>{_cerrados_hoy}</b><div style='font-size:12px;color:#6b7280'>cerrados hoy</div></div>", unsafe_allow_html=True)
-        if st.button("Ver cerrados", key="kpi_cerrados", use_container_width=True): st.session_state.filtro_kpi = "Cerrados"
-    # Mostrar lista filtrada segun KPI clicado, igual que hacia el BOX negro
-    if st.session_state.filtro_kpi != "Todos":
-        st.markdown(f"**Filtrando por: {st.session_state.filtro_kpi}** — selecciona una sucursal abajo para verla en el mapa")
-        # Construir lista segun filtro
-        _lista_f = []
-        try:
-            for _, _rr in df_reportes.iterrows():
-                _reps = split_multi_val(str(_rr.get(COL_REP, ""))) if COL_REP else []
-                _fecs = split_multi_val(str(_rr.get(COL_FEC, ""))) if COL_FEC else []
-                for _i, _rep in enumerate(_reps):
-                    if not tiene_reporte(_rep): continue
-                    _ff = _fecs[_i] if _i < len(_fecs) else (_fecs[0] if _fecs else "")
-                    _d,_t = dias_desde(_ff) if _ff else (None,"")
-                    _incl = False
-                    if st.session_state.filtro_kpi == "Activos": _incl = True
-                    elif st.session_state.filtro_kpi == "Criticos" and _d is not None and _d > 30: _incl = True
-                    elif st.session_state.filtro_kpi == "Hoy" and _d is not None and _d == 0: _incl = True
-                    if _incl:
-                        _lista_f.append(f"{str(_rr.get('ESTADO',''))} - {str(_rr.get('SUCURSAL',''))} | REP: {_rep} | {_t}")
-            if _lista_f:
-                _sel_kpi = st.selectbox("Sucursales filtradas — elige una para verla", ["-- Elige sucursal --"] + sorted(list(set(_lista_f))), key="sel_kpi_filtrado")
-                if _sel_kpi != "-- Elige sucursal --":
-                    st.info(f"Seleccionaste: {_sel_kpi} — usa el selector de abajo para ver su detalle en el mapa")
-            else:
-                st.info("Hoy no hay reportes cerrados en este filtro — todo sigue activo")
-        except Exception as _e:
-            st.info("Hoy no hay reportes cerrados en este filtro — todo sigue activo")
-        if st.button("Limpiar filtro", key="kpi_limpiar"): st.session_state.filtro_kpi = "Todos"
-        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-except: pass
-
-# --- V68 PRUEBA: Buscador global por No. Reporte / Sucursal / Falla ---
+# --- V77 LIMPIA: Buscador integrado compacto, no bloque nuevo ---
 st.markdown("### 🔍 Buscar reporte")
-_q_buscar = st.text_input("Buscar por No. Reporte, Sucursal o Falla", key="buscar_global_q", placeholder="Ej: 945969, GUADALAJARA, INTERNET...", label_visibility="collapsed")
-if _q_buscar and _q_buscar.strip():
-    _q = _q_buscar.strip().lower()
-    _res = []
+_q77 = st.text_input("Buscar reporte", key="buscar_v77", placeholder="Ej: 945969, GUADALAJARA, INTERNET...", label_visibility="collapsed")
+if _q77 and _q77.strip():
+    _q = _q77.strip().lower()
+    _res77 = []
     try:
-        for _, _r in df_reportes.iterrows():
-            _hay = " ".join([str(_r.get(c,'')) for c in df_reportes.columns]).lower()
-            if _q in _hay:
-                _res.append(_r)
+        for _, _r77 in df_reportes.iterrows():
+            _hay77 = " ".join([str(_r77.get(c,'')) for c in df_reportes.columns]).lower()
+            if _q in _hay77:
+                _res77.append(_r77)
     except: pass
-    if _res:
-        st.success(f"✅ Encontrados {len(_res)} reporte(s) con '{_q_buscar}'")
-        for _r in _res[:5]:
-            _dias_r = 0
-            try:
-                # V71 FIX: usar misma funcion que la tarjeta: dias_desde() + COL_FEC + dayfirst
-                _fec_raw = str(_r.get(COL_FEC, "")) if COL_FEC else ""
-                _fecs = split_multi_val(_fec_raw) if _fec_raw else []
-                _max = 0
-                for _ff in (_fecs if _fecs else [_fec_raw]):
-                    _d, _t = dias_desde(_ff) if _ff else (None, "")
-                    if _d is not None and _d > _max: _max = _d
-                _dias_r = int(_max)
-            except: _dias_r = 0
-            _color = "🟢" if _dias_r < 15 else ("🟡" if _dias_r <= 30 else "🔴")
-            st.info(f"{_color} {_dias_r} días • 📍 {str(_r.get('ESTADO',''))} - {str(_r.get('SUCURSAL',''))} | Reporte: {str(_r.get('NO. REPORTE',''))} | Falla: {str(_r.get('FALLA',''))[:80]}")
+    if _res77:
+        st.markdown(f"<div class='v77-selected-box' style='padding:10px 12px; margin-bottom:10px'><b style='color:#b91c1c'>✅ Filtrado por: '{_q77}' — {len(_res77)} reporte(s) — esto es lo que estás viendo</b></div>", unsafe_allow_html=True)
+        for _r77 in _res77[:5]:
+            _fec77 = str(_r77.get(COL_FEC, "")) if COL_FEC else ""
+            _fcs77 = split_multi_val(_fec77) if _fec77 else []
+            _max77 = 0
+            for _ff77 in (_fcs77 if _fcs77 else [_fec77]):
+                _d77,_t77 = dias_desde(_ff77) if _ff77 else (None,"")
+                if _d77 is not None and _d77 > _max77: _max77 = _d77
+            _col77 = "🟢" if _max77 < 15 else ("🟡" if _max77 <= 30 else "🔴")
+            st.info(f"{_col77} {_max77} días • 📍 {str(_r77.get('ESTADO',''))} - {str(_r77.get('SUCURSAL',''))} | Reporte: {str(_r77.get(COL_REP,''))} | Falla: {str(_r77.get('FALLA',''))[:80]}")
     else:
-        st.warning(f"❌ No se encontró nada con '{_q_buscar}' en reportes activos")
+        st.markdown(f"<div class='v77-selected-box' style='padding:10px 12px; margin-bottom:10px'><b style='color:#b91c1c'>❌ Sin resultados para '{_q77}' — no hay nada seleccionado</b></div>", unsafe_allow_html=True)
     st.markdown("---")
+
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
-    # V74: Logo + titulo YA estan en hero azul, no duplicar aqui - solo queda boton CASE abajo
+    if b64_logo:
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px; margin-top:8px; padding-top:4px;"><div style="width:48px; height:48px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.18; padding-top:4px;">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+    else:
+        logo_html_fallback = '<div style="width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,#dc2626,#b91c1c); display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:26px; box-shadow:0 2px 8px rgba(30,58,138,0.3);">A</div>'
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.18; padding-top:4px;">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
     if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="secondary", width='content'):
@@ -1281,7 +1136,8 @@ with c1:
 </style>
     """, unsafe_allow_html=True)
 with c2:
-    # V74: BOX negro Reportes Activos eliminado - ahora son los KPIs de arriba (no duplicar)
+    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
+    
     if not df_reportes.empty:
         st.markdown(f"""
         <div class="glass" style="margin-top:10px; margin-bottom:14px; padding:10px 14px; border-left:4px solid #ef4444; background:white !important; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
@@ -1297,7 +1153,11 @@ with c2:
         if "filtro_activo_sel" not in st.session_state or st.session_state["filtro_activo_sel"] not in opciones_con_todos:
             st.session_state["filtro_activo_sel"] = "-- Ver todas las sucursales --"
         st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)  # V63: Separar VER SOLO del selector
-        sel_activo = st.selectbox("Filtro reporte activo", opciones_con_todos, key="filtro_activo_sel", label_visibility="collapsed", placeholder="🔍 Selecciona sucursal con reporte activo...")
+        # V77: Indicador rojo translucido cuando hay algo seleccionado en VER SOLO
+    _sel_prev = st.session_state.get("filtro_activo_sel", "-- Ver todas las sucursales --")
+    if _sel_prev != "-- Ver todas las sucursales --":
+        st.markdown(f"<div style='background: rgba(220,38,38,0.12); border: 1.5px solid #dc2626; color: #b91c1c; font-weight: 800; padding: 7px 12px; border-radius: 999px; font-size: 12.5px; margin-bottom: 8px;'>🔴 Seleccionado: {_sel_prev} — esto es lo que estás viendo</div>", unsafe_allow_html=True)
+    sel_activo = st.selectbox("Filtro reporte activo", opciones_con_todos, key="filtro_activo_sel", label_visibility="collapsed", placeholder="🔍 Selecciona sucursal con reporte activo...")
     # --- FIX SYNC: Al seleccionar en Reportes Activos, sincronizar con Estado/Sucursal de abajo ---
     # --- FIX SYNC ROBUSTO: Prioridad a seleccion manual abajo ---
     try:
@@ -1390,7 +1250,7 @@ if st.session_state.get('show_delete_confirm'):
     if target:
         st.markdown('<div class="glass" style="border:2px solid #ef4444; background:rgba(254,242,242,0.8) !important; padding:24px; margin-top:16px;">', unsafe_allow_html=True)
         st.markdown(f"### ✅ Confirmar Cierre de Reporte")
-        st.markdown(f"""<div style="background:white; border:1px solid #fecaca; border-left:5px solid #ef4444; padding:16px; border-radius:10px; margin:12px 0;"><b>Estado:</b> {target.get('estado')}<br><b>Sucursal:</b> {target.get('sucursal')}<br><b>No. REPORTE:</b> {target.get('rep')}<br><b>Fecha:</b> {target.get('fec')}<br><b>Falla:</b> {target.get('obs','')[:250]}<br><br><div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;"><b style="color:#b91c1c;">⚠ ADVERTENCIA - ACCIÓN EN {Datos}</b><br><div style="font-size:0.85rem; color:#7f1d1d; margin-top:6px;">Se limpiará NO. REPORTE, FECHA y FALLA en {Datos} y se guardará cierre en HISTORIAL_REPORTES</div></div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; border:1px solid #fecaca; border-left:5px solid #ef4444; padding:16px; border-radius:10px; margin:12px 0;"><b>Estado:</b> {target.get('estado')}<br><b>Sucursal:</b> {target.get('sucursal')}<br><b>No. REPORTE:</b> {target.get('rep')}<br><b>Fecha:</b> {target.get('fec')}<br><b>Falla:</b> {target.get('obs','')[:250]}<br><br><div style="background:#fef2f2; border:1px solid #fecaca; padding:12px; border-radius:8px;"><b style="color:#b91c1c;">⚠ ADVERTENCIA - ACCIÓN EN {SHEET_PRINCIPAL}</b><br><div style="font-size:0.85rem; color:#7f1d1d; margin-top:6px;">Se limpiará NO. REPORTE, FECHA y FALLA en {SHEET_PRINCIPAL} y se guardará cierre en HISTORIAL_REPORTES</div></div></div>""", unsafe_allow_html=True)
         cc1, cc2 = st.columns(2)
         with cc1:
             if st.button("❌ No, Cancelar", key="cancel_delete_final", width='stretch'):
@@ -1401,12 +1261,12 @@ if st.session_state.get('show_delete_confirm'):
         with cc2:
             if st.button("✅ Sí, CERRAR REPORTE", key="confirm_delete_final", type="primary", width='stretch'):
                 try:
-                    with st.spinner(f"Cerrando reporte en {Datos}..."):
+                    with st.spinner(f"Cerrando reporte en {SHEET_PRINCIPAL}..."):
                         ok, msg = eliminar_reporte_hoja1(target['estado'], target['sucursal'], target['rep'], target.get('indice', None))
                         if ok:
                             log_eliminacion_historial(st.session_state.get('current_user','sistema'), target['estado'], target['sucursal'], target['rep'], target['fec'], target['obs'])
                             log_acceso(st.session_state.get('current_user','sistema'), f"CERRO REPORTE {target['rep']} {target['sucursal']} - {target['estado']}")
-                            st.success(f"✅ Reporte {target['rep']} CERRADO correctamente en {Datos}.")
+                            st.success(f"✅ Reporte {target['rep']} CERRADO correctamente en {SHEET_PRINCIPAL}.")
                             st.balloons()
                             time.sleep(1.5)
                             st.session_state['show_delete_confirm'] = False
@@ -1646,12 +1506,12 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
                         client = gspread.authorize(creds)
                         try:
-                            sh = client.open_by_key(ID_SHEETS)
+                            sh = client.open_by_key(ID_CORRECTO_SHEETS)
                         except:
                             sheet_id = st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
                             sh = client.open_by_key(sheet_id)
                         # FIX: SIEMPRE BDSUCURSALES2
-                        try: ws_main = sh.worksheet(Datos)
+                        try: ws_main = sh.worksheet(SHEET_PRINCIPAL)
                         except: ws_main = sh.worksheet("BDSUCURSALES")
                         headers = ws_main.row_values(1)
                         headers_upper = [h.strip().upper() for h in headers]
@@ -1729,7 +1589,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
                         log_acceso(st.session_state['current_user'], f"Guardo lote PRUEBA {guardados} reportes")
-                        st.success(f"✅ {guardados} reportes guardados en {Datos}")
+                        st.success(f"✅ {guardados} reportes guardados en {SHEET_PRINCIPAL}")
                         st.session_state['batch_reportes'] = []
                         # FIX 3: LIMPIAR CACHE Y RESETEAR BOX REPORTES ACTIVOS SIN ERROR
                         st.cache_data.clear()

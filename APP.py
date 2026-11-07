@@ -86,7 +86,7 @@ except:
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:#1e40af; color:white; padding:10px 16px; border-radius:10px; text-align:center; font-weight:800; font-size:14px; margin-bottom:12px;">✨ MODO PRUEBA V49 ESTÉTICA NUEVA • Si ves este banner azul, sí cargó la v49 • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V49 ESTÉTICA NUEVA • Si ves este banner azul, sí cargó la v49 • Producción sigue en v48</div>""", unsafe_allow_html=True)
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
 SHEET_PRINCIPAL = "BDSUCURSALES"
@@ -1008,9 +1008,11 @@ with c1:
     st.markdown("""
     <style>
     div[data-testid="stButton"] button[kind="secondary"] {
-        background: #1e40af !important; border: 1px solid #1e40af !important; color: white !important; font-weight: 800 !important; border-radius: 10px !important; padding: 8px 18px !important;
+        background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; font-weight: 700 !important; border-radius: 999px !important; padding: 7px 16px !important; box-shadow: 0 1px 6px rgba(30,64,175,0.10) !important;
     }
-    </style>
+    
+    div[data-testid="stButton"] button[kind="secondary"]:hover { background: #eff6ff !important; border-color: #1e40af !important; color: #1e40af !important; box-shadow: 0 2px 10px rgba(30,64,175,0.15) !important; }
+</style>
     """, unsafe_allow_html=True)
 with c2:
     st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)

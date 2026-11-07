@@ -86,7 +86,7 @@ except:
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V52 SIN BLANCO • Todo más chiquito y junto • Si ves este banner, sí cargó la V52 sin blanco • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V53 COMPACTO • Todo más chiquito y junto • Si ves este banner, sí cargó la V53 compacta • Producción sigue en v48</div>""", unsafe_allow_html=True)
 
 # --- V50 COMPACTO: todo mas chiquito y junto, estilo zoom 67% sin tocar el navegador ---
 st.markdown("""<style>
@@ -229,7 +229,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V52 SIN BLANCO]")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V53 COMPACTO]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():
@@ -491,7 +491,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     if 'SUCURSAL' in df_f.columns:
         resumen = df_f.groupby(['ESTADO','SUCURSAL']).size().reset_index(name='TOTAL_REPORTES')
         resumen = resumen.sort_values('TOTAL_REPORTES', ascending=False)
-        html = """<style>.resumen-wrap { width:100%; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); max-height:500px; overflow-y:auto; overflow-x:hidden; }.resumen-table { width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:14px; }.resumen-table th { background:#f8fafc; color:#64748b; font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; padding:12px 16px; border-bottom:1px solid #e2e8f0; text-align:left; position:sticky; top:0; z-index:1; }.resumen-table th:last-child { text-align:center !important; }.resumen-table td { padding:10px 16px; border-bottom:1px solid #f1f5f9; color:#334155; font-weight:400; }.resumen-table td:last-child { text-align:center !important; }.resumen-table tr:hover { background:#f8fafc; }</style><div class="resumen-wrap"><table class="resumen-table"><thead><tr><th style="width:20%">ESTADO</th><th style="width:45%">SUCURSAL</th><th style="width:35%; text-align:center;">TOTAL_REPORTES</th></tr></thead><tbody>"""
+        html = """<style>.resumen-wrap { width:100%; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); max-height:260px; overflow-y:auto; overflow-x:hidden; }.resumen-table { width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:12px; }.resumen-table th { background:#f8fafc; color:#64748b; font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; padding:6px 10px; border-bottom:1px solid #e2e8f0; text-align:left; position:sticky; top:0; z-index:1; }.resumen-table th:last-child { text-align:center !important; }.resumen-table td { padding:5px 10px; border-bottom:1px solid #f1f5f9; color:#334155; font-weight:400; }.resumen-table td:last-child { text-align:center !important; }.resumen-table tr:hover { background:#f8fafc; }</style><div class="resumen-wrap"><table class="resumen-table"><thead><tr><th style="width:20%">ESTADO</th><th style="width:45%">SUCURSAL</th><th style="width:35%; text-align:center;">TOTAL_REPORTES</th></tr></thead><tbody>"""
         for _, r in resumen.iterrows():
             html += f"<tr><td>{r['ESTADO']}</td><td>{r['SUCURSAL']}</td><td style='text-align:center;'>{int(r['TOTAL_REPORTES'])}</td></tr>"
         html += "</tbody></table></div>"
@@ -1163,7 +1163,7 @@ if st.session_state.get('show_delete_login') and not st.session_state.get('admin
     st.markdown('<div class="glass" style="border:2px solid #dc2626; padding:24px; margin-top:16px; background:rgba(254,242,242,0.95) !important;">', unsafe_allow_html=True)
     st.markdown("### 🔒 Login para CERRAR REPORTE")
     target = st.session_state.get('delete_target', {})
-    st.markdown(f"""<div style="background:#fef2f2; border:1px solid #fecaca; border-left:5px solid #dc2626; padding:12px 16px; border-radius:8px; margin:10px 0;"><b style="color:#991b1b;">⚠ ADVERTENCIA: Vas a CERRAR un reporte activo</b><br><b>Sucursal:</b> {target.get('sucursal','')} - {target.get('estado','')}<br><b>No. REPORTE:</b> {target.get('rep','')}<br></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div style="background:#fef2f2; border:1px solid #fecaca; border-left:5px solid #dc2626; padding:6px 10px; border-radius:8px; margin:10px 0;"><b style="color:#991b1b;">⚠ ADVERTENCIA: Vas a CERRAR un reporte activo</b><br><b>Sucursal:</b> {target.get('sucursal','')} - {target.get('estado','')}<br><b>No. REPORTE:</b> {target.get('rep','')}<br></div>""", unsafe_allow_html=True)
     u_del = st.text_input("Usuario Administrador", key="delete_login_user", placeholder="Ingresa tu usuario")
     p_del = st.text_input("Contraseña", type="password", key="delete_login_pwd", placeholder="Ingresa tu contraseña")
     cd1, cd2 = st.columns(2)

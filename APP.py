@@ -86,9 +86,14 @@ except:
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/multi-reporte/atlas_favicon.png", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V64 BOTONES PAREJOS • Todo más chiquito y junto • Si ves este banner, sí cargó la V64 botones parejos • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V65 ROJO TRANSLUCIDO • Todo más chiquito y junto • Si ves este banner, sí cargó la V65 rojo translucido • Producción sigue en v48</div>""", unsafe_allow_html=True)
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
-st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !important; min-height: 40px !important; padding: 0 16px !important; border-radius: 999px !important; font-weight: 700 !important; }</style>""", unsafe_allow_html=True)
+st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !important; min-height: 40px !important; padding: 0 16px !important; border-radius: 999px !important; font-weight: 700 !important; }
+    /* V65: Ingresar = rojo translucido, no solido, para no confundir */
+    div[data-testid="stButton"] button[kind="primary"] { background: rgba(220,38,38,0.12) !important; border: 1.5px solid #dc2626 !important; color: #b91c1c !important; }
+    div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
+    /* Cancelar = blanco borde azul */
+    div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }</style>""", unsafe_allow_html=True)
 
 # V55: Separar boton CASE del titulo
 st.markdown("""<style>/* V64 FIX: Quitado margin-top global que bajaba Cancelar - CASE ya tiene su spacer de 10px */</style>""", unsafe_allow_html=True)
@@ -242,7 +247,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V64 BOTONES PAREJOS]")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V65 ROJO TRANSLUCIDO]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():
@@ -1188,7 +1193,7 @@ if st.session_state.get('show_delete_login') and not st.session_state.get('admin
             st.session_state['delete_target'] = None
             st.rerun()
     with cd2:
-        if st.button("🔐 Ingresar y Continuar", key="confirm_delete_login", type="secondary", width='stretch'):
+        if st.button("🔐 Ingresar y Continuar", key="confirm_delete_login", type="primary", width='stretch'):
             if check_login(u_del, p_del):
                 st.session_state['admin_auth'] = True
                 st.session_state['current_user'] = u_del
@@ -1332,7 +1337,7 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
     p = st.text_input("Contraseña", type="password", key="login_pwd")
     cl1, cl2 = st.columns(2)
     with cl1:
-        if st.button("Ingresar", type="secondary", width='stretch'):
+        if st.button("Ingresar", type="primary", width='stretch'):
             if check_login(u.lower().strip(), p):
                 st.session_state['admin_auth'] = True
                 st.session_state['current_user'] = u.lower().strip()

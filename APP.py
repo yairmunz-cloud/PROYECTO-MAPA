@@ -1,5 +1,8 @@
 import streamlit as st
 from datetime import datetime, timedelta
+import hashlib
+import hmac
+def _hash_pwd(p): return hashlib.sha256(p.encode()).hexdigest()
 try:
     from zoneinfo import ZoneInfo
     TZ_MX = ZoneInfo("America/Mexico_City")
@@ -19,6 +22,42 @@ def now_mx():
     except:
         pass
     return datetime.utcnow() - timedelta(hours=6)
+
+# FIX V42: check_login temprano - Buscar lo usa antes de su definicion original
+def check_login(user, pwd):
+    try:
+        if "users" not in st.secrets: return False
+        attempts = st.session_state.get('login_attempts',0)
+        if attempts >= 5:
+            last = st.session_state.get('last_failed_login')
+            if last:
+                try:
+                    diff = (now_mx().replace(tzinfo=None) - last.replace(tzinfo=None)).total_seconds()/60
+                    if diff < 10: return False
+                    else: st.session_state['login_attempts']=0
+                except: pass
+        users_secret = st.secrets["users"]
+        if user not in users_secret:
+            st.session_state['login_attempts']=st.session_state.get('login_attempts',0)+1
+            st.session_state['last_failed_login']=now_mx().replace(tzinfo=None)
+            import time as _t; _t.sleep(0.8)
+            return False
+        stored=str(users_secret[user]).strip()
+        pwd_input=str(pwd).strip()
+        ok=False
+        if len(stored)==64 and all(c in "0123456789abcdefABCDEF" for c in stored):
+            ok=_hash_pwd(pwd_input)==stored.lower()
+        else:
+            ok=hmac.compare_digest(stored,pwd_input)
+        if ok:
+            st.session_state['login_attempts']=0
+            st.session_state['last_activity']=now_mx().replace(tzinfo=None)
+        else:
+            st.session_state['login_attempts']=st.session_state.get('login_attempts',0)+1
+            st.session_state['last_failed_login']=now_mx().replace(tzinfo=None)
+        return ok
+    except: return False
+
 
 import pandas as pd
 from datetime import datetime
@@ -48,10 +87,10 @@ st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", l
 
 # --- FIX 1: HOJA PRINCIPAL UNIFICADA ---
 SHEET_PRINCIPAL = "BDSUCURSALES"
-ID_CORRECTO_SHEETS = "196gIWN8Sfk0_ZC-WHbL0FDw-BRwK4XnCkS14gAaN9UE"
+ID_CORRECTO_SHEETS = None  # FIX V46: No hardcodear ID - debe venir de st.secrets["sheet_id"]
 
 # FIX FINAL v7: URL del usuario
-USER_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
+# FIX SEGURIDAD V41: Se elimino USER_CSV_URL publico - exponia datos sin auth. No usar CSV publicado.
 
 
 # --- FIX CRITICO PARA RESETEAR FILTRO SIN ERROR DE STREAMLIT ---
@@ -141,17 +180,24 @@ with st.sidebar:
         key="menu_pagina_v42",
         label_visibility="collapsed"
     )
+    # FIX V45: Al salir de Buscar a Mapa/Dashboard, cerrar sesion privada automaticamente
+    _pagina_prev = st.session_state.get('pagina')
     if "Mapa" in pagina:
         st.session_state['pagina'] = "🏠 Reportes"
     elif "Buscar" in pagina:
         st.session_state['pagina'] = "🔒 Buscar Reportes"
     else:
         st.session_state['pagina'] = "📊 Dashboard Analítica"
+    if _pagina_prev == "🔒 Buscar Reportes" and st.session_state.get('pagina') != "🔒 Buscar Reportes":
+        st.session_state['admin_auth'] = False
+        st.session_state['current_user'] = None
+        st.session_state['last_activity'] = None
+        st.session_state['show_login'] = False
 
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V49 ESTÉTICA]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():
@@ -174,7 +220,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 if not sheet_id:
                     try: sheet_id = SHEET_ID
                     except:
-                        try: sheet_id = SHEET_ID_PRUEBAS = st.secrets.get("sheet_id", "196glWN8Sfk0_ZC-WHbL0FDw-BRwK4XnCkS14gAaN9UE")
+                        try: sheet_id = SHEET_ID_PRUEBAS = st.secrets.get("sheet_id")  # FIX V46: sin fallback a test
                         except: sheet_id = None
                 if not sheet_id:
                     st.error("No se encontró sheet_id en secrets")
@@ -209,11 +255,11 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     top_edo_num = int(top_edo_count.iloc[0]) if not top_edo_count.empty else 0
     k1, k2, k3 = st.columns([1,2,1])
     with k1:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:110px;"><div style="font-size:13px; color:#64748b; font-weight:600;">📋 Total eventos</div><div style="font-size:32px; font-weight:800; color:#0f172a; margin-top:4px;">{total_ev}</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #0f172a; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:120px;"><div style="font-size:13px; color:#64748b; font-weight:600;">📋 Total eventos</div><div style="font-size:32px; font-weight:800; color:#0f172a; margin-top:4px;">{total_ev}</div></div>""", unsafe_allow_html=True)
     with k2:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #ef4444; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:110px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🏆 Sucursal con más eventos</div><div style="font-size:18px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word; line-height:1.2;">{top_suc}</div><div style="font-size:12px; color:#16a34a; background:#dcfce7; display:inline-block; padding:2px 8px; border-radius:99px; margin-top:4px;">↗ {top_suc_num} eventos</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #ef4444; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:120px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🏆 Sucursal con más eventos</div><div style="font-size:18px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word; line-height:1.2;">{top_suc}</div><div style="font-size:12px; color:#16a34a; background:#dcfce7; display:inline-block; padding:2px 8px; border-radius:99px; margin-top:4px;">↗ {top_suc_num} eventos</div></div>""", unsafe_allow_html=True)
     with k3:
-        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #3b82f6; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:110px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🗺 Estado con más fallas</div><div style="font-size:22px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word;">{top_edo}</div><div style="font-size:12px; color:#64748b; margin-top:4px;">{top_edo_num} eventos</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="background:white; padding:18px; border-radius:12px; border-left:5px solid #3b82f6; box-shadow:0 2px 8px rgba(0,0,0,0.06); height:120px;"><div style="font-size:13px; color:#64748b; font-weight:600;">🗺 Estado con más fallas</div><div style="font-size:22px; font-weight:800; color:#0f172a; margin-top:4px; white-space:normal; word-break:break-word;">{top_edo}</div><div style="font-size:12px; color:#64748b; margin-top:4px;">{top_edo_num} eventos</div></div>""", unsafe_allow_html=True)
     st.markdown("---")
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
@@ -235,7 +281,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         if 'SUCURSAL' in df_f.columns:
             top10 = df_f['SUCURSAL'].value_counts().head(10).reset_index()
             top10.columns = ['SUCURSAL','REPORTES']
-            chart = alt.Chart(top10).mark_bar(color='#ef4444').encode(x='REPORTES:Q', y=alt.Y('SUCURSAL:N', sort='-x'), tooltip=['SUCURSAL','REPORTES']).properties(height=400)
+            chart = alt.Chart(top10).mark_bar(color='#1e40af').encode(x='REPORTES:Q', y=alt.Y('SUCURSAL:N', sort='-x'), tooltip=['SUCURSAL','REPORTES']).properties(height=400)
             st.altair_chart(chart, width='stretch')
     with c2:
         st.subheader("📅 Reportes por Mes / Año")
@@ -244,11 +290,161 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES').sort_values('MES_ANO')
             chart2 = alt.Chart(por_mes).mark_line(point=True, color='#0f172a').encode(x='MES_ANO:N', y='REPORTES:Q', tooltip=['MES_ANO','REPORTES']).properties(height=400)
             st.altair_chart(chart2, width='stretch')
+    # --- RESTAURADO V47: Graficas que se perdieron en v39-v46 al recortar Dashboard ---
+    c3, c4 = st.columns(2)
+    with c3:
+        st.subheader("🗺 Fallas por Estado")
+        st.caption("Paleta azul-gris • Anillo")
+        if 'ESTADO' in df_f.columns:
+            por_edo = df_f['ESTADO'].value_counts().reset_index()
+            por_edo.columns = ['ESTADO','REPORTES']
+            blues_grays = ['#0f172a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#e0e7ff','#cbd5e1','#94a3b8','#64748b','#475569','#334155']
+            domain_estados = por_edo['ESTADO'].tolist()
+            range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
+            total_edo = int(por_edo['REPORTES'].sum())
+            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=75, outerRadius=130, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
+                theta=alt.Theta('REPORTES:Q', stack=True),
+                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
+                tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
+                order=alt.Order('REPORTES:Q', sort='descending')
+            ).properties(height=420, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
+            st.altair_chart(chart3, width='stretch')
+    with c4:
+        def mes_a_letra(m):
+            mapa = {'1':'Enero','2':'Febrero','3':'Marzo','4':'Abril','5':'Mayo','6':'Junio','7':'Julio','8':'Agosto','9':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre',1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre','01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'}
+            try:
+                s = str(m).strip()
+                if not s: return s
+                key = s.lstrip('0')
+                if key == '': key = '0'
+                if key in mapa: return mapa[key]
+                try: return mapa[int(s)]
+                except: return mapa.get(s, s)
+            except: return str(m)
+        st.subheader("📊 Reportes por Día / Hora / Mes")
+        vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], index=2, key="vista_dashboard_final_v47")
+        if vista == "DIA del mes" and 'DIA' in df_f.columns:
+            data = df_f['DIA'].value_counts().sort_index().reset_index()
+            data.columns = ['DIA','REPORTES']
+            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('DIA:O', title='Día del mes'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['DIA','REPORTES']).properties(height=380)
+            st.altair_chart(chart4, width='stretch')
+        elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
+            try:
+                df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
+                data = df_f['_HORA'].value_counts().sort_index().reset_index()
+                data.columns = ['HORA','REPORTES']
+                chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(x=alt.X('HORA:O', title='Hora del día'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['HORA','REPORTES']).properties(height=380)
+                st.altair_chart(chart4, width='stretch')
+            except Exception as e: st.error(str(e))
+        elif vista == "MES" and 'MES' in df_f.columns:
+            data = df_f['MES'].value_counts().sort_index().reset_index()
+            data.columns = ['MES','REPORTES']
+            data['MES_LETRA'] = data['MES'].apply(lambda x: mes_a_letra(x))
+            try:
+                data['MES_NUM'] = pd.to_numeric(data['MES'], errors='coerce')
+                data = data.sort_values('MES_NUM')
+            except: pass
+            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('MES_LETRA:O', title='Mes', sort=None), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=[alt.Tooltip('MES_LETRA:N', title='Mes'), alt.Tooltip('REPORTES:Q', title='Reportes')]).properties(height=380)
+            st.altair_chart(chart4, width='stretch')
+    st.markdown("---")
+    st.subheader("⏱ Tiempo de reparación / Cierre")
+    try:
+        if 'FECHA_REGISTRO' in df_f.columns and 'FECHA' in df_f.columns:
+            df_f['_FECHA_REG'] = pd.to_datetime(df_f['FECHA_REGISTRO'], dayfirst=True, errors='coerce')
+            df_f['_FECHA_REP'] = pd.to_datetime(df_f['FECHA'], dayfirst=True, errors='coerce')
+            df_f['_DIAS'] = (df_f['_FECHA_REG'] - df_f['_FECHA_REP']).dt.days
+            df_valid = df_f[df_f['_DIAS'].notna() & (df_f['_DIAS']>=0)]
+            if not df_valid.empty:
+                col_a, col_b, col_c = st.columns(3)
+                col_a.metric("Promedio cierre", f"{df_valid['_DIAS'].mean():.1f} días")
+                col_b.metric("Más rápido", f"{df_valid['_DIAS'].min()} días")
+                col_c.metric("Más lento", f"{df_valid['_DIAS'].max()} días")
+                chart5 = alt.Chart(df_valid).mark_bar().encode(alt.X('_DIAS:Q', bin=alt.Bin(maxbins=20), title='Días para cierre'), y='count()').properties(title="Distribución tiempo de cierre")
+                st.altair_chart(chart5, width='stretch')
+                por_suc_tiempo = df_valid.groupby('SUCURSAL')['_DIAS'].mean().reset_index().sort_values('_DIAS', ascending=False).head(10)
+                chart6 = alt.Chart(por_suc_tiempo).mark_bar(color='#1e293b').encode(x='_DIAS:Q', y=alt.Y('SUCURSAL:N', sort='-x')).properties(title="Tiempo promedio cierre por sucursal (Top 10 más lentas)")
+                st.altair_chart(chart6, width='stretch')
+    except Exception as e: st.warning(f"No se pudo calcular tiempo: {e}")
+    st.markdown("---")
+    st.subheader("📞 Top Líneas Telefónicas con más fallas")
+    try:
+        col_tel = None
+        for cand in ['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','LINEAS','LINEA','TEL','TELMEX']:
+            if cand in df_f.columns:
+                col_tel = cand
+                break
+        if not col_tel:
+            for c in df_f.columns:
+                if 'LINEA' in c or 'TEL' in c:
+                    col_tel = c
+                    break
+        if col_tel:
+            from collections import Counter, defaultdict
+            todas_lineas = []
+            linea_to_suc = defaultdict(set)
+            linea_to_estado = defaultdict(set)
+            for idx, row in df_f.iterrows():
+                val = str(row.get(col_tel, '')).strip()
+                if not val or val.lower() in ['nan','none','']: continue
+                suc = str(row.get('SUCURSAL','')).strip()
+                edo = str(row.get('ESTADO','')).strip()
+                for p in val.split('|'):
+                    for pc in p.split(','):
+                        num = pc.strip()
+                        if num and len(num)>=3:
+                            todas_lineas.append(num)
+                            if suc: linea_to_suc[num].add(suc)
+                            if edo: linea_to_estado[num].add(edo)
+            if todas_lineas:
+                counter = Counter(todas_lineas)
+                top_lineas = counter.most_common(20)
+                data_rows = []
+                for linea, fallas in top_lineas:
+                    sucs = ", ".join(sorted(linea_to_suc.get(linea, []))[:3])
+                    edos = ", ".join(sorted(linea_to_estado.get(linea, []))[:2])
+                    data_rows.append({"LINEA": linea, "FALLAS": fallas, "SUCURSAL(ES)": sucs, "ESTADO": edos})
+                df_lineas = pd.DataFrame(data_rows)
+                c_line1, c_line2 = st.columns([1.5,1.5])
+                with c_line1:
+                    chart_df = df_lineas.head(10).copy()
+                    chart_line = alt.Chart(chart_df).mark_bar(color='#1e40af').encode(x='FALLAS:Q', y=alt.Y('LINEA:N', sort='-x', title='LINEA'), tooltip=['LINEA','FALLAS','SUCURSAL(ES)','ESTADO']).properties(height=450)
+                    st.altair_chart(chart_line, width='stretch')
+                with c_line2:
+                    st.markdown("**Detalle con sucursal:**")
+                    st.dataframe(df_lineas, width='stretch', hide_index=True)
+                    csv_lineas = df_lineas.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Descargar líneas CSV", csv_lineas, "lineas_mas_fallas_con_sucursal.csv", "text/csv")
+            else: st.info("No hay datos en LINEAS CON FALLA / TEL")
+        else: st.info(f"No se encontró columna de líneas. Columnas: {list(df_f.columns)[:20]}")
+    except Exception as e: st.error(f"Error graficando líneas: {e}")
+    st.markdown("---")
+    st.subheader("📋 Resumen por Sucursal")
+    if 'SUCURSAL' in df_f.columns:
+        resumen = df_f.groupby(['ESTADO','SUCURSAL']).size().reset_index(name='TOTAL_REPORTES')
+        resumen = resumen.sort_values('TOTAL_REPORTES', ascending=False)
+        html = """<style>.resumen-wrap { width:100%; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); max-height:500px; overflow-y:auto; overflow-x:hidden; }.resumen-table { width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:14px; }.resumen-table th { background:#f8fafc; color:#64748b; font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; padding:12px 16px; border-bottom:1px solid #e2e8f0; text-align:left; position:sticky; top:0; z-index:1; }.resumen-table th:last-child { text-align:center !important; }.resumen-table td { padding:10px 16px; border-bottom:1px solid #f1f5f9; color:#334155; font-weight:400; }.resumen-table td:last-child { text-align:center !important; }.resumen-table tr:hover { background:#f8fafc; }</style><div class="resumen-wrap"><table class="resumen-table"><thead><tr><th style="width:20%">ESTADO</th><th style="width:45%">SUCURSAL</th><th style="width:35%; text-align:center;">TOTAL_REPORTES</th></tr></thead><tbody>"""
+        for _, r in resumen.iterrows():
+            html += f"<tr><td>{r['ESTADO']}</td><td>{r['SUCURSAL']}</td><td style='text-align:center;'>{int(r['TOTAL_REPORTES'])}</td></tr>"
+        html += "</tbody></table></div>"
+        st.markdown(html, unsafe_allow_html=True)
+        csv = resumen.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Descargar reporte CSV", csv, "reporte_sucursales_mas_fallas.csv", "text/csv")
     
     st.stop()
 
 # --- BUSCAR REPORTES - PRIVADO Y COMPACTO ---
 if st.session_state.get('pagina') == "🔒 Buscar Reportes":
+    # FIX SEGURIDAD V41: Timeout 30 min - si paso mucho tiempo, cerrar sesion
+    try:
+        last_act = st.session_state.get('last_activity')
+        if last_act and st.session_state.get('admin_auth'):
+            diff_min = (now_mx().replace(tzinfo=None) - last_act).total_seconds()/60
+            if diff_min > 30:
+                st.session_state['admin_auth'] = False
+                st.session_state['current_user'] = None
+                st.warning("Sesión expirada por inactividad (30 min). Vuelve a ingresar.")
+    except:
+        pass
     if not st.session_state.get('admin_auth'):
         st.title("🔒 Buscar Reportes - Acceso Privado")
         st.warning("Esta sección es privada. Ingresa credenciales para buscar reportes viejos cerrados.")
@@ -258,13 +454,19 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
         with col_b2:
             pass_b = st.text_input("Contraseña", type="password", key="buscar_pass", placeholder="Contraseña")
         if st.button("🔓 Ingresar a Buscar Reportes", key="btn_buscar_login", type="primary"):
-            if user_b.strip() and pass_b.strip():
+            if check_login(user_b.strip().lower(), pass_b):
                 st.session_state['admin_auth'] = True
-                st.session_state['current_user'] = user_b.strip()
+                st.session_state['current_user'] = user_b.strip().lower()
+                st.session_state['last_activity'] = now_mx().replace(tzinfo=None)
+                # FIX V44: log_acceso esta definido mas abajo, no debe tumbar el login si aun no existe
+                try:
+                    log_acceso(user_b.strip().lower(), "Login Buscar Reportes")
+                except:
+                    pass
                 st.success("Acceso concedido")
                 st.rerun()
             else:
-                st.error("Ingresa usuario y contraseña")
+                st.error("Usuario o contraseña incorrectos")
         st.stop()
     # Si ya esta autenticado, mostrar buscador compacto
     st.title("🔒 Buscar Reportes Viejos")
@@ -339,7 +541,7 @@ st.markdown("""
     html, body { font-family: Inter, sans-serif; }
     .stApp { background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
-    .glass { background: rgba(255,255,255,0.95) !important; border-radius: 18px; padding: 20px 22px; box-shadow: 0 8px 32px rgba(15,23,42,0.08); border: 1px solid white; }
+    .glass { background: #ffffff !important; border-radius: 16px; padding: 20px 22px; box-shadow: 0 2px 12px rgba(15,23,42,0.06); border: 1px solid #e2e8f0; }
     .glass-dark { background: rgba(15,23,42,0.88) !important; color: white; border-radius: 18px; padding: 16px 18px; }
     .badge { display:inline-flex; padding:7px 14px; border-radius:100px; font-size:0.82rem; font-weight:800; letter-spacing:0.3px; }
     .badge-ok { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
@@ -366,7 +568,8 @@ def cargar_datos(sheet_id_override=None):
             from google.oauth2.service_account import Credentials
             creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=["https://www.googleapis.com/auth/spreadsheets"])
             client = gspread.authorize(creds)
-            sid = sheet_id_override or ID_CORRECTO_SHEETS or st.secrets.get("sheet_id", SHEET_ID_PRUEBAS)
+            # FIX V39: Secrets primero - produccion 12uBz... debe ganar sobre test 196...
+            sid = sheet_id_override or st.secrets.get("sheet_id") or ID_CORRECTO_SHEETS
             if sid:
                 sh = client.open_by_key(sid)
                 ws = None
@@ -399,16 +602,13 @@ def cargar_datos(sheet_id_override=None):
         pass
     if df_privado is not None and not df_privado.empty and len(df_privado) > 5:
         return df_privado
-    try:
-        base_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTu5PSwbG4i6ywzNnt4H4hKiwyGygA7r_JBIeO6afIIlhIbrS3DmvNRj8isD-J7iu8OrEBYPCL8vc32/pub?output=csv"
-        url = f"{base_url}&cb={int(time.time())}"
-        df = pd.read_csv(url, dtype=str)
-        df.columns = df.columns.str.strip().str.upper()
-        return df.dropna(how='all').fillna("")
-    except:
-        if df_privado is not None:
-            return df_privado
-        return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
+    # FIX V39: No usar CSV de pruebas como fallback en produccion - mostraria datos equivocados
+    # Si gspread fallo (ej: Invalid JWT), mostrar error en vez de datos de pruebas
+    if df_privado is not None and not df_privado.empty:
+        return df_privado
+    # Si no hay datos privados, retornar vacio para que se vea que no cargo produccion
+    st.error("No se pudo cargar el Sheet de producción. Revisa Secrets: sheet_id y private_key deben ser los de producción.")
+    return pd.DataFrame(columns=["ESTADO","SUCURSAL","TELMEX","NO. REPORTE","FECHA","OBSERVACIONES"])
 
 def deduplicar_df(df_in):
     try:
@@ -795,10 +995,10 @@ opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
     if b64_logo:
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:16px"><div style="width:52px; height:52px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px"><div style="width:48px; height:48px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     else:
         logo_html_fallback = '<div style="width:56px; height:56px; border-radius:14px; background:linear-gradient(135deg,#dc2626,#b91c1c); display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:26px; box-shadow:0 2px 8px rgba(30,58,138,0.3);">A</div>'
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:16px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.1">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="primary", width='content'):
         st.session_state['show_case_pdf'] = True
@@ -941,6 +1141,11 @@ if st.session_state.get('show_delete_confirm'):
                             st.session_state['show_delete_confirm'] = False
                             st.session_state['delete_target'] = None
                             st.session_state['show_delete_login'] = False
+                            # FIX V40: Al cerrar reporte, cerrar sesion privada para que Buscar Reportes vuelva a pedir credenciales
+                            st.session_state['admin_auth'] = False
+                            st.session_state['current_user'] = None
+                            st.session_state['last_activity'] = None
+                            st.session_state['show_login'] = False
                             # FIX: limpiar cache y resetear box SIN ERROR - v26
                             try:
                                 st.cache_data.clear()
@@ -976,7 +1181,7 @@ if st.session_state.get('show_case_pdf'):
             <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Monterrey - 800 832 2600</b><br><span style="font-size:0.85rem; color:#64748b;">Nuevo León - Tamaulipas - Coahuila - SLP - Zacatecas</span></div>
             <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Guadalajara - 800 364 0500</b><br><span style="font-size:0.85rem; color:#64748b;">Jalisco - Aguascalientes - Colima - Nayarit - Zacatecas</span></div>
             <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Querétaro - 800 404 0000</b><br><span style="font-size:0.85rem; color:#64748b;">Querétaro - Guanajuato - Michoacán - SLP</span></div>
-            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #dc2626;"><b>CASE San Juan - 800 905 2200</b><br><span style="font-size:0.85rem; color:#64748b;">CDMX y zona metropolitana - Edo. de México - Morelos - Guerrero</span></div>
+            <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE San Juan - 800 905 2200</b><br><span style="font-size:0.85rem; color:#64748b;">CDMX y zona metropolitana - Edo. de México - Morelos - Guerrero</span></div>
             <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Puebla - 800 226 1500</b><br><span style="font-size:0.85rem; color:#64748b;">Puebla - Tlaxcala - Veracruz - Hidalgo - Edo. de México - Morelos - Guerrero</span></div>
             <div style="background:white; border-radius:8px; padding:10px 14px; border-left:4px solid #1e40af;"><b>CASE Mérida - 800 201 1100</b><br><span style="font-size:0.85rem; color:#64748b;">Yucatán - Quintana Roo - Campeche - Tabasco - Chiapas - Oaxaca - Veracruz</span></div>
         </div>

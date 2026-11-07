@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V69 PROFESIONAL • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V69 PRUEBA PROFESIONAL</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V71 SIN DISCREPANCIA • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V71 SIN DISCREPANCIA</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,7 +95,7 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V69 PROFESIONAL: Responsive celular + estados vacios + semaforo --- */
+/* --- V71 SIN DISCREPANCIA: Responsive celular + estados vacios + semaforo --- */
 @media (max-width: 768px) {
   .block-container { padding-left: 8px !important; padding-right: 8px !important; padding-top: 1rem !important; }
   div[data-testid="stColumns"] { flex-direction: column !important; }
@@ -386,7 +386,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 df_f['MES / AÑO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
             por_mes = df_f.groupby('MES / AÑO').size().reset_index(name='REPORTES').sort_values('MES / AÑO')
             if not por_mes.empty:
-                # V69 PRUEBA PROFESIONAL: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
+                # V71 SIN DISCREPANCIA: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
                 _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES / AÑO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES / AÑO','REPORTES']).properties(height=260)
                 _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES / AÑO:N', y='REPORTES:Q', text='REPORTES:Q')
                 chart2 = _bar + _txt
@@ -1099,27 +1099,52 @@ if not df_reportes.empty:
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 
-# --- V69 PROFESIONAL: Barra de estado + Buscador + Semafaro ---
+# --- V71 SIN DISCREPANCIA: Barra de estado + Buscador + Semafaro ---
 try:
     _hoy = pd.to_datetime("today").normalize()
     _nuevos_hoy = 0
     _cerrados_hoy = 0
     _mas_critico_txt = "Sin reportes activos"
     _mas_critico_dias = 0
-    if not df_reportes.empty and 'FECHA' in df_reportes.columns:
-        _f = pd.to_datetime(df_reportes['FECHA'], errors='coerce')
-        _nuevos_hoy = int((_f.dt.normalize() == _hoy).sum())
-        _dias = (_hoy - _f.dt.normalize()).dt.days.fillna(0)
-        if len(_dias) > 0:
-            _idx = _dias.idxmax()
-            _r = df_reportes.loc[_idx]
-            _mas_critico_dias = int(_dias.max())
-            _mas_critico_txt = f"{str(_r.get('SUCURSAL',''))} • {_mas_critico_dias} días"
-    if 'df_historial' in locals() and not df_historial.empty and 'FECHA_CIERRE' in df_historial.columns:
-        _fc = pd.to_datetime(df_historial['FECHA_CIERRE'], errors='coerce')
-        _cerrados_hoy = int((_fc.dt.normalize() == _hoy).sum())
+    # V70 FIX: buscar columna de fecha real: FECHA, FECHA_REPORTE, FECHA_REGISTRO, FECHA_ALTA
+    # V71: usar COL_FEC + dias_desde (misma que tarjeta) para que no haya discrepancia
+    _max_dias = 0
+    _r_crit = None
+    if not df_reportes.empty and COL_FEC:
+        for _, _rr in df_reportes.iterrows():
+            _fr = str(_rr.get(COL_FEC, ""))
+            _fcs = split_multi_val(_fr) if _fr else []
+            for _ff in (_fcs if _fcs else [_fr]):
+                _d, _t = dias_desde(_ff) if _ff else (None, "")
+                if _d is not None and _d > _max_dias:
+                    _max_dias = _d
+                    _r_crit = _rr
+                # Nuevos hoy: si la fecha es hoy
+                try:
+                    _dt = pd.to_datetime(_ff, errors='coerce', dayfirst=True)
+                    if pd.notna(_dt) and _dt.normalize() == _hoy:
+                        _nuevos_hoy += 1
+                except: pass
+        if _r_crit is not None:
+            _mas_critico_dias = int(_max_dias)
+            _mas_critico_txt = f"{str(_r_crit.get('SUCURSAL',''))} • {_mas_critico_dias} días"
+        elif not df_reportes.empty:
+            _r0 = df_reportes.iloc[0]
+            _mas_critico_txt = f"{str(_r0.get('SUCURSAL',''))} • {len(df_reportes)} activos"
+    # Cerrados hoy: buscar en historial con varias columnas posibles
+    try:
+        if 'df_historial' in locals() and df_historial is not None and not df_historial.empty:
+            _col_cierre = None
+            for _cc in ['FECHA_CIERRE','FECHA_CIERRE_REPORTE','FECHA','FECHA_REGISTRO']:
+                if _cc in df_historial.columns:
+                    _col_cierre = _cc
+                    break
+            if _col_cierre:
+                _fc = pd.to_datetime(df_historial[_col_cierre], errors='coerce')
+                _cerrados_hoy = int((_fc.dt.normalize() == _hoy).sum())
+    except: pass
     st.markdown(f"<div class='barra-estado'>📊 Hoy: <b>{_nuevos_hoy} nuevos</b> &nbsp;•&nbsp; ✅ Cerrados hoy: <b>{_cerrados_hoy}</b> &nbsp;•&nbsp; 🚨 Más crítico: <b>{_mas_critico_txt}</b></div>", unsafe_allow_html=True)
-except:
+except Exception as _e:
     pass
 
 # --- V68 PRUEBA: Buscador global por No. Reporte / Sucursal / Falla ---
@@ -1139,7 +1164,14 @@ if _q_buscar and _q_buscar.strip():
         for _r in _res[:5]:
             _dias_r = 0
             try:
-                _dias_r = int((pd.to_datetime('today').normalize() - pd.to_datetime(_r.get('FECHA'), errors='coerce')).days)
+                # V71 FIX: usar misma funcion que la tarjeta: dias_desde() + COL_FEC + dayfirst
+                _fec_raw = str(_r.get(COL_FEC, "")) if COL_FEC else ""
+                _fecs = split_multi_val(_fec_raw) if _fec_raw else []
+                _max = 0
+                for _ff in (_fecs if _fecs else [_fec_raw]):
+                    _d, _t = dias_desde(_ff) if _ff else (None, "")
+                    if _d is not None and _d > _max: _max = _d
+                _dias_r = int(_max)
             except: _dias_r = 0
             _color = "🟢" if _dias_r < 15 else ("🟡" if _dias_r <= 30 else "🔴")
             st.info(f"{_color} {_dias_r} días • 📍 {str(_r.get('ESTADO',''))} - {str(_r.get('SUCURSAL',''))} | Reporte: {str(_r.get('NO. REPORTE',''))} | Falla: {str(_r.get('FALLA',''))[:80]}")

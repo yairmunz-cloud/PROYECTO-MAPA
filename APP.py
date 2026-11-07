@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V84 FORMULARIOS • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V83 SIDEBAR SUAVE • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,13 +95,13 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V84 FORMULARIOS: Telefono clicable sin boton copiar --- */
+/* --- V83 SIDEBAR SUAVE: Telefono clicable sin boton copiar --- */
 a[href^="tel:"] { color: #1e40af !important; font-weight: 800 !important; font-size: 14px !important; text-decoration: none !important; }
 a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !important; }
 .v78-orden { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; color: #1e40af; display: inline-block; margin-bottom: 10px; }
 
 
-/* --- V84 FORMULARIOS: alto contraste + sin encimados --- */
+/* --- V83 SIDEBAR SUAVE: alto contraste + sin encimados --- */
 @media (max-width: 768px) {
   /* Forzar fondo claro y texto oscuro, aunque el celular este en modo oscuro */
   .block-container, .main, [data-testid="stAppViewContainer"] { background: #f8fafc !important; color: #111827 !important; }
@@ -147,7 +147,7 @@ a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !i
 }
 
 
-/* --- V84 FORMULARIOS: menu desplegable siempre blanco con letra negra, nunca negro sobre negro --- */
+/* --- V83 SIDEBAR SUAVE: menu desplegable siempre blanco con letra negra, nunca negro sobre negro --- */
 /* Caja cerrada: fondo blanco, letra negra, flecha negra */
 div[data-testid="stSelectbox"] > div > div,
 div[data-testid="stSelectbox"] div[data-baseweb="select"],
@@ -211,29 +211,6 @@ section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checke
   background: #1e40af !important; border-color: #1e40af !important;
 }
 section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p { color: white !important; }
-
-
-/* --- V84 FIX FORMULARIOS: todos los cuadros para escribir en blanco con letra negra, nunca negro sobre negro --- */
-input, textarea, select {
-  background: white !important; color: #111827 !important; -webkit-text-fill-color: #111827 !important; caret-color: #111827 !important;
-}
-input::placeholder, textarea::placeholder { color: #6b7280 !important; -webkit-text-fill-color: #6b7280 !important; opacity: 1 !important; }
-div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea,
-div[data-testid="stDateInput"] input, div[data-testid="stNumberInput"] input,
-div[data-testid="stTextInput"] > div, div[data-testid="stTextArea"] > div,
-div[data-testid="stDateInput"] > div, div[data-testid="stNumberInput"] > div {
-  background: white !important; color: #111827 !important; border-color: #d1d5db !important;
-}
-div[data-testid="stTextArea"] textarea { min-height: 100px !important; font-size: 15px !important; line-height: 1.4 !important; }
-div[data-testid="stDateInput"] svg, div[data-testid="stDateInput"] span { fill: #111827 !important; color: #111827 !important; }
-/* Botones dentro del formulario: si el fondo es oscuro, letra blanca; si es blanco, letra azul - nunca negro sobre negro */
-div[data-testid="stForm"] button, div[data-testid="stButton"] button {
-  background: white !important; color: #1e40af !important; border: 1.5px solid #1e40af !important;
-}
-div[data-testid="stForm"] button[kind="primary"], div[data-testid="stButton"] button[kind="primary"] {
-  background: #dc2626 !important; color: white !important; border-color: #dc2626 !important;
-}
-div[data-testid="stForm"] button p, div[data-testid="stButton"] button p { color: inherit !important; }
 
 </style>""", unsafe_allow_html=True)
 
@@ -1223,7 +1200,7 @@ if not df_reportes.empty:
     mapa_activos_global = mapa_activos
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
-# --- V84 FORMULARIOS: Ordenar por mas criticos primero (sin boton copiar) ---
+# --- V83 SIDEBAR SUAVE: Ordenar por mas criticos primero (sin boton copiar) ---
 # Si el usuario activa este toggle, la lista de opciones se ordena por dias descendente, no por A-Z
 _orden_crit = st.toggle("🔴 Ordenar: Más críticos primero", value=False, key="orden_criticos_v78")
 if _orden_crit and not df_reportes.empty:

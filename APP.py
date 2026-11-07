@@ -85,7 +85,7 @@ except:
 
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V73 CUENTA POR REPORTE • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V73 CUENTA POR REPORTE</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V74 SIN DUPLICADO + KPI CLICABLE • Barra estado + Buscador + Semáforo + Móvil • No es producción • Producción sigue en V74 SIN DUPLICADO + KPI CLICABLE</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -95,7 +95,7 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V73 CUENTA POR REPORTE: Responsive celular + estados vacios + semaforo --- */
+/* --- V74 SIN DUPLICADO + KPI CLICABLE: Responsive celular + estados vacios + semaforo --- */
 @media (max-width: 768px) {
   .block-container { padding-left: 8px !important; padding-right: 8px !important; padding-top: 1rem !important; }
   div[data-testid="stColumns"] { flex-direction: column !important; }
@@ -111,7 +111,7 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
 .barra-estado { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 8px 14px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; font-weight: 600; color: #1e40af; margin-bottom: 12px; }
 
 
-/* --- V73 CUENTA POR REPORTE --- */
+/* --- V74 SIN DUPLICADO + KPI CLICABLE --- */
 .v72-hero { background: linear-gradient(135deg,#0f2a6b 0%, #1e40af 55%, #3b82f6 100%); color:white; border-radius:18px; padding:18px 20px; margin-bottom:14px; box-shadow:0 8px 24px rgba(30,64,175,.25); }
 .v72-hero h1 { color:white !important; font-size:1.9rem !important; line-height:1.1 !important; margin:0 !important; }
 .v72-hero p { color:#dbeafe !important; font-size:13px !important; margin:4px 0 0 0 !important; }
@@ -397,7 +397,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                 df_f['MES / AÑO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
             por_mes = df_f.groupby('MES / AÑO').size().reset_index(name='REPORTES').sort_values('MES / AÑO')
             if not por_mes.empty:
-                # V73 CUENTA POR REPORTE: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
+                # V74 SIN DUPLICADO + KPI CLICABLE: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
                 _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES / AÑO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES / AÑO','REPORTES']).properties(height=260)
                 _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES / AÑO:N', y='REPORTES:Q', text='REPORTES:Q')
                 chart2 = _bar + _txt
@@ -1110,7 +1110,7 @@ if not df_reportes.empty:
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
 
-# --- V73 CUENTA POR REPORTE: Barra de estado + Buscador + Semafaro ---
+# --- V74 SIN DUPLICADO + KPI CLICABLE: Barra de estado + Buscador + Semafaro ---
 try:
     _hoy = pd.to_datetime("today").normalize()
     _nuevos_hoy = 0
@@ -1182,12 +1182,53 @@ try:
                 _d,_t = dias_desde(_ff) if _ff else (None,"")
                 if _d is not None and _d > 30: _crit += 1
     except: pass
-    st.markdown(f"<div class='v72-hero'><h1>📍 Reportes y Consultas — Seguros Atlas</h1><p>Mapa en vivo • {_total_act} reportes activos en {len(df_reportes) if not df_reportes.empty else 0} sucursales • {_crit} en crítico (+30 días) • Actualizado hoy</p></div>", unsafe_allow_html=True)
+    # V74: Logo + titulo del proyecto DENTRO del hero azul, para no duplicar abajo
+    _logo_html = f"<img src='data:image/png;base64,{b64_logo}' style='width:48px;height:48px;border-radius:14px;object-fit:cover;background:white;flex-shrink:0'>" if 'b64_logo' in locals() and b64_logo else "<div style='width:48px;height:48px;border-radius:14px;background:#dc2626;color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:26px;flex-shrink:0'>A</div>"
+    st.markdown(f"<div class='v72-hero' style='display:flex;gap:14px;align-items:center'><div>{_logo_html}</div><div><h1 style='margin:0'>REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</h1><p>Mapa en vivo • {_total_act} reportes activos en {len(df_reportes) if not df_reportes.empty else 0} sucursales • {_crit} en crítico (+30 días) • Actualizado hoy</p></div></div>", unsafe_allow_html=True)
+    # V74: KPIs como BOTONES que filtran, no solo muestran
+    if 'filtro_kpi' not in st.session_state: st.session_state.filtro_kpi = "Todos"
     cK1,cK2,cK3,cK4 = st.columns(4)
-    with cK1: st.markdown(f"<div class='v72-kpi'><span>📊 Activos</span><br><b>{_total_act}</b><div style='font-size:12px;color:#6b7280'>requieren atención</div></div>", unsafe_allow_html=True)
-    with cK2: st.markdown(f"<div class='v72-kpi'><span>🔴 Críticos +30d</span><br><b style='color:#dc2626 !important'>{_crit}</b><div style='font-size:12px;color:#6b7280'>prioridad máxima</div></div>", unsafe_allow_html=True)
-    with cK3: st.markdown(f"<div class='v72-kpi'><span>📅 Hoy</span><br><b>{_nuevos_hoy}</b><div style='font-size:12px;color:#6b7280'>nuevos hoy</div></div>", unsafe_allow_html=True)
-    with cK4: st.markdown(f"<div class='v72-kpi'><span>✅ Cerrados hoy</span><br><b>{_cerrados_hoy}</b><div style='font-size:12px;color:#6b7280'>cerrados hoy</div></div>", unsafe_allow_html=True)
+    with cK1:
+        st.markdown(f"<div class='v72-kpi' style='text-align:center'><span>📊 Activos</span><br><b>{_total_act}</b><div style='font-size:12px;color:#6b7280'>requieren atención</div></div>", unsafe_allow_html=True)
+        if st.button("Ver activos", key="kpi_activos", use_container_width=True): st.session_state.filtro_kpi = "Activos"
+    with cK2:
+        st.markdown(f"<div class='v72-kpi' style='text-align:center'><span>🔴 Críticos +30d</span><br><b style='color:#dc2626 !important'>{_crit}</b><div style='font-size:12px;color:#6b7280'>prioridad máxima</div></div>", unsafe_allow_html=True)
+        if st.button("Ver críticos", key="kpi_criticos", use_container_width=True): st.session_state.filtro_kpi = "Criticos"
+    with cK3:
+        st.markdown(f"<div class='v72-kpi' style='text-align:center'><span>📅 Hoy</span><br><b>{_nuevos_hoy}</b><div style='font-size:12px;color:#6b7280'>nuevos hoy</div></div>", unsafe_allow_html=True)
+        if st.button("Ver hoy", key="kpi_hoy", use_container_width=True): st.session_state.filtro_kpi = "Hoy"
+    with cK4:
+        st.markdown(f"<div class='v72-kpi' style='text-align:center'><span>✅ Cerrados hoy</span><br><b>{_cerrados_hoy}</b><div style='font-size:12px;color:#6b7280'>cerrados hoy</div></div>", unsafe_allow_html=True)
+        if st.button("Ver cerrados", key="kpi_cerrados", use_container_width=True): st.session_state.filtro_kpi = "Cerrados"
+    # Mostrar lista filtrada segun KPI clicado, igual que hacia el BOX negro
+    if st.session_state.filtro_kpi != "Todos":
+        st.markdown(f"**Filtrando por: {st.session_state.filtro_kpi}** — selecciona una sucursal abajo para verla en el mapa")
+        # Construir lista segun filtro
+        _lista_f = []
+        try:
+            for _, _rr in df_reportes.iterrows():
+                _reps = split_multi_val(str(_rr.get(COL_REP, ""))) if COL_REP else []
+                _fecs = split_multi_val(str(_rr.get(COL_FEC, ""))) if COL_FEC else []
+                for _i, _rep in enumerate(_reps):
+                    if not tiene_reporte(_rep): continue
+                    _ff = _fecs[_i] if _i < len(_fecs) else (_fecs[0] if _fecs else "")
+                    _d,_t = dias_desde(_ff) if _ff else (None,"")
+                    _incl = False
+                    if st.session_state.filtro_kpi == "Activos": _incl = True
+                    elif st.session_state.filtro_kpi == "Criticos" and _d is not None and _d > 30: _incl = True
+                    elif st.session_state.filtro_kpi == "Hoy" and _d is not None and _d == 0: _incl = True
+                    if _incl:
+                        _lista_f.append(f"{str(_rr.get('ESTADO',''))} - {str(_rr.get('SUCURSAL',''))} | REP: {_rep} | {_t}")
+            if _lista_f:
+                _sel_kpi = st.selectbox("Sucursales filtradas — elige una para verla", ["-- Elige sucursal --"] + sorted(list(set(_lista_f))), key="sel_kpi_filtrado")
+                if _sel_kpi != "-- Elige sucursal --":
+                    st.info(f"Seleccionaste: {_sel_kpi} — usa el selector de abajo para ver su detalle en el mapa")
+            else:
+                st.info("Sin sucursales en este filtro")
+        except Exception as _e:
+            st.info("Sin sucursales en este filtro")
+        if st.button("Limpiar filtro", key="kpi_limpiar"): st.session_state.filtro_kpi = "Todos"
+        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 except: pass
 
@@ -1224,11 +1265,7 @@ if _q_buscar and _q_buscar.strip():
     st.markdown("---")
 c1, c2 = st.columns([2.2, 1.3])
 with c1:
-    if b64_logo:
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px; margin-top:8px; padding-top:4px;"><div style="width:48px; height:48px; border-radius:14px; overflow:hidden; background:white"><img src="data:image/png;base64,{b64_logo}" style="width:100%; height:100%; object-fit:cover"></div><div style="font-size:1.75rem; font-weight:900; letter-spacing:-0.8px; line-height:1.18; padding-top:4px;">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
-    else:
-        logo_html_fallback = '<div style="width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg,#dc2626,#b91c1c); display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:26px; box-shadow:0 2px 8px rgba(30,58,138,0.3);">A</div>'
-        st.markdown(f"""<div style="display:flex; align-items:center; gap:12px;">{logo_html_fallback}<div style="font-size:1.75rem; font-weight:900; line-height:1.18; padding-top:4px;">REPORTES Y CONSULTAS<br>SUCURSALES SEGUROS ATLAS</div></div>""", unsafe_allow_html=True)
+    # V74: Logo + titulo YA estan en hero azul, no duplicar aqui - solo queda boton CASE abajo
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
     if st.button("📞 Telefonos CASE NACIONAL", key="btn_case_nacional", type="secondary", width='content'):
@@ -1243,8 +1280,7 @@ with c1:
 </style>
     """, unsafe_allow_html=True)
 with c2:
-    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
-    
+    # V74: BOX negro Reportes Activos eliminado - ahora son los KPIs de arriba (no duplicar)
     if not df_reportes.empty:
         st.markdown(f"""
         <div class="glass" style="margin-top:10px; margin-bottom:14px; padding:10px 14px; border-left:4px solid #ef4444; background:white !important; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">

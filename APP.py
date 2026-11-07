@@ -86,7 +86,7 @@ except:
 st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="🏢", initial_sidebar_state="expanded")
 
 # --- BANNER V49 PRUEBA - MUY VISIBLE ---
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V50 COMPACTO • Todo más chiquito y junto • Si ves este banner, sí cargó la V50 compacta • Producción sigue en v48</div>""", unsafe_allow_html=True)
+st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px; letter-spacing:0.2px; box-shadow:0 2px 10px rgba(30,64,175,0.18);">✨ MODO PRUEBA V52 SIN BLANCO • Todo más chiquito y junto • Si ves este banner, sí cargó la V52 sin blanco • Producción sigue en v48</div>""", unsafe_allow_html=True)
 
 # --- V50 COMPACTO: todo mas chiquito y junto, estilo zoom 67% sin tocar el navegador ---
 st.markdown("""<style>
@@ -229,7 +229,7 @@ with st.sidebar:
 # --- DASHBOARD ANALÍTICA - PUBLICO ---
 if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     import altair as alt
-    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V50 COMPACTO]")
+    st.title("📊 Dashboard Analítica - Sucursales [PRUEBA V52 SIN BLANCO]")
     st.caption("Análisis de HISTORIAL_REPORTES + BDSUCURSALES | Hora CDMX")
     @st.cache_data(ttl=60)
     def cargar_historial_dashboard():
@@ -276,7 +276,34 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     if df_hist is None or df_hist.empty:
         st.warning("No se encontró HISTORIAL_REPORTES.")
         st.stop()
-    df_hist.columns = [c.strip().upper() for c in df_hist.columns]
+    df_hist.columns = [c.strip().upper().replace('Á','A').replace('É','E').replace('Í','I').replace('Ó','O').replace('Ú','U') for c in df_hist.columns]
+    # V52 FIX: Blanco en Reportes por Mes/Ano - derivar ANO/MES/DIA desde FECHA si no vienen en el Sheet
+    try:
+        # Normalizar AÑO -> ANO
+        if 'AÑO' in df_hist.columns and 'ANO' not in df_hist.columns:
+            df_hist['ANO'] = df_hist['AÑO']
+        # Si falta ANO o MES, intentar desde FECHA / FECHA_REGISTRO / FECHA_REPORTE
+        _col_fecha = None
+        for _c in ['FECHA','FECHA_REGISTRO','FECHA_REPORTE','FECHA_REP']:
+            if _c in df_hist.columns:
+                _col_fecha = _c
+                break
+        if _col_fecha is not None:
+            _fechas = pd.to_datetime(df_hist[_col_fecha], dayfirst=True, errors='coerce')
+            if 'ANO' not in df_hist.columns or df_hist['ANO'].isna().all() or (df_hist['ANO'].astype(str).str.strip()=='' ).all():
+                df_hist['ANO'] = _fechas.dt.year
+            if 'MES' not in df_hist.columns or df_hist['MES'].isna().all() or (df_hist['MES'].astype(str).str.strip()=='' ).all():
+                df_hist['MES'] = _fechas.dt.month
+            if 'DIA' not in df_hist.columns or df_hist['DIA'].isna().all():
+                df_hist['DIA'] = _fechas.dt.day
+        # Limpiar ANO/MES: quitar .0 de floats (2026.0 -> 2026)
+        for _col in ['ANO','MES','DIA']:
+            if _col in df_hist.columns:
+                try:
+                    df_hist[_col] = pd.to_numeric(df_hist[_col], errors='coerce')
+                except: pass
+    except Exception as _e:
+        pass
     st.markdown("### 📌 KPIs Generales")
     total_ev = len(df_hist)
     top_suc_count = df_hist['SUCURSAL'].value_counts()
@@ -317,11 +344,19 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             st.altair_chart(chart, width='stretch')
     with c2:
         st.subheader("📅 Reportes por Mes / Año")
-        if 'MES' in df_f.columns and 'ANO' in df_f.columns:
-            df_f['MES_ANO'] = df_f['ANO'].astype(str) + "-" + df_f['MES'].astype(str).str.zfill(2)
+        if 'MES' in df_f.columns:
+            if 'ANO' in df_f.columns and df_f['ANO'].notna().any():
+                df_f['MES_ANO'] = df_f['ANO'].astype('Int64').astype(str) + "-" + df_f['MES'].astype('Int64').astype(str).str.zfill(2)
+            else:
+                df_f['MES_ANO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
             por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES').sort_values('MES_ANO')
-            chart2 = alt.Chart(por_mes).mark_line(point=True, color='#0f172a').encode(x='MES_ANO:N', y='REPORTES:Q', tooltip=['MES_ANO','REPORTES']).properties(height=260)
-            st.altair_chart(chart2, width='stretch')
+            if not por_mes.empty:
+                chart2 = alt.Chart(por_mes).mark_line(point=True, color='#0f172a').encode(x='MES_ANO:N', y='REPORTES:Q', tooltip=['MES_ANO','REPORTES']).properties(height=260)
+                st.altair_chart(chart2, width='stretch')
+            else:
+                st.info("Sin datos para Mes/Año con el filtro actual")
+        else:
+            st.info("No hay columna MES / FECHA para Mes/Año")
     # --- RESTAURADO V47: Graficas que se perdieron en v39-v46 al recortar Dashboard ---
     c3, c4 = st.columns(2)
     with c3:
@@ -443,7 +478,9 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
                     st.altair_chart(chart_line, width='stretch')
                 with c_line2:
                     st.markdown("**Detalle con sucursal:**")
-                    st.dataframe(df_lineas, width='stretch', hide_index=True)
+                    # V51: Emparejar altura con grafica de la izquierda (la mas chiquita, 280px)
+                    # Tabla con altura fija 218px + titulo + boton = misma altura total que la grafica
+                    st.dataframe(df_lineas, width='stretch', hide_index=True, height=218)
                     csv_lineas = df_lineas.to_csv(index=False).encode('utf-8')
                     st.download_button("📥 Descargar líneas CSV", csv_lineas, "lineas_mas_fallas_con_sucursal.csv", "text/csv")
             else: st.info("No hay datos en LINEAS CON FALLA / TEL")

@@ -185,16 +185,16 @@ def _id_desde_evento(ev, ids):
 
 
 def _tel_html(tels, en_falla):
-    # FIX CELULAR V11: guion no-partible, el telefono nunca se parte en 999- / 923-4019
+    # FIX CELULAR V12: cada telefono en su celda GRID 2 columnas, nunca se parte
     NB = chr(8209)
     partes = []
     for t in tels:
         digitos = re.sub(r"\D", "", t)
         t_nb = escape(t).replace("-", NB)
-        link = '<a href="tel:' + digitos + '" style="white-space:nowrap;word-break:keep-all;">' + t_nb + '</a>'
-        inner = "🚨 <b style='color:#b91c1c;white-space:nowrap;word-break:keep-all'>" + link + "</b>" if digitos in en_falla else "📞 <span style='white-space:nowrap;word-break:keep-all'>" + link + "</span>"
-        partes.append("<span style='display:inline-block;white-space:nowrap;word-break:keep-all;overflow-wrap:normal;margin:2px 8px 2px 0;'>" + inner + "</span>")
-    return "<div style='display:flex;flex-wrap:wrap;gap:2px 4px;'>" + "".join(partes) + "</div>"
+        link = '<a href="tel:' + digitos + '" style="white-space:nowrap;word-break:keep-all;text-decoration:none;color:inherit;">' + t_nb + '</a>'
+        inner = "🚨 <b style='color:#b91c1c;white-space:nowrap'>" + link + "</b>" if digitos in en_falla else "📞 " + link
+        partes.append("<div style='white-space:nowrap;word-break:keep-all;overflow-wrap:normal;font-size:13px;'>" + inner + "</div>")
+    return "<div style='display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:2px;'>" + "".join(partes) + "</div>"
 
 
 def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_tel_falla,

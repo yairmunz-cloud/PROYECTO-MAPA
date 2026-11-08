@@ -1442,12 +1442,7 @@ if st.session_state.get('show_case_pdf'):
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
-from mapa_reportes import mostrar_mapa
-try:
-    mostrar_mapa(df, COL_EST, COL_SUC, COL_REP, COL_FEC, COL_OBS, COL_TEL,
-                 COL_TEL_FALLA, tiene_reporte, split_multi_val, dias_desde, split_tels)
-except Exception as e_mapa:
-    st.error(f"No se pudo mostrar el mapa: {e_mapa}")
+# V10: BARRAS DE BUSQUEDA ARRIBA DEL MAPA - ESTADO / SUCURSALES / ACCIONES ahora van antes del mapa, no abajo
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 default_est_idx = 0
 default_suc = None
@@ -1490,6 +1485,14 @@ if not es_modo_agregar:
         st.markdown('</div>', unsafe_allow_html=True)
     st.session_state['prev_estado_real'] = st.session_state.get('estado_real')
     st.session_state['prev_sucursal_real'] = st.session_state.get('sucursal_real')
+
+from mapa_reportes import mostrar_mapa
+try:
+    mostrar_mapa(df, COL_EST, COL_SUC, COL_REP, COL_FEC, COL_OBS, COL_TEL,
+                 COL_TEL_FALLA, tiene_reporte, split_multi_val, dias_desde, split_tels)
+except Exception as e_mapa:
+    st.error(f"No se pudo mostrar el mapa: {e_mapa}")
+
 else:
     estado_actual = st.session_state.get('estado_real', lista_estados[0] if lista_estados else "")
     df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df

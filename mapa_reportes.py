@@ -1,5 +1,5 @@
 """
-mapa_reportes.py - Mapa interactivo de México para la app de reportes de sucursales.
+mapa_reportes.py V4 SYNC BUSCADOR - Mapa interactivo (FIX CELULAR: mapa ancho completo arriba, panel abajo) de México para la app de reportes de sucursales.
 
 Uso en APP.py (antes de la línea  es_modo_agregar = ... ):
 
@@ -125,7 +125,7 @@ def _centro(feature):
     return (sum(p[0] for p in anillo) / len(anillo), sum(p[1] for p in anillo) / len(anillo))
 
 
-def construir_figura(resumen, geo, id_sel=None, alto=620):
+def construir_figura(resumen, geo, id_sel=None, alto=420):
     import plotly.graph_objects as go
     feats = geo["features"]
     ids = [f["properties"]["id"] for f in feats]
@@ -209,6 +209,42 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
         st.session_state["_mapa_ev_prev"] = ev_id
         if ev_id:
             st.session_state["mapa_estado_id"] = ev_id
+            # V3 SYNC: actualizar tambien los box de abajo (ESTADO / SUCURSALES de APP.py)
+            # APP.py usa keys estado_real / sucursal_real, si no lo ponemos aqui, el box no se actualiza
+            try:
+                _nom_sheet = None
+                if ev_id in resumen:
+                    _nom_sheet = resumen[ev_id].get("estado_sheet")
+                if not _nom_sheet:
+                    _nom_sheet = nombres.get(ev_id, "")
+                if _nom_sheet:
+                    st.session_state["estado_real"] = _nom_sheet.upper()
+                    # Limpiar sucursal para que APP.py ponga la primera de ese estado
+                    if "sucursal_real" in st.session_state:
+                        del st.session_state["sucursal_real"]
+                    # V4 SYNC BUSCADOR ARRIBA: poner filtro_activo_sel en la primera sucursal con reporte de ese estado
+                    # No lo dejamos en "-- Ver todas --", lo ponemos en "JALISCO - GUADALAJARA | REP: ... | ..."
+                    try:
+                        _e = resumen.get(ev_id)
+                        if _e and _e.get("sucursales"):
+                            _con_rep = [s for s in _e["sucursales"] if s.get("reportes")]
+                            if _con_rep:
+                                _s = _con_rep[0]
+                                _reps = _s["reportes"]
+                                _count = len(_reps)
+                                # txt_badge = el del reporte mas viejo (max dias)
+                                _r_max = max(_reps, key=lambda r: (r.get("dias") or 0))
+                                _txt = _r_max.get("txt", "Hoy") if _r_max else "Hoy"
+                                if _count == 1:
+                                    _label = f"{_nom_sheet.upper()} - {_s['sucursal']} | REP: {_reps[0]['rep']} | {_txt}"
+                                else:
+                                    _label = f"{_nom_sheet.upper()} - {_s['sucursal']} | {_count} REPORTES | {_txt} ({_count} activos)"
+                                st.session_state["filtro_activo_sel"] = _label
+                                st.session_state["last_filtro_activo_sel"] = _label
+                                # Tambien guardar estado para que APP.py lo use si el label no coincide exacto
+                                st.session_state["mapa_filtro_estado"] = _nom_sheet.upper()
+                    except: pass
+            except: pass
     id_sel = st.session_state.get("mapa_estado_id")
 
     con_rep = sorted([i for i, e in resumen.items() if e["n_reportes"]],
@@ -225,8 +261,12 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
     k2.markdown(chip.format("🗺 ESTADOS AFECTADOS", len(con_rep)), unsafe_allow_html=True)
     k3.markdown(chip.format("🔴 MÁS CRÍTICO", escape(peor)), unsafe_allow_html=True)
 
-    c_mapa, c_panel = st.columns([5, 3], gap="medium")
-    with c_mapa:
+    # V2 FIX CELULAR: mapa arriba ancho completo, panel abajo ancho completo (no 2 columnas que aprietan en celular)
+    # Antes: st.columns([5,3]) -> en celular quedaba mapa chiquito a la izquierda y tarjetas apretadas a la derecha
+    with st.container():
+        pass
+    # Mapa - ancho completo
+    with st.container():
         leyenda = "".join(f"<span style='display:inline-flex;align-items:center;gap:5px;margin-right:12px;"
                           f"font-size:12px;font-weight:600;color:#334155'><span style='width:12px;height:12px;"
                           f"border-radius:3px;background:{COLORES[n]}'></span>{t}</span>"
@@ -236,7 +276,8 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
         st.plotly_chart(construir_figura(resumen, geo, id_sel), key="mapa_mx", on_select="rerun",
                         selection_mode="points", width="stretch", config={"displayModeBar": False})
 
-    with c_panel:
+    # Panel abajo ancho completo
+    with st.container():
         if not id_sel or id_sel not in nombres:
             st.info("👆 Toca un estado del mapa para ver sus sucursales y reportes.")
         else:

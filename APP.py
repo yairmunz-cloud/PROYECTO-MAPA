@@ -1486,19 +1486,7 @@ if not es_modo_agregar:
     st.session_state['prev_estado_real'] = st.session_state.get('estado_real')
     st.session_state['prev_sucursal_real'] = st.session_state.get('sucursal_real')
 
-from mapa_reportes import mostrar_mapa
-try:
-    mostrar_mapa(df, COL_EST, COL_SUC, COL_REP, COL_FEC, COL_OBS, COL_TEL,
-                 COL_TEL_FALLA, tiene_reporte, split_multi_val, dias_desde, split_tels)
-except Exception as e_mapa:
-    st.error(f"No se pudo mostrar el mapa: {e_mapa}")
-
-else:
-    estado_actual = st.session_state.get('estado_real', lista_estados[0] if lista_estados else "")
-    df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df
-    lista_suc = sorted(df_estado[COL_SUC].dropna().unique()) if COL_SUC else []
-    sucursal_actual = st.session_state.get('sucursal_real', lista_suc[0] if lista_suc else "")
-
+# V11: LOGIN / AGREGAR ARRIBA DEL MAPA - al dar clic en + ya se ve sin bajar
 if st.session_state['show_login'] and not st.session_state['admin_auth']:
     st.markdown('<div class="glass" style="border:2px solid #0f172a; padding:24px">', unsafe_allow_html=True)
     st.markdown("### 🔐 Login Administrador")
@@ -1744,6 +1732,20 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                     import traceback
                     st.code(traceback.format_exc())
     st.markdown('</div>', unsafe_allow_html=True)
+
+
+from mapa_reportes import mostrar_mapa
+try:
+    mostrar_mapa(df, COL_EST, COL_SUC, COL_REP, COL_FEC, COL_OBS, COL_TEL,
+                 COL_TEL_FALLA, tiene_reporte, split_multi_val, dias_desde, split_tels)
+except Exception as e_mapa:
+    st.error(f"No se pudo mostrar el mapa: {e_mapa}")
+
+else:
+    estado_actual = st.session_state.get('estado_real', lista_estados[0] if lista_estados else "")
+    df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df
+    lista_suc = sorted(df_estado[COL_SUC].dropna().unique()) if COL_SUC else []
+    sucursal_actual = st.session_state.get('sucursal_real', lista_suc[0] if lista_suc else "")
 
 # DETALLE - V9: QUITAR DUPLICADO DE ABAJO
 # Ya se muestra el detalle completo a un lado del mapa (en mapa_reportes.py V8)

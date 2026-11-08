@@ -1441,7 +1441,13 @@ if st.session_state.get('show_case_pdf'):
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
-
+    
+from mapa_reportes import mostrar_mapa
+try:
+    mostrar_mapa(df, COL_EST, COL_SUC, COL_REP, COL_FEC, COL_OBS, COL_TEL,
+                 COL_TEL_FALLA, tiene_reporte, split_multi_val, dias_desde, split_tels)
+except Exception as e_mapa:
+    st.error(f"No se pudo mostrar el mapa: {e_mapa}")
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 default_est_idx = 0
 default_suc = None

@@ -1,5 +1,5 @@
 """
-mapa_reportes.py V8 PANEL DETALLE + QUITAR DUPLICADO ABAJO - Mapa interactivo (FIX CELULAR: mapa ancho completo arriba, panel abajo) de México para la app de reportes de sucursales.
+mapa_reportes.py V9 SIN REPORTE TAMBIEN MUESTRA INFO + QUITAR DUPLICADO ABAJO - Mapa interactivo (FIX CELULAR: mapa ancho completo arriba, panel abajo) de México para la app de reportes de sucursales.
 
 Uso en APP.py (antes de la línea  es_modo_agregar = ... ):
 
@@ -296,7 +296,19 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
             e = resumen.get(id_sel)
             st.markdown(f"### 📍 {nombres[id_sel]}")
             if not e:
-                st.caption("No hay sucursales registradas en este estado.")
+                # V9: aunque no este en resumen (sin reportes), mostrar la sucursal seleccionada abajo
+                _suc2 = str(st.session_state.get("sucursal_real", "") or "").strip()
+                _est2 = str(st.session_state.get("estado_real", "") or "").strip()
+                if _suc2 and _est2:
+                    st.markdown(
+                        f"<div style='background:white;border:1px solid #e2e8f0;border-left:5px solid #16a34a;"
+                        f"border-radius:12px;padding:12px 14px;margin-bottom:6px'>"
+                        f"<div style='display:flex;justify-content:space-between;gap:8px'><b>{escape(_suc2)}</b>"
+                        f"<span style='background:#16a34a;color:white;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:800'>✅ Sin reporte</span></div>"
+                        f"<div style='font-size:12.5px;color:#475569;margin-top:4px'>📍 {escape(_est2)}</div>"
+                        f"<div style='font-size:13px;margin-top:6px'>Sin reportes activos en este estado</div></div>", unsafe_allow_html=True)
+                else:
+                    st.caption("No hay sucursales registradas en este estado.")
             else:
                 st.caption(f"{len(e['sucursales'])} sucursales · {e['n_reportes']} reportes activos")
                 sin_rep = []
@@ -332,9 +344,30 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                                 st.session_state["show_delete_login"] = True
                                 st.session_state["show_delete_confirm"] = False
                             st.rerun()
-                if sin_rep:
-                    with st.expander(f"Sucursales sin reporte ({len(sin_rep)})"):
-                        for s in sin_rep:
+                # V9: aunque no tenga reporte activo, mostrar la info a un lado del mapa
+                # Antes solo salia en expander chiquito y si el estado no tenia reportes, no se veia nada
+                _suc_sel = str(st.session_state.get("sucursal_real", "") or "").strip()
+                _mostrar_sin = []
+                _resto_sin = []
+                for s in sin_rep:
+                    if e.get("n_reportes", 0) == 0 or s["sucursal"].strip() == _suc_sel:
+                        _mostrar_sin.append(s)
+                    else:
+                        _resto_sin.append(s)
+                for s in _mostrar_sin:
+                    st.markdown(
+                        f"<div style='background:white;border:1px solid #e2e8f0;border-left:5px solid #16a34a;"
+                        f"border-radius:12px;padding:12px 14px;margin-bottom:6px'>"
+                        f"<div style='display:flex;justify-content:space-between;gap:8px'>"
+                        f"<b>{escape(s['sucursal'])}</b>"
+                        f"<span style='background:#16a34a;color:white;border-radius:99px;padding:2px 10px;"
+                        f"font-size:12px;font-weight:800;white-space:nowrap'>✅ Sin reporte</span></div>"
+                        f"<div style='font-size:12.5px;color:#475569;margin-top:4px'>📍 {escape(e['estado_sheet'])}</div>"
+                        f"<div style='font-size:13px;margin-top:6px'>{_tel_html(s['telefonos'], set()) if s['telefonos'] else 'Sin telefonos registrados'}</div>"
+                        f"</div>", unsafe_allow_html=True)
+                if _resto_sin:
+                    with st.expander(f"Sucursales sin reporte ({len(_resto_sin)})"):
+                        for s in _resto_sin:
                             st.markdown(f"**{s['sucursal']}**", unsafe_allow_html=True)
                             if s["telefonos"]:
                                 st.markdown(_tel_html(s["telefonos"], set()), unsafe_allow_html=True)

@@ -1,5 +1,5 @@
 """
-mapa_reportes.py V4 SYNC BUSCADOR - Mapa interactivo (FIX CELULAR: mapa ancho completo arriba, panel abajo) de México para la app de reportes de sucursales.
+mapa_reportes.py V5 INFO A UN LADO + SYNC - Mapa interactivo (FIX CELULAR: mapa ancho completo arriba, panel abajo) de México para la app de reportes de sucursales.
 
 Uso en APP.py (antes de la línea  es_modo_agregar = ... ):
 
@@ -125,7 +125,7 @@ def _centro(feature):
     return (sum(p[0] for p in anillo) / len(anillo), sum(p[1] for p in anillo) / len(anillo))
 
 
-def construir_figura(resumen, geo, id_sel=None, alto=420):
+def construir_figura(resumen, geo, id_sel=None, alto=620):
     import plotly.graph_objects as go
     feats = geo["features"]
     ids = [f["properties"]["id"] for f in feats]
@@ -261,12 +261,9 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
     k2.markdown(chip.format("🗺 ESTADOS AFECTADOS", len(con_rep)), unsafe_allow_html=True)
     k3.markdown(chip.format("🔴 MÁS CRÍTICO", escape(peor)), unsafe_allow_html=True)
 
-    # V2 FIX CELULAR: mapa arriba ancho completo, panel abajo ancho completo (no 2 columnas que aprietan en celular)
-    # Antes: st.columns([5,3]) -> en celular quedaba mapa chiquito a la izquierda y tarjetas apretadas a la derecha
-    with st.container():
-        pass
-    # Mapa - ancho completo
-    with st.container():
+    # V5 REGRESADO COMO ESTABA: mapa a la izquierda, info a un lado a la derecha
+    c_mapa, c_panel = st.columns([5, 3], gap="medium")
+    with c_mapa:
         leyenda = "".join(f"<span style='display:inline-flex;align-items:center;gap:5px;margin-right:12px;"
                           f"font-size:12px;font-weight:600;color:#334155'><span style='width:12px;height:12px;"
                           f"border-radius:3px;background:{COLORES[n]}'></span>{t}</span>"
@@ -276,8 +273,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
         st.plotly_chart(construir_figura(resumen, geo, id_sel), key="mapa_mx", on_select="rerun",
                         selection_mode="points", width="stretch", config={"displayModeBar": False})
 
-    # Panel abajo ancho completo
-    with st.container():
+    with c_panel:
         if not id_sel or id_sel not in nombres:
             st.info("👆 Toca un estado del mapa para ver sus sucursales y reportes.")
         else:

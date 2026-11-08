@@ -1,5 +1,5 @@
 """
-mapa_reportes.py - Mapa interactivo de México para la app de reportes de sucursales.
+mapa_reportes.py PRODUCCION FINAL - Mapa + Panel + Sync ambos lados + QUITAR DUPLICADO ABAJO - Mapa interactivo (FIX CELULAR: mapa ancho completo arriba, panel abajo) de México para la app de reportes de sucursales.
 
 Uso en APP.py (antes de la línea  es_modo_agregar = ... ):
 
@@ -203,12 +203,64 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                                          col_tel_falla, tiene_reporte, split_multi_val, dias_desde,
                                          split_tels)
 
+    # --- V7 REVERSE SYNC: si cambias el box de arriba (VER SOLO) o el ESTADO de abajo, el mapa tambien se mueve ---
+    # Antes solo era mapa -> box, por eso al seleccionar PUEBLA arriba, el mapa se quedaba en TUXTLA GUTIERREZ
+    try:
+        _filtro = str(st.session_state.get("filtro_activo_sel", "") or "")
+        _estado_box = ""
+        if _filtro and _filtro != "-- Ver todas las sucursales --" and " - " in _filtro:
+            _estado_box = _filtro.split(" - ")[0].strip()
+        if not _estado_box:
+            _estado_box = str(st.session_state.get("estado_real", "") or "").strip()
+        if _estado_box:
+            _id_box = id_estado(_estado_box)
+            if _id_box and _id_box != st.session_state.get("mapa_estado_id"):
+                # Solo si el estado del box si tiene sucursales en el mapa
+                if _id_box in resumen or _id_box in ids:
+                    st.session_state["mapa_estado_id"] = _id_box
+    except: pass
     # --- Estado seleccionado: clic en el mapa ---
     ev_id = _id_desde_evento(st.session_state.get("mapa_mx"), ids)
     if ev_id != st.session_state.get("_mapa_ev_prev"):
         st.session_state["_mapa_ev_prev"] = ev_id
         if ev_id:
             st.session_state["mapa_estado_id"] = ev_id
+            # V3 SYNC: actualizar tambien los box de abajo (ESTADO / SUCURSALES de APP.py)
+            # APP.py usa keys estado_real / sucursal_real, si no lo ponemos aqui, el box no se actualiza
+            try:
+                _nom_sheet = None
+                if ev_id in resumen:
+                    _nom_sheet = resumen[ev_id].get("estado_sheet")
+                if not _nom_sheet:
+                    _nom_sheet = nombres.get(ev_id, "")
+                if _nom_sheet:
+                    st.session_state["estado_real"] = _nom_sheet.upper()
+                    # Limpiar sucursal para que APP.py ponga la primera de ese estado
+                    if "sucursal_real" in st.session_state:
+                        del st.session_state["sucursal_real"]
+                    # V4 SYNC BUSCADOR ARRIBA: poner filtro_activo_sel en la primera sucursal con reporte de ese estado
+                    # No lo dejamos en "-- Ver todas --", lo ponemos en "JALISCO - GUADALAJARA | REP: ... | ..."
+                    try:
+                        _e = resumen.get(ev_id)
+                        if _e and _e.get("sucursales"):
+                            _con_rep = [s for s in _e["sucursales"] if s.get("reportes")]
+                            if _con_rep:
+                                _s = _con_rep[0]
+                                _reps = _s["reportes"]
+                                _count = len(_reps)
+                                # txt_badge = el del reporte mas viejo (max dias)
+                                _r_max = max(_reps, key=lambda r: (r.get("dias") or 0))
+                                _txt = _r_max.get("txt", "Hoy") if _r_max else "Hoy"
+                                if _count == 1:
+                                    _label = f"{_nom_sheet.upper()} - {_s['sucursal']} | REP: {_reps[0]['rep']} | {_txt}"
+                                else:
+                                    _label = f"{_nom_sheet.upper()} - {_s['sucursal']} | {_count} REPORTES | {_txt} ({_count} activos)"
+                                st.session_state["filtro_activo_sel"] = _label
+                                st.session_state["last_filtro_activo_sel"] = _label
+                                # Tambien guardar estado para que APP.py lo use si el label no coincide exacto
+                                st.session_state["mapa_filtro_estado"] = _nom_sheet.upper()
+                    except: pass
+            except: pass
     id_sel = st.session_state.get("mapa_estado_id")
 
     con_rep = sorted([i for i, e in resumen.items() if e["n_reportes"]],
@@ -225,6 +277,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
     k2.markdown(chip.format("🗺 ESTADOS AFECTADOS", len(con_rep)), unsafe_allow_html=True)
     k3.markdown(chip.format("🔴 MÁS CRÍTICO", escape(peor)), unsafe_allow_html=True)
 
+    # V5 REGRESADO COMO ESTABA: mapa a la izquierda, info a un lado a la derecha
     c_mapa, c_panel = st.columns([5, 3], gap="medium")
     with c_mapa:
         leyenda = "".join(f"<span style='display:inline-flex;align-items:center;gap:5px;margin-right:12px;"
@@ -243,7 +296,19 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
             e = resumen.get(id_sel)
             st.markdown(f"### 📍 {nombres[id_sel]}")
             if not e:
-                st.caption("No hay sucursales registradas en este estado.")
+                # V9: aunque no este en resumen (sin reportes), mostrar la sucursal seleccionada abajo
+                _suc2 = str(st.session_state.get("sucursal_real", "") or "").strip()
+                _est2 = str(st.session_state.get("estado_real", "") or "").strip()
+                if _suc2 and _est2:
+                    st.markdown(
+                        f"<div style='background:white;border:1px solid #e2e8f0;border-left:5px solid #16a34a;"
+                        f"border-radius:12px;padding:12px 14px;margin-bottom:6px'>"
+                        f"<div style='display:flex;justify-content:space-between;gap:8px'><b>{escape(_suc2)}</b>"
+                        f"<span style='background:#16a34a;color:white;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:800'>✅ Sin reporte</span></div>"
+                        f"<div style='font-size:12.5px;color:#475569;margin-top:4px'>📍 {escape(_est2)}</div>"
+                        f"<div style='font-size:13px;margin-top:6px'>Sin reportes activos en este estado</div></div>", unsafe_allow_html=True)
+                else:
+                    st.caption("No hay sucursales registradas en este estado.")
             else:
                 st.caption(f"{len(e['sucursales'])} sucursales · {e['n_reportes']} reportes activos")
                 sin_rep = []
@@ -279,9 +344,30 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                                 st.session_state["show_delete_login"] = True
                                 st.session_state["show_delete_confirm"] = False
                             st.rerun()
-                if sin_rep:
-                    with st.expander(f"Sucursales sin reporte ({len(sin_rep)})"):
-                        for s in sin_rep:
+                # V9: aunque no tenga reporte activo, mostrar la info a un lado del mapa
+                # Antes solo salia en expander chiquito y si el estado no tenia reportes, no se veia nada
+                _suc_sel = str(st.session_state.get("sucursal_real", "") or "").strip()
+                _mostrar_sin = []
+                _resto_sin = []
+                for s in sin_rep:
+                    if e.get("n_reportes", 0) == 0 or s["sucursal"].strip() == _suc_sel:
+                        _mostrar_sin.append(s)
+                    else:
+                        _resto_sin.append(s)
+                for s in _mostrar_sin:
+                    st.markdown(
+                        f"<div style='background:white;border:1px solid #e2e8f0;border-left:5px solid #16a34a;"
+                        f"border-radius:12px;padding:12px 14px;margin-bottom:6px'>"
+                        f"<div style='display:flex;justify-content:space-between;gap:8px'>"
+                        f"<b>{escape(s['sucursal'])}</b>"
+                        f"<span style='background:#16a34a;color:white;border-radius:99px;padding:2px 10px;"
+                        f"font-size:12px;font-weight:800;white-space:nowrap'>✅ Sin reporte</span></div>"
+                        f"<div style='font-size:12.5px;color:#475569;margin-top:4px'>📍 {escape(e['estado_sheet'])}</div>"
+                        f"<div style='font-size:13px;margin-top:6px'>{_tel_html(s['telefonos'], set()) if s['telefonos'] else 'Sin telefonos registrados'}</div>"
+                        f"</div>", unsafe_allow_html=True)
+                if _resto_sin:
+                    with st.expander(f"Sucursales sin reporte ({len(_resto_sin)})"):
+                        for s in _resto_sin:
                             st.markdown(f"**{s['sucursal']}**", unsafe_allow_html=True)
                             if s["telefonos"]:
                                 st.markdown(_tel_html(s["telefonos"], set()), unsafe_allow_html=True)

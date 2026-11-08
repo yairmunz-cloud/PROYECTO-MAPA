@@ -125,7 +125,7 @@ def _centro(feature):
     return (sum(p[0] for p in anillo) / len(anillo), sum(p[1] for p in anillo) / len(anillo))
 
 
-def construir_figura(resumen, geo, id_sel=None, alto=500):
+def construir_figura(resumen, geo, id_sel=None, alto=620):
     import plotly.graph_objects as go
     feats = geo["features"]
     ids = [f["properties"]["id"] for f in feats]
@@ -203,10 +203,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                                          col_tel_falla, tiene_reporte, split_multi_val, dias_desde,
                                          split_tels)
 
-    # --- Estado seleccionado: clic en el mapa o botón de la barra lateral ---
-    def _elegir(eid):
-        st.session_state["mapa_estado_id"] = eid
-
+    # --- Estado seleccionado: clic en el mapa ---
     ev_id = _id_desde_evento(st.session_state.get("mapa_mx"), ids)
     if ev_id != st.session_state.get("_mapa_ev_prev"):
         st.session_state["_mapa_ev_prev"] = ev_id
@@ -218,16 +215,6 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                      key=lambda i: -resumen[i]["max_dias"])
     total = sum(resumen[i]["n_reportes"] for i in con_rep)
 
-    # --- Barra lateral: reportes activos, del más crítico al menos ---
-    with st.sidebar:
-        st.markdown("#### 🚨 Reportes activos")
-        if not con_rep:
-            st.caption("Sin reportes activos")
-        for i in con_rep:
-            e = resumen[i]
-            st.button(f"{EMOJI[e['nivel']]} {nombres[i]} · {e['n_reportes']} rep · {e['max_dias']} d",
-                      key=f"side_{i}", on_click=_elegir, args=(i,), width="stretch")
-
     # --- Franja de resumen ---
     peor = nombres[con_rep[0]] if con_rep else "—"
     chip = ("<div style='background:white;border:1px solid #e2e8f0;border-radius:12px;padding:8px 12px;'>"
@@ -238,7 +225,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
     k2.markdown(chip.format("🗺 ESTADOS AFECTADOS", len(con_rep)), unsafe_allow_html=True)
     k3.markdown(chip.format("🔴 MÁS CRÍTICO", escape(peor)), unsafe_allow_html=True)
 
-    c_mapa, c_panel = st.columns([3, 2], gap="medium")
+    c_mapa, c_panel = st.columns([5, 3], gap="medium")
     with c_mapa:
         leyenda = "".join(f"<span style='display:inline-flex;align-items:center;gap:5px;margin-right:12px;"
                           f"font-size:12px;font-weight:600;color:#334155'><span style='width:12px;height:12px;"

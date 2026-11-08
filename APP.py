@@ -1743,7 +1743,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # DETALLE
-if False and not st.session_state.get('show_add_form', False):
+if not st.session_state.get('show_add_form', False):
     if 'estado_real' in st.session_state and 'sucursal_real' in st.session_state and COL_EST and COL_SUC:
         estado_sel = st.session_state['estado_real']
         suc_sel = st.session_state['sucursal_real']

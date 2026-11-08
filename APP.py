@@ -1485,6 +1485,13 @@ if not es_modo_agregar:
         st.markdown('</div>', unsafe_allow_html=True)
     st.session_state['prev_estado_real'] = st.session_state.get('estado_real')
     st.session_state['prev_sucursal_real'] = st.session_state.get('sucursal_real')
+# FIX V12: cuando es_modo_agregar=True, el if de arriba no define estado_actual -> NameError en Agregar
+# Definirlo siempre desde session_state para que el form de Agregar si lo encuentre
+if es_modo_agregar:
+    estado_actual = st.session_state.get('estado_real', lista_estados[0] if lista_estados else "")
+    df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df
+    lista_suc = sorted(df_estado[COL_SUC].dropna().unique()) if COL_SUC else []
+    sucursal_actual = st.session_state.get('sucursal_real', lista_suc[0] if lista_suc else "")
 
 # V11: LOGIN / AGREGAR ARRIBA DEL MAPA - al dar clic en + ya se ve sin bajar
 if st.session_state['show_login'] and not st.session_state['admin_auth']:
@@ -1740,12 +1747,7 @@ try:
                  COL_TEL_FALLA, tiene_reporte, split_multi_val, dias_desde, split_tels)
 except Exception as e_mapa:
     st.error(f"No se pudo mostrar el mapa: {e_mapa}")
-
-else:
-    estado_actual = st.session_state.get('estado_real', lista_estados[0] if lista_estados else "")
-    df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df
-    lista_suc = sorted(df_estado[COL_SUC].dropna().unique()) if COL_SUC else []
-    sucursal_actual = st.session_state.get('sucursal_real', lista_suc[0] if lista_suc else "")
+# FIX V12: else colgado eliminado - estado_actual ya se define arriba en el fallback, no aqui
 
 # DETALLE - V9: QUITAR DUPLICADO DE ABAJO
 # Ya se muestra el detalle completo a un lado del mapa (en mapa_reportes.py V8)

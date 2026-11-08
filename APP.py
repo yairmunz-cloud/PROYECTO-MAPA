@@ -94,13 +94,13 @@ st.markdown("""<style>div[data-testid="stButton"] button { height: 40px !importa
     div[data-testid="stButton"] button[kind="primary"]:hover { background: rgba(220,38,38,0.20) !important; border-color: #b91c1c !important; color: #991b1b !important; }
     /* Cancelar = blanco borde azul */
     div[data-testid="stButton"] button[kind="secondary"] { background: white !important; border: 1.5px solid #1e40af !important; color: #1e40af !important; }
-/* --- V86 FINAL PRODUCCION: Telefono clicable sin boton copiar --- */
+/* --- V86 NEGRO + LETRAS BLANCAS: Telefono clicable sin boton copiar --- */
 a[href^="tel:"] { color: #1e40af !important; font-weight: 800 !important; font-size: 14px !important; text-decoration: none !important; }
 a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !important; }
 .v78-orden { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; font-weight: 700; color: #1e40af; display: inline-block; margin-bottom: 10px; }
 
 
-/* --- V86 FINAL PRODUCCION: alto contraste + sin encimados --- */
+/* --- V86 NEGRO + LETRAS BLANCAS: alto contraste + sin encimados --- */
 @media (max-width: 768px) {
   /* Forzar fondo claro y texto oscuro, aunque el celular este en modo oscuro */
   .block-container, .main, [data-testid="stAppViewContainer"] { background: #f8fafc !important; color: #111827 !important; }
@@ -146,7 +146,7 @@ a[href^="tel:"]:hover { color: #dc2626 !important; text-decoration: underline !i
 }
 
 
-/* --- V86 FINAL PRODUCCION: menu desplegable siempre blanco con letra negra, nunca negro sobre negro --- */
+/* --- V86 NEGRO + LETRAS BLANCAS: menu desplegable siempre blanco con letra negra, nunca negro sobre negro --- */
 /* Caja cerrada: fondo blanco, letra negra, flecha negra */
 div[data-testid="stSelectbox"] > div > div,
 div[data-testid="stSelectbox"] div[data-baseweb="select"],
@@ -212,7 +212,7 @@ section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checke
 section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p { color: white !important; }
 
 
-/* --- V86 FINAL: Box Observaciones NEGRO como estaba, solo letras BLANCAS --- */
+/* --- V86 FIX: Box Observaciones NEGRO como estaba, solo letras BLANCAS --- */
 div[data-testid="stForm"] textarea {
   background: #0f172a !important; color: white !important; -webkit-text-fill-color: white !important; caret-color: white !important;
   border: 1.5px solid #334155 !important;
@@ -1212,7 +1212,7 @@ if not df_reportes.empty:
     mapa_activos_global = mapa_activos
 else: total_reps_global = 0
 opciones_con_todos = ["-- Ver todas las sucursales --"] + opciones_activas
-# --- V86 FINAL PRODUCCION: Ordenar por mas criticos primero (sin boton copiar) ---
+# --- V86 NEGRO + LETRAS BLANCAS: Ordenar por mas criticos primero (sin boton copiar) ---
 # Si el usuario activa este toggle, la lista de opciones se ordena por dias descendente, no por A-Z
 _orden_crit = st.toggle("🔴 Ordenar: Más críticos primero", value=False, key="orden_criticos_v78")
 if _orden_crit and not df_reportes.empty:
@@ -1440,7 +1440,8 @@ if st.session_state.get('show_case_pdf'):
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
-
+    
+# V10: BARRAS DE BUSQUEDA ARRIBA DEL MAPA - ESTADO / SUCURSALES / ACCIONES ahora van antes del mapa, no abajo
 es_modo_agregar = st.session_state.get('show_add_form', False) and st.session_state.get('admin_auth', False)
 default_est_idx = 0
 default_suc = None
@@ -1483,12 +1484,15 @@ if not es_modo_agregar:
         st.markdown('</div>', unsafe_allow_html=True)
     st.session_state['prev_estado_real'] = st.session_state.get('estado_real')
     st.session_state['prev_sucursal_real'] = st.session_state.get('sucursal_real')
-else:
+# FIX V12: cuando es_modo_agregar=True, el if de arriba no define estado_actual -> NameError en Agregar
+# Definirlo siempre desde session_state para que el form de Agregar si lo encuentre
+if es_modo_agregar:
     estado_actual = st.session_state.get('estado_real', lista_estados[0] if lista_estados else "")
     df_estado = df[df[COL_EST] == estado_actual] if COL_EST else df
     lista_suc = sorted(df_estado[COL_SUC].dropna().unique()) if COL_SUC else []
     sucursal_actual = st.session_state.get('sucursal_real', lista_suc[0] if lista_suc else "")
 
+# V11: LOGIN / AGREGAR ARRIBA DEL MAPA - al dar clic en + ya se ve sin bajar
 if st.session_state['show_login'] and not st.session_state['admin_auth']:
     st.markdown('<div class="glass" style="border:2px solid #0f172a; padding:24px">', unsafe_allow_html=True)
     st.markdown("### 🔐 Login Administrador")
@@ -1514,8 +1518,8 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
 if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px">', unsafe_allow_html=True)
     st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}**")
-    id_display = SHEET_ID_PRUEBAS[:20] + "..." if SHEET_ID_PRUEBAS else "Cargado desde Streamlit Secrets"
-    st.info(f"Hoja ID: {id_display} | Modo lote: agrega N reportes y al final guarda todo")
+    id_display = "Cargado desde Streamlit Secrets (Producción)"
+    st.info(f"Hoja pruebas ID: {id_display} | Modo lote: agrega N reportes y al final guarda todo")
     st.markdown("#### 1⃣ Selecciona Estado y Sucursal")
     fc_sel1, fc_sel2 = st.columns(2)
     with fc_sel1:
@@ -1579,6 +1583,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             except: reportes_en_cola = []
             if not rep_new_clean: st.error("No. Reporte obligatorio")
             elif not rep_new_clean.isdigit(): st.error("❌ Solo numeros")
+            elif rep_new_clean.strip("0").strip(".") == "" or rep_new_clean.strip() in ["0.0"]: st.error("❌ REP 0 no es válido - el sistema lo toma como Sin reporte y no se va a mostrar. Usa el REP real que te dio Telmex (ej: 123456)")
             elif not suc_new: st.error("Sucursal obligatoria")
             elif not tel_final: st.error("Selecciona al menos una linea")
             elif not obs_new: st.error("Observaciones obligatoria")
@@ -1616,7 +1621,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                 st.session_state['batch_reportes'] = []
                 st.rerun()
         with c_save2:
-            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS (PRUEBA REAL)", type="primary", width='stretch'):
+            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS", type="primary", width='stretch'):
                 try:
                     guardados = 0
                     if "gcp_service_account" in st.secrets:
@@ -1707,8 +1712,21 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                                 all_vals.append(new_row)
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
-                        log_acceso(st.session_state['current_user'], f"Guardo lote PRUEBA {guardados} reportes")
+                        log_acceso(st.session_state['current_user'], f"Guardo lote {guardados} reportes")
                         st.success(f"✅ {guardados} reportes guardados en {SHEET_PRINCIPAL}")
+                        # V13 FIX ACTUALIZAR: al guardar, saltar al estado del reporte nuevo para que el mapa y buscadores si lo muestren
+                        try:
+                            _ult = st.session_state.get('batch_reportes', [])[-1] if st.session_state.get('batch_reportes') else None
+                            if _ult:
+                                st.session_state['estado_real'] = str(_ult.get('estado','')).strip().upper()
+                                # Limpiar mapa_estado_id para que el mapa se mueva al nuevo estado en el siguiente rerun
+                                if 'mapa_estado_id' in st.session_state:
+                                    del st.session_state['mapa_estado_id']
+                                # Poner VER SOLO en el reporte nuevo
+                                _lbl_nuevo = f"{str(_ult.get('estado','')).strip().upper()} - {str(_ult.get('sucursal','')).strip()} | REP: {str(_ult.get('no_reporte','')).strip()} | Hoy"
+                                st.session_state['filtro_activo_sel'] = _lbl_nuevo
+                                st.session_state['last_filtro_activo_sel'] = _lbl_nuevo
+                        except: pass
                         st.session_state['batch_reportes'] = []
                         # FIX 3: LIMPIAR CACHE Y RESETEAR BOX REPORTES ACTIVOS SIN ERROR
                         st.cache_data.clear()
@@ -1735,8 +1753,25 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                     st.code(traceback.format_exc())
     st.markdown('</div>', unsafe_allow_html=True)
 
-# DETALLE
-if not st.session_state.get('show_add_form', False):
+
+from mapa_reportes import mostrar_mapa
+try:
+    mostrar_mapa(df, COL_EST, COL_SUC, COL_REP, COL_FEC, COL_OBS, COL_TEL,
+                 COL_TEL_FALLA, tiene_reporte, split_multi_val, dias_desde, split_tels)
+except Exception as e_mapa:
+    st.error(f"No se pudo mostrar el mapa: {e_mapa}")
+# FIX V12: else colgado eliminado - estado_actual ya se define arriba en el fallback, no aqui
+
+# DETALLE - V9: QUITAR DUPLICADO DE ABAJO
+# Ya se muestra el detalle completo a un lado del mapa (en mapa_reportes.py V8)
+# Si el mapa ya esta mostrando el estado, NO duplicar abajo
+if not st.session_state.get('show_add_form', False) and not st.session_state.get('mapa_estado_id'):
+    # Solo mostrar detalle abajo si NO hay estado seleccionado en el mapa (ej: al entrar, sin tocar mapa)
+    pass  # placeholder, el bloque real empieza abajo con el if siguiente
+if not st.session_state.get('show_add_form', False) and st.session_state.get('mapa_estado_id'):
+    # Detalle ya visible a un lado del mapa -> no mostrar duplicado abajo
+    pass
+elif not st.session_state.get('show_add_form', False):
     if 'estado_real' in st.session_state and 'sucursal_real' in st.session_state and COL_EST and COL_SUC:
         estado_sel = st.session_state['estado_real']
         suc_sel = st.session_state['sucursal_real']

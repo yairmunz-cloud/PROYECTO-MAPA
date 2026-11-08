@@ -1,5 +1,5 @@
 """
-mapa_reportes.py V9 SIN REPORTE TAMBIEN MUESTRA INFO + QUITAR DUPLICADO ABAJO - Mapa interactivo (FIX CELULAR: mapa ancho completo arriba, panel abajo) de México para la app de reportes de sucursales.
+mapa_reportes.py PRODUCCION FINAL - Mapa + Panel + Sync ambos lados + QUITAR DUPLICADO ABAJO - Mapa interactivo (FIX CELULAR: mapa ancho completo arriba, panel abajo) de México para la app de reportes de sucursales.
 
 Uso en APP.py (antes de la línea  es_modo_agregar = ... ):
 
@@ -125,7 +125,7 @@ def _centro(feature):
     return (sum(p[0] for p in anillo) / len(anillo), sum(p[1] for p in anillo) / len(anillo))
 
 
-def construir_figura(resumen, geo, id_sel=None, alto=620):
+def construir_figura(resumen, geo, id_sel=None, alto=420):
     import plotly.graph_objects as go
     feats = geo["features"]
     ids = [f["properties"]["id"] for f in feats]
@@ -185,12 +185,16 @@ def _id_desde_evento(ev, ids):
 
 
 def _tel_html(tels, en_falla):
+    # FIX CELULAR V11: guion no-partible, el telefono nunca se parte en 999- / 923-4019
+    NB = chr(8209)
     partes = []
     for t in tels:
         digitos = re.sub(r"\D", "", t)
-        link = f'<a href="tel:{digitos}">{escape(t)}</a>'
-        partes.append(f"🚨 <b style='color:#b91c1c'>{link}</b>" if digitos in en_falla else f"📞 {link}")
-    return " &nbsp; ".join(partes)
+        t_nb = escape(t).replace("-", NB)
+        link = '<a href="tel:' + digitos + '" style="white-space:nowrap;word-break:keep-all;">' + t_nb + '</a>'
+        inner = "🚨 <b style='color:#b91c1c;white-space:nowrap;word-break:keep-all'>" + link + "</b>" if digitos in en_falla else "📞 <span style='white-space:nowrap;word-break:keep-all'>" + link + "</span>"
+        partes.append("<span style='display:inline-block;white-space:nowrap;word-break:keep-all;overflow-wrap:normal;margin:2px 8px 2px 0;'>" + inner + "</span>")
+    return "<div style='display:flex;flex-wrap:wrap;gap:2px 4px;'>" + "".join(partes) + "</div>"
 
 
 def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_tel_falla,
@@ -322,7 +326,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                         st.markdown(
                             f"<div style='background:white;border:1px solid #e2e8f0;border-left:5px solid {color};"
                             f"border-radius:12px;padding:12px 14px;margin-bottom:6px'>"
-                            f"<div style='display:flex;justify-content:space-between;gap:8px'>"
+                            f"<div style='display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:flex-start'>"
                             f"<b>{escape(s['sucursal'])}</b>"
                             f"<span style='background:{color};color:white;border-radius:99px;padding:2px 10px;"
                             f"font-size:12px;font-weight:800;white-space:nowrap'>{escape(str(r['txt']))}</span></div>"
@@ -358,7 +362,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                     st.markdown(
                         f"<div style='background:white;border:1px solid #e2e8f0;border-left:5px solid #16a34a;"
                         f"border-radius:12px;padding:12px 14px;margin-bottom:6px'>"
-                        f"<div style='display:flex;justify-content:space-between;gap:8px'>"
+                        f"<div style='display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:flex-start'>"
                         f"<b>{escape(s['sucursal'])}</b>"
                         f"<span style='background:#16a34a;color:white;border-radius:99px;padding:2px 10px;"
                         f"font-size:12px;font-weight:800;white-space:nowrap'>✅ Sin reporte</span></div>"

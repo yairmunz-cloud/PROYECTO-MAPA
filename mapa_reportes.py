@@ -125,7 +125,7 @@ def _centro(feature):
     return (sum(p[0] for p in anillo) / len(anillo), sum(p[1] for p in anillo) / len(anillo))
 
 
-def construir_figura(resumen, geo, id_sel=None, alto=620):
+def construir_figura(resumen, geo, id_sel=None, alto=420):
     import plotly.graph_objects as go
     feats = geo["features"]
     ids = [f["properties"]["id"] for f in feats]
@@ -185,12 +185,16 @@ def _id_desde_evento(ev, ids):
 
 
 def _tel_html(tels, en_falla):
+    # FIX CELULAR V12: cada telefono en su celda GRID 2 columnas, nunca se parte
+    NB = chr(8209)
     partes = []
     for t in tels:
         digitos = re.sub(r"\D", "", t)
-        link = f'<a href="tel:{digitos}">{escape(t)}</a>'
-        partes.append(f"🚨 <b style='color:#b91c1c'>{link}</b>" if digitos in en_falla else f"📞 {link}")
-    return " &nbsp; ".join(partes)
+        t_nb = escape(t).replace("-", NB)
+        link = '<a href="tel:' + digitos + '" style="white-space:nowrap;word-break:keep-all;text-decoration:none;color:inherit;">' + t_nb + '</a>'
+        inner = "🚨 <b style='color:#b91c1c;white-space:nowrap'>" + link + "</b>" if digitos in en_falla else "📞 " + link
+        partes.append("<div style='white-space:nowrap;word-break:keep-all;overflow-wrap:normal;font-size:13px;'>" + inner + "</div>")
+    return "<div style='display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:2px;'>" + "".join(partes) + "</div>"
 
 
 def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_tel_falla,
@@ -322,7 +326,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                         st.markdown(
                             f"<div style='background:white;border:1px solid #e2e8f0;border-left:5px solid {color};"
                             f"border-radius:12px;padding:12px 14px;margin-bottom:6px'>"
-                            f"<div style='display:flex;justify-content:space-between;gap:8px'>"
+                            f"<div style='display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:flex-start'>"
                             f"<b>{escape(s['sucursal'])}</b>"
                             f"<span style='background:{color};color:white;border-radius:99px;padding:2px 10px;"
                             f"font-size:12px;font-weight:800;white-space:nowrap'>{escape(str(r['txt']))}</span></div>"
@@ -358,7 +362,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                     st.markdown(
                         f"<div style='background:white;border:1px solid #e2e8f0;border-left:5px solid #16a34a;"
                         f"border-radius:12px;padding:12px 14px;margin-bottom:6px'>"
-                        f"<div style='display:flex;justify-content:space-between;gap:8px'>"
+                        f"<div style='display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:flex-start'>"
                         f"<b>{escape(s['sucursal'])}</b>"
                         f"<span style='background:#16a34a;color:white;border-radius:99px;padding:2px 10px;"
                         f"font-size:12px;font-weight:800;white-space:nowrap'>✅ Sin reporte</span></div>"

@@ -1584,7 +1584,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
             except: reportes_en_cola = []
             if not rep_new_clean: st.error("No. Reporte obligatorio")
             elif not rep_new_clean.isdigit(): st.error("❌ Solo numeros")
-            elif rep_new_clean in ["0", "0.0", "00"]: st.error("❌ REP 0 no es válido - el sistema lo toma como Sin reporte y no se va a mostrar. Usa el REP real que te dio Telmex (ej: 123456)")
+            elif rep_new_clean.strip("0").strip(".") == "" or rep_new_clean.strip() in ["0.0"]: st.error("❌ REP 0 no es válido - el sistema lo toma como Sin reporte y no se va a mostrar. Usa el REP real que te dio Telmex (ej: 123456)")
             elif not suc_new: st.error("Sucursal obligatoria")
             elif not tel_final: st.error("Selecciona al menos una linea")
             elif not obs_new: st.error("Observaciones obligatoria")

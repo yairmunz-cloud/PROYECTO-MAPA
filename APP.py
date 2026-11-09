@@ -1259,7 +1259,8 @@ with c1:
 </style>
     """, unsafe_allow_html=True)
 with c2:
-    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
+    # V15: BOX NEGRO ELIMINADO - ya se muestra abajo en la franja del mapa con resaltado translucido, no duplicar
+    pass
     
     if not df_reportes.empty:
         st.markdown(f"""
@@ -1269,7 +1270,7 @@ with c2:
                     <div style="width:18px; height:18px; background:#ef4444; border-radius:5px; display:flex; align-items:center; justify-content:center; color:white; font-size:10px;">🚨</div>
                     <div style="font-weight:800; font-size:0.68rem; letter-spacing:0.4px; color:#991b1b;">VER SOLO SUCURSALES CON REPORTE ACTIVO</div>
                 </div>
-                <span class="badge badge-red" style="font-size:0.65rem; padding:3px 8px;">{len(df_reportes)} encontradas</span>
+                <span class="badge badge-red" style="font-size:0.65rem; padding:3px 8px;">{total_reps_global} reportes</span>
             </div>
         </div>
         """, unsafe_allow_html=True)

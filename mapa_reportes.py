@@ -125,7 +125,7 @@ def _centro(feature):
     return (sum(p[0] for p in anillo) / len(anillo), sum(p[1] for p in anillo) / len(anillo))
 
 
-def construir_figura(resumen, geo, id_sel=None, alto=420):
+def construir_figura(resumen, geo, id_sel=None, alto=650):
     import plotly.graph_objects as go
     feats = geo["features"]
     ids = [f["properties"]["id"] for f in feats]
@@ -286,7 +286,8 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
     k3.markdown(chip.format("🔴 MÁS CRÍTICO", escape(peor)), unsafe_allow_html=True)
 
     # V5 REGRESADO COMO ESTABA: mapa a la izquierda, info a un lado a la derecha
-    c_mapa, c_panel = st.columns([5, 3], gap="medium")
+    # V14: MAPA MAS GRANDE - de [5,3] a [7,3] para que el mapa ocupe 70% y no quede tanto blanco
+    c_mapa, c_panel = st.columns([7, 3], gap="small")
     with c_mapa:
         leyenda = "".join(f"<span style='display:inline-flex;align-items:center;gap:5px;margin-right:12px;"
                           f"font-size:12px;font-weight:600;color:#334155'><span style='width:12px;height:12px;"
@@ -294,7 +295,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                           for n, t in [(0, "Sin reporte"), (1, "Hasta 2 días"), (2, "3 a 5 días"),
                                        (3, "Más de 5 días")])
         st.markdown(f"<div style='margin:6px 0'>{leyenda}</div>", unsafe_allow_html=True)
-        st.plotly_chart(construir_figura(resumen, geo, id_sel), key="mapa_mx", on_select="rerun",
+        st.plotly_chart(construir_figura(resumen, geo, id_sel), key="mapa_mx", on_select="rerun", use_container_width=True,
                         selection_mode="points", width="stretch", config={"displayModeBar": False})
 
     with c_panel:

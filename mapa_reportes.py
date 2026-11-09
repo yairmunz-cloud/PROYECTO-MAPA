@@ -163,9 +163,12 @@ def construir_figura(resumen, geo, id_sel=None, alto=520):
         fig.add_trace(go.Scattergeo(lon=lon, lat=lat, text=txt, mode="text", hoverinfo="skip",
                                     textfont=dict(color="white", size=15, family="Arial Black"),
                                     showlegend=False))
-    fig.update_geos(fitbounds="locations", visible=False, projection_type="mercator",
-                    bgcolor="rgba(0,0,0,0)")
-    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=alto, dragmode=False,
+    # V17: recorte exacto a Mexico [-118,-86] x [14,33] para que llene todo el ancho, sin mar vacio
+    fig.update_geos(visible=False, projection_type="mercator",
+                    bgcolor="rgba(0,0,0,0)",
+                    lonaxis=dict(range=[-118, -86]), lataxis=dict(range=[14, 33]),
+                    domain=dict(x=[0, 1], y=[0, 1]))
+    fig.update_layout(margin=dict(l=-10, r=-10, t=0, b=0), height=alto, dragmode=False,
                       paper_bgcolor="rgba(0,0,0,0)", showlegend=False)
     return fig
 
@@ -286,8 +289,8 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
     k3.markdown(chip.format("🔴 MÁS CRÍTICO", escape(peor)), unsafe_allow_html=True)
 
     # V5 REGRESADO COMO ESTABA: mapa a la izquierda, info a un lado a la derecha
-    # V16: MAPA SUBE Y LLENA EL CUADRO - [7,3] para que ocupe 70%, sin zoom que lo mandaba abajo
-    c_mapa, c_panel = st.columns([7, 3], gap="small")
+    # V17: MAPA MAS ANCHO - [8,2] mapa 80% para llenar los blancos de izquierda/derecha, panel 20%
+    c_mapa, c_panel = st.columns([8, 2], gap="small")
     with c_mapa:
         leyenda = "".join(f"<span style='display:inline-flex;align-items:center;gap:5px;margin-right:12px;"
                           f"font-size:12px;font-weight:600;color:#334155'><span style='width:12px;height:12px;"

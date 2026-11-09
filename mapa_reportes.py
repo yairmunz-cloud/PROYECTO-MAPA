@@ -125,7 +125,7 @@ def _centro(feature):
     return (sum(p[0] for p in anillo) / len(anillo), sum(p[1] for p in anillo) / len(anillo))
 
 
-def construir_figura(resumen, geo, id_sel=None, alto=520):
+def construir_figura(resumen, geo, id_sel=None, alto=420):
     import plotly.graph_objects as go
     feats = geo["features"]
     ids = [f["properties"]["id"] for f in feats]
@@ -163,11 +163,8 @@ def construir_figura(resumen, geo, id_sel=None, alto=520):
         fig.add_trace(go.Scattergeo(lon=lon, lat=lat, text=txt, mode="text", hoverinfo="skip",
                                     textfont=dict(color="white", size=15, family="Arial Black"),
                                     showlegend=False))
-    # V17: recorte exacto a Mexico [-118,-86] x [14,33] para que llene todo el ancho, sin mar vacio
-    fig.update_geos(visible=False, projection_type="mercator",
-                    bgcolor="rgba(0,0,0,0)",
-                    lonaxis=dict(range=[-118, -86]), lataxis=dict(range=[14, 33]),
-                    domain=dict(x=[0, 1], y=[0, 1]))
+    fig.update_geos(fitbounds="locations", visible=False, projection_type="mercator",
+                    bgcolor="rgba(0,0,0,0)")
     fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=alto, dragmode=False,
                       paper_bgcolor="rgba(0,0,0,0)", showlegend=False)
     return fig
@@ -274,6 +271,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                      key=lambda i: -resumen[i]["max_dias"])
     total = sum(resumen[i]["n_reportes"] for i in con_rep)
 
+    # V18: RESTAURADO A TAMANO PRODUCCION - [5,3] y alto 420, panel grande como en produccion, mapa no tapa leyenda
     # --- Franja de resumen ---
     peor = nombres[con_rep[0]] if con_rep else "—"
     chip = ("<div style='background:white;border:1px solid #e2e8f0;border-radius:12px;padding:8px 12px;'>"
@@ -289,15 +287,14 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
     k3.markdown(chip.format("🔴 MÁS CRÍTICO", escape(peor)), unsafe_allow_html=True)
 
     # V5 REGRESADO COMO ESTABA: mapa a la izquierda, info a un lado a la derecha
-    # V17: MAPA MAS ANCHO - [8,2] mapa 80% para llenar los blancos de izquierda/derecha, panel 20%
-    c_mapa, c_panel = st.columns([8, 2], gap="small")
+    c_mapa, c_panel = st.columns([5, 3], gap="medium")
     with c_mapa:
         leyenda = "".join(f"<span style='display:inline-flex;align-items:center;gap:5px;margin-right:12px;"
                           f"font-size:12px;font-weight:600;color:#334155'><span style='width:12px;height:12px;"
                           f"border-radius:3px;background:{COLORES[n]}'></span>{t}</span>"
                           for n, t in [(0, "Sin reporte"), (1, "Hasta 2 días"), (2, "3 a 5 días"),
                                        (3, "Más de 5 días")])
-        st.markdown(f"<div style='margin:2px 0 0 0'>{leyenda}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='margin:6px 0'>{leyenda}</div>", unsafe_allow_html=True)
         st.plotly_chart(construir_figura(resumen, geo, id_sel), key="mapa_mx", on_select="rerun",
                         selection_mode="points", width="stretch", config={"displayModeBar": False})
 

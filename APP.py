@@ -717,7 +717,7 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
         st.warning("No se encontró HISTORIAL_REPORTES.")
         st.stop()
     df_hist_b.columns = [c.strip().upper() for c in df_hist_b.columns]
-    # V23: DIAS TRANSCURRIDOS - desde FECHA_REPORTE (inicio) hasta FECHA_REGISTRO (cierre/registro)
+    # V23: DIAS HASTA CIERRE - desde FECHA_REPORTE (inicio) hasta FECHA_REGISTRO (cierre/registro)
     # Ej: 01/09/2026 -> 28/10/2026 = 57 dias, 29/10 -> 29/10 = 0 dias
     try:
         _f_rep = pd.to_datetime(df_hist_b.get('FECHA_REPORTE'), format='%d/%m/%Y', errors='coerce', dayfirst=True)
@@ -732,11 +732,11 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
         _dias = (_f_reg - _f_rep).dt.days
         # Si la fecha de cierre es antes que la de inicio por error de captura, dejar en 0 en vez de negativo
         _dias = _dias.clip(lower=0)
-        df_hist_b['DÍAS TRANSCURRIDOS'] = _dias
+        df_hist_b['DÍAS HASTA CIERRE'] = _dias
         # Para que se vea como numero entero sin .0, y vacio si no hay fechas
-        df_hist_b['DÍAS TRANSCURRIDOS'] = df_hist_b['DÍAS TRANSCURRIDOS'].apply(lambda x: int(x) if pd.notna(x) else '')
+        df_hist_b['DÍAS HASTA CIERRE'] = df_hist_b['DÍAS HASTA CIERRE'].apply(lambda x: int(x) if pd.notna(x) else '')
     except Exception:
-        df_hist_b['DÍAS TRANSCURRIDOS'] = ''
+        df_hist_b['DÍAS HASTA CIERRE'] = ''
     # Buscador compacto
     col_s1, col_s2 = st.columns([3,1])
     with col_s1:
@@ -752,7 +752,7 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
                 mask_b = mask_b | df_f_b[col_b].astype(str).str.lower().str.contains(sl, na=False)
         df_f_b = df_f_b[mask_b]
     # Tabla compacta - solo columnas clave, altura pequeña
-    cols_mostrar = [c for c in ['FECHA_REGISTRO','ESTADO','SUCURSAL','NO_REPORTE','FECHA_REPORTE','DÍAS TRANSCURRIDOS','USUARIO'] if c in df_f_b.columns]
+    cols_mostrar = [c for c in ['FECHA_REGISTRO','ESTADO','SUCURSAL','NO_REPORTE','FECHA_REPORTE','DÍAS HASTA CIERRE','USUARIO'] if c in df_f_b.columns]
     if not df_f_b.empty:
         st.dataframe(df_f_b[cols_mostrar].sort_values('FECHA_REGISTRO' if 'FECHA_REGISTRO' in cols_mostrar else cols_mostrar[0], ascending=False).head(50), width='stretch', height=250)
         st.caption(f"Mostrando {min(50, len(df_f_b))} de {len(df_f_b)} eventos (Total: {len(df_hist_b)}). Tabla compacta para no ocupar mucho espacio.")

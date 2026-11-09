@@ -769,12 +769,7 @@ st.markdown("""
     .badge-warn { background:#fef9c3; color:#854d0e; border:1px solid #fde68a; }
     .badge-orange { background:#ffedd5; color:#9a3412; border:1px solid #fed7aa; }
     .badge-red { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
-    .filter-pill { background: white; border: 1px solid #e2e8f0; border-radius: 50px !important; padding: 10px 18px 12px 18px !important; height: 78px !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; }
-    /* V20 ALINEAR: selectbox y botones dentro del pill con mismo alto, para que no se vean encimados */
-    .filter-pill div[data-testid="stSelectbox"] > div > div { height: 38px !important; min-height: 38px !important; }
-    .filter-pill div[data-testid="stButton"] button { height: 38px !important; min-height: 38px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
-    .filter-pill div[data-testid="stSelectbox"] { margin-top: auto !important; }
-    .filter-pill div[data-testid="stHorizontalBlock"] { margin-top: auto !important; }
+    .filter-pill { background: white; border: 1px solid #e2e8f0; border-radius: 50px !important; padding: 10px 18px 12px 18px !important; }
     .filter-label { font-size:0.72rem !important; font-weight:800 !important; color:#64748b !important; letter-spacing:0.8px; text-transform:uppercase; margin-bottom:2px; }
     .rep-box { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:4px 10px; font-weight:700; font-size:0.85rem; display:inline-flex; gap:6px; align-items:center; }
 </style>

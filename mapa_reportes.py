@@ -168,7 +168,7 @@ def construir_figura(resumen, geo, id_sel=None, alto=520):
                     bgcolor="rgba(0,0,0,0)",
                     lonaxis=dict(range=[-118, -86]), lataxis=dict(range=[14, 33]),
                     domain=dict(x=[0, 1], y=[0, 1]))
-    fig.update_layout(margin=dict(l=-10, r=-10, t=0, b=0), height=alto, dragmode=False,
+    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=alto, dragmode=False,
                       paper_bgcolor="rgba(0,0,0,0)", showlegend=False)
     return fig
 

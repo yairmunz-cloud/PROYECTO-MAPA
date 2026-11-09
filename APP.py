@@ -760,7 +760,10 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
                 mask_b = mask_b | df_f_b[col_b].astype(str).str.lower().str.contains(sl, na=False)
         df_f_b = df_f_b[mask_b]
     # Tabla compacta - solo columnas clave, altura pequeña
-    cols_mostrar = [c for c in ['FECHA_REGISTRO','ESTADO','SUCURSAL','NO_REPORTE','FECHA_REPORTE','DÍAS HASTA CIERRE','USUARIO'] if c in df_f_b.columns]
+    # V27: Mostrar FECHA_REPORTE como FECHA_CIERRE_REPORTE (solo cambia el nombre que ve el usuario, el calculo sigue igual)
+    if 'FECHA_REPORTE' in df_f_b.columns and 'FECHA_CIERRE_REPORTE' not in df_f_b.columns:
+        df_f_b['FECHA_CIERRE_REPORTE'] = df_f_b['FECHA_REPORTE']
+    cols_mostrar = [c for c in ['FECHA_REGISTRO','ESTADO','SUCURSAL','NO_REPORTE','FECHA_CIERRE_REPORTE','DÍAS HASTA CIERRE','USUARIO'] if c in df_f_b.columns]
     if not df_f_b.empty:
         # V26 FIX: ordenar por FECHA_REGISTRO como fecha real, no como texto.
         # Como texto, '09/11/2026' quedaba despues de '28/10/2026' y el de hoy 69 dias se cortaba con head(50)

@@ -273,10 +273,13 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
 
     # --- Franja de resumen ---
     peor = nombres[con_rep[0]] if con_rep else "—"
-    # V13: chip REPORTES ACTIVOS resaltado translucido - se ve de inmediato, sin ser solido negro
-    chip_activo = ("<div style='background:rgba(239,68,68,0.12);border:1.5px solid rgba(239,68,68,0.35);border-left:5px solid #ef4444;border-radius:12px;padding:10px 12px;box-shadow:0 2px 10px rgba(239,68,68,0.12);'>"
+    chip = ("<div style='background:white;border:1px solid #e2e8f0;border-radius:12px;padding:8px 12px;'>"
             "<div style='font-size:11px;color:#64748b;font-weight:700'>{}</div>"
             "<div style='font-size:18px;font-weight:900;color:#0f172a'>{}</div></div>")
+    # V13 FIX: chip_activo translucido solo para REPORTES ACTIVOS, chip blanco se queda para k2/k3
+    chip_activo = ("<div style='background:rgba(239,68,68,0.12);border:1.5px solid rgba(239,68,68,0.35);border-left:5px solid #ef4444;border-radius:12px;padding:10px 12px;box-shadow:0 2px 10px rgba(239,68,68,0.12);'>"
+            "<div style='font-size:11px;color:#991b1b;font-weight:800'>{}</div>"
+            "<div style='font-size:18px;font-weight:900;color:#991b1b'>{}</div></div>")
     k1, k2, k3 = st.columns(3)
     k1.markdown(chip_activo.format("🚨 REPORTES ACTIVOS", total), unsafe_allow_html=True)
     k2.markdown(chip.format("🗺 ESTADOS AFECTADOS", len(con_rep)), unsafe_allow_html=True)

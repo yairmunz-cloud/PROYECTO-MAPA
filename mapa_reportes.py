@@ -163,12 +163,10 @@ def construir_figura(resumen, geo, id_sel=None, alto=520):
         fig.add_trace(go.Scattergeo(lon=lon, lat=lat, text=txt, mode="text", hoverinfo="skip",
                                     textfont=dict(color="white", size=15, family="Arial Black"),
                                     showlegend=False))
-    # V15: SUBIR MAPA - zoom 1.35 y centrado en Mexico para quitar el blanco de arriba/abajo
     fig.update_geos(fitbounds="locations", visible=False, projection_type="mercator",
-                    bgcolor="rgba(0,0,0,0)", center=dict(lon=-102, lat=23),
-                    projection=dict(scale=1.35), domain=dict(x=[0, 1], y=[0, 1]))
-    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0, pad=0), height=alto, dragmode=False,
-                      paper_bgcolor="rgba(0,0,0,0)", showlegend=False, autosize=True)
+                    bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=alto, dragmode=False,
+                      paper_bgcolor="rgba(0,0,0,0)", showlegend=False)
     return fig
 
 
@@ -288,7 +286,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
     k3.markdown(chip.format("🔴 MÁS CRÍTICO", escape(peor)), unsafe_allow_html=True)
 
     # V5 REGRESADO COMO ESTABA: mapa a la izquierda, info a un lado a la derecha
-    # V14: MAPA MAS GRANDE - de [5,3] a [7,3] para que el mapa ocupe 70% y no quede tanto blanco
+    # V16: MAPA SUBE Y LLENA EL CUADRO - [7,3] para que ocupe 70%, sin zoom que lo mandaba abajo
     c_mapa, c_panel = st.columns([7, 3], gap="small")
     with c_mapa:
         leyenda = "".join(f"<span style='display:inline-flex;align-items:center;gap:5px;margin-right:12px;"
@@ -297,7 +295,7 @@ def mostrar_mapa(df, col_est, col_suc, col_rep, col_fec, col_obs, col_tel, col_t
                           for n, t in [(0, "Sin reporte"), (1, "Hasta 2 días"), (2, "3 a 5 días"),
                                        (3, "Más de 5 días")])
         st.markdown(f"<div style='margin:2px 0 0 0'>{leyenda}</div>", unsafe_allow_html=True)
-        st.plotly_chart(construir_figura(resumen, geo, id_sel), key="mapa_mx", on_select="rerun", use_container_width=True,
+        st.plotly_chart(construir_figura(resumen, geo, id_sel), key="mapa_mx", on_select="rerun",
                         selection_mode="points", width="stretch", config={"displayModeBar": False})
 
     with c_panel:

@@ -83,9 +83,8 @@ try:
 except:
     pass
 
-st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/para_hacer_cambios/atlas_favicon.png", initial_sidebar_state="expanded")
+st.set_page_config(page_title="REPORTES Y CONSULTAS SUCURSALES SEGUROS ATLAS", layout="wide", page_icon="https://raw.githubusercontent.com/yairmunz-cloud/PROYECTO-MAPA/main/atlas_favicon.png", initial_sidebar_state="expanded")
 
-st.markdown("""<div style="background:linear-gradient(90deg,#1e40af,#3b82f6); color:white; padding:7px 14px; border-radius:999px; text-align:center; font-weight:700; font-size:12.5px; margin-bottom:14px;">🧪 MODO PRUEBA V86 NEGRO + LETRAS BLANCAS • Teléfono clicable + Ordenar críticos • Sin botón copiar • Sin cambios visuales</div>""", unsafe_allow_html=True)
 
 # --- PRODUCCION V65 PRODUCCION FINAL - sin banner de prueba ---
 # V64: Botones Ingresar / Cancelar misma altura y mismo formato
@@ -1260,7 +1259,8 @@ with c1:
 </style>
     """, unsafe_allow_html=True)
 with c2:
-    st.markdown(f"""<div class="glass-dark"><div style="display:flex; justify-content:space-between; align-items:center"><div style="display:flex; gap:10px; align-items:center"><div style="width:34px; height:34px; background:rgba(239,68,68,0.25); border-radius:9px; display:flex; align-items:center; justify-content:center">🚨</div><div><div style="font-weight:700">Reportes Activos</div><div style="font-size:0.75rem; opacity:0.7">{total_reps_global} requieren atencion ({len(df_reportes)} sucursales)</div></div></div><div style="font-size:1.6rem; font-weight:900">{total_reps_global}</div></div></div>""", unsafe_allow_html=True)
+    # V15: BOX NEGRO ELIMINADO - ya se muestra abajo en la franja del mapa con resaltado translucido, no duplicar
+    pass
     
     if not df_reportes.empty:
         st.markdown(f"""
@@ -1519,7 +1519,7 @@ if st.session_state['show_login'] and not st.session_state['admin_auth']:
 if st.session_state['admin_auth'] and st.session_state['show_add_form']:
     st.markdown('<div class="glass" style="border:2px solid #16a34a; padding:28px">', unsafe_allow_html=True)
     st.markdown(f"### ➕ Agregar Reporte - Usuario: **{st.session_state['current_user']}**")
-    id_display = SHEET_ID_PRUEBAS[:20] + "..." if SHEET_ID_PRUEBAS else "Cargado desde Streamlit Secrets"
+    id_display = "Cargado desde Streamlit Secrets (Producción)"
     st.info(f"Hoja pruebas ID: {id_display} | Modo lote: agrega N reportes y al final guarda todo")
     st.markdown("#### 1⃣ Selecciona Estado y Sucursal")
     fc_sel1, fc_sel2 = st.columns(2)
@@ -1622,7 +1622,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                 st.session_state['batch_reportes'] = []
                 st.rerun()
         with c_save2:
-            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS (PRUEBA REAL)", type="primary", width='stretch'):
+            if st.button(f"💾 GUARDAR LOS {len(st.session_state['batch_reportes'])} REPORTES EN GOOGLE SHEETS", type="primary", width='stretch'):
                 try:
                     guardados = 0
                     if "gcp_service_account" in st.secrets:
@@ -1713,7 +1713,7 @@ if st.session_state['admin_auth'] and st.session_state['show_add_form']:
                                 all_vals.append(new_row)
                             log_reporte_historial(st.session_state['current_user'], r['estado'], r['sucursal'], r['no_reporte'], r['fecha_reporte'], r['tel'], r['obs'])
                             guardados += 1
-                        log_acceso(st.session_state['current_user'], f"Guardo lote PRUEBA {guardados} reportes")
+                        log_acceso(st.session_state['current_user'], f"Guardo lote {guardados} reportes")
                         st.success(f"✅ {guardados} reportes guardados en {SHEET_PRINCIPAL}")
                         # V13 FIX ACTUALIZAR: al guardar, saltar al estado del reporte nuevo para que el mapa y buscadores si lo muestren
                         try:

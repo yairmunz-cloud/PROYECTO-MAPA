@@ -1270,7 +1270,7 @@ with c2:
                     <div style="width:18px; height:18px; background:#ef4444; border-radius:5px; display:flex; align-items:center; justify-content:center; color:white; font-size:10px;">🚨</div>
                     <div style="font-weight:800; font-size:0.68rem; letter-spacing:0.4px; color:#991b1b;">VER SOLO SUCURSALES CON REPORTE ACTIVO</div>
                 </div>
-                <span class="badge badge-red" style="font-size:0.65rem; padding:3px 8px;">{len(df_reportes)} encontradas</span>
+                <span class="badge badge-red" style="font-size:0.65rem; padding:3px 8px;">{total_reps_global} reportes</span>
             </div>
         </div>
         """, unsafe_allow_html=True)

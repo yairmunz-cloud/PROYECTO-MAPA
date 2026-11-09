@@ -712,6 +712,14 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
         except Exception as e:
             st.error(f"Error cargando historial: {e}")
         return df_h
+    # V25: Boton Actualizar - limpia el cache de 60s para ver eventos recien guardados sin esperar
+    _c_act, _c_txt = st.columns([1, 4])
+    with _c_act:
+        if st.button("🔄 Actualizar", key="btn_actualizar_buscar"):
+            cargar_historial_buscar.clear()
+            st.rerun()
+    with _c_txt:
+        st.caption("Si acabas de cerrar un reporte y no aparece, pulsa Actualizar (la tabla se guarda en caché 60 segundos).")
     df_hist_b = cargar_historial_buscar()
     if df_hist_b is None or df_hist_b.empty:
         st.warning("No se encontró HISTORIAL_REPORTES.")
@@ -754,8 +762,16 @@ if st.session_state.get('pagina') == "🔒 Buscar Reportes":
     # Tabla compacta - solo columnas clave, altura pequeña
     cols_mostrar = [c for c in ['FECHA_REGISTRO','ESTADO','SUCURSAL','NO_REPORTE','FECHA_REPORTE','DÍAS HASTA CIERRE','USUARIO'] if c in df_f_b.columns]
     if not df_f_b.empty:
-        st.dataframe(df_f_b[cols_mostrar].sort_values('FECHA_REGISTRO' if 'FECHA_REGISTRO' in cols_mostrar else cols_mostrar[0], ascending=False).head(50), width='stretch', height=250)
-        st.caption(f"Mostrando {min(50, len(df_f_b))} de {len(df_f_b)} eventos (Total: {len(df_hist_b)}). Tabla compacta para no ocupar mucho espacio.")
+        # V26 FIX: ordenar por FECHA_REGISTRO como fecha real, no como texto.
+        # Como texto, '09/11/2026' quedaba despues de '28/10/2026' y el de hoy 69 dias se cortaba con head(50)
+        try:
+            _ord = pd.to_datetime(df_f_b.get('FECHA_REGISTRO'), format='%d/%m/%Y', errors='coerce', dayfirst=True)
+            _ord = _ord.fillna(pd.to_datetime(df_f_b.get('FECHA_REGISTRO'), errors='coerce', dayfirst=True))
+            df_f_b = df_f_b.assign(_ORD=_ord).sort_values('_ORD', ascending=False).drop(columns=['_ORD'])
+        except Exception:
+            pass
+        st.dataframe(df_f_b[cols_mostrar].head(200), width='stretch', height=400)
+        st.caption(f"Mostrando {min(200, len(df_f_b))} de {len(df_f_b)} eventos (Total: {len(df_hist_b)}). Ordenado por fecha más reciente.")
     else:
         st.info("No se encontraron reportes con ese criterio.")
     if st.button("🔓 Cerrar sesión privada", key="btn_logout_buscar"):

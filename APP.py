@@ -1456,6 +1456,8 @@ if not es_modo_agregar:
         st.markdown('<div class="filter-pill"><div class="filter-label">📍 Estado</div>', unsafe_allow_html=True)
         if "estado_real" not in st.session_state or st.session_state["estado_real"] not in lista_estados:
             st.session_state["estado_real"] = lista_estados[default_est_idx] if lista_estados else ""
+        # V22: solo bajar el SELECTOR 5px para alinear con botones ACCIONES, el pill y el label quedan como estaban
+        st.markdown("<div style='height:5px'></div>", unsafe_allow_html=True)
         estado_actual = st.selectbox("Estado", lista_estados, key="estado_real", label_visibility="collapsed")
 
         st.markdown('</div>', unsafe_allow_html=True)
@@ -1466,6 +1468,8 @@ if not es_modo_agregar:
         if "sucursal_real" not in st.session_state or st.session_state["sucursal_real"] not in lista_suc:
             if default_suc and default_suc in lista_suc: st.session_state["sucursal_real"] = default_suc
             elif lista_suc: st.session_state["sucursal_real"] = lista_suc[0]
+        # V22: solo bajar el SELECTOR 5px para alinear con botones ACCIONES
+        st.markdown("<div style='height:5px'></div>", unsafe_allow_html=True)
         sucursal_actual = st.selectbox("Sucursales", lista_suc, key="sucursal_real", label_visibility="collapsed")
         st.markdown('</div>', unsafe_allow_html=True)
         # FIX: no resetear filtro

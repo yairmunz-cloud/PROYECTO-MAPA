@@ -483,89 +483,65 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     if sel_anio != "Todos" and 'ANO' in df_f.columns: df_f = df_f[df_f['ANO']==sel_anio]
     if sel_estado != "Todos" and 'ESTADO' in df_f.columns: df_f = df_f[df_f['ESTADO']==sel_estado]
     if sel_mes != "Todos" and 'MES' in df_f.columns: df_f = df_f[df_f['MES']==sel_mes]
-    c1, c2 = st.columns(2)
-    with c1:
-        st.subheader("🏆 Top 10 Sucursales con más fallas")
-        if 'SUCURSAL' in df_f.columns:
-            top10 = df_f['SUCURSAL'].value_counts().head(10).reset_index()
-            top10.columns = ['SUCURSAL','REPORTES']
-            chart = alt.Chart(top10).mark_bar(color='#1e40af').encode(x='REPORTES:Q', y=alt.Y('SUCURSAL:N', sort='-x'), tooltip=['SUCURSAL','REPORTES']).properties(height=260)
-            st.altair_chart(chart, width='stretch')
-    with c2:
-        st.subheader("📅 Reportes por Mes / Año")
-        if 'MES' in df_f.columns:
-            if 'ANO' in df_f.columns and df_f['ANO'].notna().any():
-                df_f['MES_ANO'] = df_f['ANO'].astype('Int64').astype(str) + "-" + df_f['MES'].astype('Int64').astype(str).str.zfill(2)
-            else:
-                df_f['MES_ANO'] = df_f['MES'].astype('Int64').astype(str).str.zfill(2)
-            por_mes = df_f.groupby('MES_ANO').size().reset_index(name='REPORTES').sort_values('MES_ANO')
-            if not por_mes.empty:
-                # V67: Mes/Ano en barras bonitas, no linea fea - con numero arriba y color Atlas
-                _bar = alt.Chart(por_mes).mark_bar(color='#1e40af', cornerRadiusTopLeft=10, cornerRadiusTopRight=10, width=70).encode(x=alt.X('MES_ANO:N', title='MES / AÑO', axis=alt.Axis(labelAngle=0)), y=alt.Y('REPORTES:Q', title='REPORTES'), tooltip=['MES_ANO','REPORTES']).properties(height=260)
-                _txt = alt.Chart(por_mes).mark_text(dy=-10, fontSize=13, fontWeight=700, color='#1e40af').encode(x='MES_ANO:N', y='REPORTES:Q', text='REPORTES:Q')
-                chart2 = _bar + _txt
-                st.altair_chart(chart2, width='stretch')
-            else:
-                st.info("Sin datos para Mes/Año con el filtro actual")
-        else:
-            st.info("No hay columna MES / FECHA para Mes/Año")
-    # --- RESTAURADO V47: Graficas que se perdieron en v39-v46 al recortar Dashboard ---
-    c3, c4 = st.columns(2)
-    with c3:
-        st.subheader("🗺 Fallas por Estado")
-        st.caption("Paleta azul-gris • Anillo")
-        if 'ESTADO' in df_f.columns:
-            por_edo = df_f['ESTADO'].value_counts().reset_index()
-            por_edo.columns = ['ESTADO','REPORTES']
-            blues_grays = ['#0f172a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#e0e7ff','#cbd5e1','#94a3b8','#64748b','#475569','#334155']
-            domain_estados = por_edo['ESTADO'].tolist()
-            range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
-            total_edo = int(por_edo['REPORTES'].sum())
-            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=75, outerRadius=130, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
-                theta=alt.Theta('REPORTES:Q', stack=True),
-                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
-                tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
-                order=alt.Order('REPORTES:Q', sort='descending')
-            ).properties(height=280, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
-            st.altair_chart(chart3, width='stretch')
-    with c4:
-        def mes_a_letra(m):
-            mapa = {'1':'Enero','2':'Febrero','3':'Marzo','4':'Abril','5':'Mayo','6':'Junio','7':'Julio','8':'Agosto','9':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre',1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre','01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'}
-            try:
-                s = str(m).strip()
-                if not s: return s
-                key = s.lstrip('0')
-                if key == '': key = '0'
-                if key in mapa: return mapa[key]
-                try: return mapa[int(s)]
-                except: return mapa.get(s, s)
-            except: return str(m)
-        st.subheader("📊 Reportes por Día / Hora / Mes")
-        vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], index=2, key="vista_dashboard_final_v47")
-        if vista == "DIA del mes" and 'DIA' in df_f.columns:
-            data = df_f['DIA'].value_counts().sort_index().reset_index()
-            data.columns = ['DIA','REPORTES']
-            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('DIA:O', title='Día del mes'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['DIA','REPORTES']).properties(height=250)
-            st.altair_chart(chart4, width='stretch')
-        elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
-            try:
-                df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
-                data = df_f['_HORA'].value_counts().sort_index().reset_index()
-                data.columns = ['HORA','REPORTES']
-                chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(x=alt.X('HORA:O', title='Hora del día'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['HORA','REPORTES']).properties(height=250)
-                st.altair_chart(chart4, width='stretch')
-            except Exception as e: st.error(str(e))
-        elif vista == "MES" and 'MES' in df_f.columns:
-            data = df_f['MES'].value_counts().sort_index().reset_index()
-            data.columns = ['MES','REPORTES']
-            data['MES_LETRA'] = data['MES'].apply(lambda x: mes_a_letra(x))
-            try:
-                data['MES_NUM'] = pd.to_numeric(data['MES'], errors='coerce')
-                data = data.sort_values('MES_NUM')
-            except: pass
-            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('MES_LETRA:O', title='Mes', sort=None), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=[alt.Tooltip('MES_LETRA:N', title='Mes'), alt.Tooltip('REPORTES:Q', title='Reportes')]).properties(height=250)
-            st.altair_chart(chart4, width='stretch')
+       # --- FIX DASHBOARD: sin duplicados, Fallas a todo lo ancho + Cerrados ---
+    st.subheader("🏆 Top 10 Sucursales con más fallas")
+    if 'SUCURSAL' in df_f.columns:
+        top10 = df_f['SUCURSAL'].value_counts().head(10).reset_index()
+        top10.columns = ['SUCURSAL','REPORTES']
+        chart = alt.Chart(top10).mark_bar(color='#1e40af').encode(
+            x='REPORTES:Q',
+            y=alt.Y('SUCURSAL:N', sort='-x'),
+            tooltip=['SUCURSAL','REPORTES']
+        ).properties(height=260)
+        st.altair_chart(chart, width='stretch')
+
+    st.subheader("🗺 Fallas por Estado")
+    st.caption("Paleta azul-gris • Anillo")
+    if 'ESTADO' in df_f.columns:
+        por_edo = df_f['ESTADO'].value_counts().reset_index()
+        por_edo.columns = ['ESTADO','REPORTES']
+        blues_grays = ['#0f172a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#e0e7ff','#cbd5e1','#94a3b8','#64748b','#475569','#334155']
+        domain_estados = por_edo['ESTADO'].tolist()
+        range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
+        total_edo = int(por_edo['REPORTES'].sum())
+        chart3 = alt.Chart(por_edo).mark_arc(innerRadius=75, outerRadius=130, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
+            theta=alt.Theta('REPORTES:Q', stack=True),
+            color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
+            tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
+            order=alt.Order('REPORTES:Q', sort='descending')
+        ).properties(height=280, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
+        st.altair_chart(chart3, width='stretch')
+
     st.markdown("---")
+    st.subheader("✅ Últimos reportes cerrados")
+    st.caption("Los 10 más recientes • Ordenados por fecha de cierre")
+    try:
+        df_cerr = df_f.copy()
+        if 'NO_REPORTE' in df_cerr.columns:
+            df_cerr = df_cerr[df_cerr['NO_REPORTE'].astype(str).str.strip().str.startswith('ELIMINADO-')]
+
+            if not df_cerr.empty:
+                df_cerr['_CIERRE'] = pd.to_datetime(df_cerr.get('FECHA_REGISTRO'), dayfirst=True, errors='coerce')
+                df_cerr['_APERTURA'] = pd.to_datetime(df_cerr.get('FECHA_REPORTE'), dayfirst=True, errors='coerce')
+                df_cerr['_DIAS'] = (df_cerr['_CIERRE'] - df_cerr['_APERTURA']).dt.days
+                df_cerr['_DIAS'] = df_cerr['_DIAS'].clip(lower=0)
+                df_cerr = df_cerr.sort_values('_CIERRE', ascending=False).head(10)
+
+                df_cerr_show = pd.DataFrame({
+                    'SUCURSAL': df_cerr.get('SUCURSAL', ''),
+                    'ESTADO': df_cerr.get('ESTADO', ''),
+                    'REP': df_cerr['NO_REPORTE'].astype(str).str.replace('ELIMINADO-', '', regex=False).str.strip(),
+                    'FALLA / REPORTE': df_cerr.get('OBSERVACIONES', '').astype(str).str.slice(0, 80),
+                    'FECHA CIERRE': df_cerr['_CIERRE'].dt.strftime('%d/%m/%Y'),
+                    'DÍAS PARA CIERRE': df_cerr['_DIAS'],
+                })
+                st.dataframe(df_cerr_show, width='stretch', hide_index=True, height=360)
+            else:
+                st.info("Aún no hay reportes cerrados con el filtro actual.")
+        else:
+            st.info("No hay columna NO_REPORTE para detectar cerrados.")
+    except Exception as e:
+        st.warning(f"No se pudo cargar cerrados: {e}")
     st.subheader("⏱ Tiempo de reparación / Cierre")
     try:
         if 'FECHA_REGISTRO' in df_f.columns and 'FECHA' in df_f.columns:

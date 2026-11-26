@@ -484,7 +484,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     if sel_estado != "Todos" and 'ESTADO' in df_f.columns: df_f = df_f[df_f['ESTADO']==sel_estado]
     if sel_mes != "Todos" and 'MES' in df_f.columns: df_f = df_f[df_f['MES']==sel_mes]
       # --- FIX DASHBOARD COMPACTO: 2 columnas + pestañas ---
-    c_top, c_edo = st.columns(2)
+    c_top, c_edo = st.columns([1.2, 1])
 
     with c_top:
         st.subheader("🏆 Top 10 Sucursales con más fallas")
@@ -508,12 +508,12 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             domain_estados = por_edo['ESTADO'].tolist()
             range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
             total_edo = int(por_edo['REPORTES'].sum())
-            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=60, outerRadius=100, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
+                       chart3 = alt.Chart(por_edo).mark_arc(innerRadius=50, outerRadius=85, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
                 theta=alt.Theta('REPORTES:Q', stack=True),
-                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
+                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="bottom", columns=3)),
                 tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
                 order=alt.Order('REPORTES:Q', sort='descending')
-            ).properties(height=200, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
+            ).properties(height=220, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
             st.altair_chart(chart3, width='stretch')
 
     tab1, tab2, tab3 = st.tabs(["✅ Cerrados", "⏱ Tiempo / Líneas", "📋 Resumen"])

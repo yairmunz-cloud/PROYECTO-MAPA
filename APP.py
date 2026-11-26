@@ -483,150 +483,156 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
     if sel_anio != "Todos" and 'ANO' in df_f.columns: df_f = df_f[df_f['ANO']==sel_anio]
     if sel_estado != "Todos" and 'ESTADO' in df_f.columns: df_f = df_f[df_f['ESTADO']==sel_estado]
     if sel_mes != "Todos" and 'MES' in df_f.columns: df_f = df_f[df_f['MES']==sel_mes]
-       # --- FIX DASHBOARD: sin duplicados, Fallas a todo lo ancho + Cerrados ---
-    st.subheader("🏆 Top 10 Sucursales con más fallas")
-    if 'SUCURSAL' in df_f.columns:
-        top10 = df_f['SUCURSAL'].value_counts().head(10).reset_index()
-        top10.columns = ['SUCURSAL','REPORTES']
-        chart = alt.Chart(top10).mark_bar(color='#1e40af').encode(
-            x='REPORTES:Q',
-            y=alt.Y('SUCURSAL:N', sort='-x'),
-            tooltip=['SUCURSAL','REPORTES']
-        ).properties(height=260)
-        st.altair_chart(chart, width='stretch')
+      # --- FIX DASHBOARD COMPACTO: 2 columnas + pestañas ---
+    c_top, c_edo = st.columns(2)
 
-    st.subheader("🗺 Fallas por Estado")
-    st.caption("Paleta azul-gris • Anillo")
-    if 'ESTADO' in df_f.columns:
-        por_edo = df_f['ESTADO'].value_counts().reset_index()
-        por_edo.columns = ['ESTADO','REPORTES']
-        blues_grays = ['#0f172a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#e0e7ff','#cbd5e1','#94a3b8','#64748b','#475569','#334155']
-        domain_estados = por_edo['ESTADO'].tolist()
-        range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
-        total_edo = int(por_edo['REPORTES'].sum())
-        chart3 = alt.Chart(por_edo).mark_arc(innerRadius=75, outerRadius=130, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
-            theta=alt.Theta('REPORTES:Q', stack=True),
-            color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
-            tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
-            order=alt.Order('REPORTES:Q', sort='descending')
-        ).properties(height=280, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
-        st.altair_chart(chart3, width='stretch')
+    with c_top:
+        st.subheader("🏆 Top 10 Sucursales con más fallas")
+        if 'SUCURSAL' in df_f.columns:
+            top10 = df_f['SUCURSAL'].value_counts().head(10).reset_index()
+            top10.columns = ['SUCURSAL','REPORTES']
+            chart = alt.Chart(top10).mark_bar(color='#1e40af').encode(
+                x='REPORTES:Q',
+                y=alt.Y('SUCURSAL:N', sort='-x'),
+                tooltip=['SUCURSAL','REPORTES']
+            ).properties(height=200)
+            st.altair_chart(chart, width='stretch')
 
-    st.markdown("---")
-    st.subheader("✅ Últimos reportes cerrados")
-    st.caption("Los 10 más recientes • Ordenados por fecha de cierre")
-    try:
-        df_cerr = df_f.copy()
-        if 'NO_REPORTE' in df_cerr.columns:
-            df_cerr = df_cerr[df_cerr['NO_REPORTE'].astype(str).str.strip().str.startswith('ELIMINADO-')]
+    with c_edo:
+        st.subheader("🗺 Fallas por Estado")
+        st.caption("Paleta azul-gris • Anillo")
+        if 'ESTADO' in df_f.columns:
+            por_edo = df_f['ESTADO'].value_counts().reset_index()
+            por_edo.columns = ['ESTADO','REPORTES']
+            blues_grays = ['#0f172a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#e0e7ff','#cbd5e1','#94a3b8','#64748b','#475569','#334155']
+            domain_estados = por_edo['ESTADO'].tolist()
+            range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
+            total_edo = int(por_edo['REPORTES'].sum())
+            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=60, outerRadius=100, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
+                theta=alt.Theta('REPORTES:Q', stack=True),
+                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
+                tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
+                order=alt.Order('REPORTES:Q', sort='descending')
+            ).properties(height=200, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
+            st.altair_chart(chart3, width='stretch')
 
-            if not df_cerr.empty:
-                df_cerr['_CIERRE'] = pd.to_datetime(df_cerr.get('FECHA_REGISTRO'), dayfirst=True, errors='coerce')
-                df_cerr['_APERTURA'] = pd.to_datetime(df_cerr.get('FECHA_REPORTE'), dayfirst=True, errors='coerce')
-                df_cerr['_DIAS'] = (df_cerr['_CIERRE'] - df_cerr['_APERTURA']).dt.days
-                df_cerr['_DIAS'] = df_cerr['_DIAS'].clip(lower=0)
-                df_cerr = df_cerr.sort_values('_CIERRE', ascending=False).head(10)
+    tab1, tab2, tab3 = st.tabs(["✅ Cerrados", "⏱ Tiempo / Líneas", "📋 Resumen"])
 
-                df_cerr_show = pd.DataFrame({
-                    'SUCURSAL': df_cerr.get('SUCURSAL', ''),
-                    'ESTADO': df_cerr.get('ESTADO', ''),
-                    'REP': df_cerr['NO_REPORTE'].astype(str).str.replace('ELIMINADO-', '', regex=False).str.strip(),
-                    'FALLA / REPORTE': df_cerr.get('OBSERVACIONES', '').astype(str).str.slice(0, 80),
-                    'FECHA CIERRE': df_cerr['_CIERRE'].dt.strftime('%d/%m/%Y'),
-                    'DÍAS PARA CIERRE': df_cerr['_DIAS'],
-                })
-                st.dataframe(df_cerr_show, width='stretch', hide_index=True, height=360)
+    with tab1:
+        st.subheader("✅ Últimos reportes cerrados")
+        st.caption("Los 10 más recientes • Ordenados por fecha de cierre")
+        try:
+            df_cerr = df_f.copy()
+            if 'NO_REPORTE' in df_cerr.columns:
+                df_cerr = df_cerr[df_cerr['NO_REPORTE'].astype(str).str.strip().str.startswith('ELIMINADO-')]
+                if not df_cerr.empty:
+                    df_cerr['_CIERRE'] = pd.to_datetime(df_cerr.get('FECHA_REGISTRO'), dayfirst=True, errors='coerce')
+                    df_cerr['_APERTURA'] = pd.to_datetime(df_cerr.get('FECHA_REPORTE'), dayfirst=True, errors='coerce')
+                    df_cerr['_DIAS'] = (df_cerr['_CIERRE'] - df_cerr['_APERTURA']).dt.days
+                    df_cerr['_DIAS'] = df_cerr['_DIAS'].clip(lower=0)
+                    df_cerr = df_cerr.sort_values('_CIERRE', ascending=False).head(10)
+                    df_cerr_show = pd.DataFrame({
+                        'SUCURSAL': df_cerr.get('SUCURSAL', ''),
+                        'ESTADO': df_cerr.get('ESTADO', ''),
+                        'REP': df_cerr['NO_REPORTE'].astype(str).str.replace('ELIMINADO-', '', regex=False).str.strip(),
+                        'FALLA / REPORTE': df_cerr.get('OBSERVACIONES', '').astype(str).str.slice(0, 80),
+                        'FECHA CIERRE': df_cerr['_CIERRE'].dt.strftime('%d/%m/%Y'),
+                        'DÍAS PARA CIERRE': df_cerr['_DIAS'],
+                    })
+                    st.dataframe(df_cerr_show, width='stretch', hide_index=True, height=220)
+                else:
+                    st.info("Aún no hay reportes cerrados con el filtro actual.")
             else:
-                st.info("Aún no hay reportes cerrados con el filtro actual.")
-        else:
-            st.info("No hay columna NO_REPORTE para detectar cerrados.")
-    except Exception as e:
-        st.warning(f"No se pudo cargar cerrados: {e}")
-    st.subheader("⏱ Tiempo de reparación / Cierre")
-    try:
-        if 'FECHA_REGISTRO' in df_f.columns and 'FECHA' in df_f.columns:
-            df_f['_FECHA_REG'] = pd.to_datetime(df_f['FECHA_REGISTRO'], dayfirst=True, errors='coerce')
-            df_f['_FECHA_REP'] = pd.to_datetime(df_f['FECHA'], dayfirst=True, errors='coerce')
-            df_f['_DIAS'] = (df_f['_FECHA_REG'] - df_f['_FECHA_REP']).dt.days
-            df_valid = df_f[df_f['_DIAS'].notna() & (df_f['_DIAS']>=0)]
-            if not df_valid.empty:
-                col_a, col_b, col_c = st.columns(3)
-                col_a.metric("Promedio cierre", f"{df_valid['_DIAS'].mean():.1f} días")
-                col_b.metric("Más rápido", f"{df_valid['_DIAS'].min()} días")
-                col_c.metric("Más lento", f"{df_valid['_DIAS'].max()} días")
-                chart5 = alt.Chart(df_valid).mark_bar().encode(alt.X('_DIAS:Q', bin=alt.Bin(maxbins=20), title='Días para cierre'), y='count()').properties(title="Distribución tiempo de cierre")
-                st.altair_chart(chart5, width='stretch')
-                por_suc_tiempo = df_valid.groupby('SUCURSAL')['_DIAS'].mean().reset_index().sort_values('_DIAS', ascending=False).head(10)
-                chart6 = alt.Chart(por_suc_tiempo).mark_bar(color='#1e293b').encode(x='_DIAS:Q', y=alt.Y('SUCURSAL:N', sort='-x')).properties(title="Tiempo promedio cierre por sucursal (Top 10 más lentas)")
-                st.altair_chart(chart6, width='stretch')
-    except Exception as e: st.warning(f"No se pudo calcular tiempo: {e}")
-    st.markdown("---")
-    st.subheader("📞 Top Líneas Telefónicas con más fallas")
-    try:
-        col_tel = None
-        for cand in ['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','LINEAS','LINEA','TEL','TELMEX']:
-            if cand in df_f.columns:
-                col_tel = cand
-                break
-        if not col_tel:
-            for c in df_f.columns:
-                if 'LINEA' in c or 'TEL' in c:
-                    col_tel = c
+                st.info("No hay columna NO_REPORTE para detectar cerrados.")
+        except Exception as e:
+            st.warning(f"No se pudo cargar cerrados: {e}")
+
+    with tab2:
+        st.subheader("⏱ Tiempo de reparación / Cierre")
+        try:
+            if 'FECHA_REGISTRO' in df_f.columns and 'FECHA' in df_f.columns:
+                df_f['_FECHA_REG'] = pd.to_datetime(df_f['FECHA_REGISTRO'], dayfirst=True, errors='coerce')
+                df_f['_FECHA_REP'] = pd.to_datetime(df_f['FECHA'], dayfirst=True, errors='coerce')
+                df_f['_DIAS'] = (df_f['_FECHA_REG'] - df_f['_FECHA_REP']).dt.days
+                df_valid = df_f[df_f['_DIAS'].notna() & (df_f['_DIAS']>=0)]
+                if not df_valid.empty:
+                    col_a, col_b, col_c = st.columns(3)
+                    col_a.metric("Promedio cierre", f"{df_valid['_DIAS'].mean():.1f} días")
+                    col_b.metric("Más rápido", f"{df_valid['_DIAS'].min()} días")
+                    col_c.metric("Más lento", f"{df_valid['_DIAS'].max()} días")
+                    chart5 = alt.Chart(df_valid).mark_bar().encode(alt.X('_DIAS:Q', bin=alt.Bin(maxbins=20), title='Días para cierre'), y='count()').properties(title="Distribución tiempo de cierre", height=180)
+                    st.altair_chart(chart5, width='stretch')
+                    por_suc_tiempo = df_valid.groupby('SUCURSAL')['_DIAS'].mean().reset_index().sort_values('_DIAS', ascending=False).head(10)
+                    chart6 = alt.Chart(por_suc_tiempo).mark_bar(color='#1e293b').encode(x='_DIAS:Q', y=alt.Y('SUCURSAL:N', sort='-x')).properties(title="Tiempo promedio cierre por sucursal (Top 10 más lentas)", height=180)
+                    st.altair_chart(chart6, width='stretch')
+        except Exception as e: st.warning(f"No se pudo calcular tiempo: {e}")
+
+        st.markdown("---")
+        st.subheader("📞 Top Líneas Telefónicas con más fallas")
+        try:
+            col_tel = None
+            for cand in ['LINEAS CON FALLA','LINEA CON FALLA','TEL FALLA','LINEAS','LINEA','TEL','TELMEX']:
+                if cand in df_f.columns:
+                    col_tel = cand
                     break
-        if col_tel:
-            from collections import Counter, defaultdict
-            todas_lineas = []
-            linea_to_suc = defaultdict(set)
-            linea_to_estado = defaultdict(set)
-            for idx, row in df_f.iterrows():
-                val = str(row.get(col_tel, '')).strip()
-                if not val or val.lower() in ['nan','none','']: continue
-                suc = str(row.get('SUCURSAL','')).strip()
-                edo = str(row.get('ESTADO','')).strip()
-                for p in val.split('|'):
-                    for pc in p.split(','):
-                        num = pc.strip()
-                        if num and len(num)>=3:
-                            todas_lineas.append(num)
-                            if suc: linea_to_suc[num].add(suc)
-                            if edo: linea_to_estado[num].add(edo)
-            if todas_lineas:
-                counter = Counter(todas_lineas)
-                top_lineas = counter.most_common(20)
-                data_rows = []
-                for linea, fallas in top_lineas:
-                    sucs = ", ".join(sorted(linea_to_suc.get(linea, []))[:3])
-                    edos = ", ".join(sorted(linea_to_estado.get(linea, []))[:2])
-                    data_rows.append({"LINEA": linea, "FALLAS": fallas, "SUCURSAL(ES)": sucs, "ESTADO": edos})
-                df_lineas = pd.DataFrame(data_rows)
-                c_line1, c_line2 = st.columns([1.5,1.5])
-                with c_line1:
-                    chart_df = df_lineas.head(10).copy()
-                    chart_line = alt.Chart(chart_df).mark_bar(color='#1e40af').encode(x='FALLAS:Q', y=alt.Y('LINEA:N', sort='-x', title='LINEA'), tooltip=['LINEA','FALLAS','SUCURSAL(ES)','ESTADO']).properties(height=280)
-                    st.altair_chart(chart_line, width='stretch')
-                with c_line2:
-                    st.markdown("**Detalle con sucursal:**")
-                    # V51: Emparejar altura con grafica de la izquierda (la mas chiquita, 280px)
-                    # Tabla con altura fija 218px + titulo + boton = misma altura total que la grafica
-                    st.dataframe(df_lineas, width='stretch', hide_index=True, height=218)
-                    csv_lineas = df_lineas.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Descargar líneas CSV", csv_lineas, "lineas_mas_fallas_con_sucursal.csv", "text/csv")
-            else: st.info("No hay datos en LINEAS CON FALLA / TEL")
-        else: st.info(f"No se encontró columna de líneas. Columnas: {list(df_f.columns)[:20]}")
-    except Exception as e: st.error(f"Error graficando líneas: {e}")
-    st.markdown("---")
-    st.subheader("📋 Resumen por Sucursal")
-    if 'SUCURSAL' in df_f.columns:
-        resumen = df_f.groupby(['ESTADO','SUCURSAL']).size().reset_index(name='TOTAL_REPORTES')
-        resumen = resumen.sort_values('TOTAL_REPORTES', ascending=False)
-        html = """<style>.resumen-wrap { width:100%; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); max-height:260px; overflow-y:auto; overflow-x:hidden; }.resumen-table { width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:12px; }.resumen-table th { background:#f8fafc; color:#64748b; font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; padding:6px 10px; border-bottom:1px solid #e2e8f0; text-align:left; position:sticky; top:0; z-index:1; }.resumen-table th:last-child { text-align:center !important; }.resumen-table td { padding:5px 10px; border-bottom:1px solid #f1f5f9; color:#334155; font-weight:400; }.resumen-table td:last-child { text-align:center !important; }.resumen-table tr:hover { background:#f8fafc; }</style><div class="resumen-wrap"><table class="resumen-table"><thead><tr><th style="width:20%">ESTADO</th><th style="width:45%">SUCURSAL</th><th style="width:35%; text-align:center;">TOTAL_REPORTES</th></tr></thead><tbody>"""
-        for _, r in resumen.iterrows():
-            html += f"<tr><td>{r['ESTADO']}</td><td>{r['SUCURSAL']}</td><td style='text-align:center;'>{int(r['TOTAL_REPORTES'])}</td></tr>"
-        html += "</tbody></table></div>"
-        st.markdown(html, unsafe_allow_html=True)
-        csv = resumen.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Descargar reporte CSV", csv, "reporte_sucursales_mas_fallas.csv", "text/csv")
-    
+            if not col_tel:
+                for c in df_f.columns:
+                    if 'LINEA' in c or 'TEL' in c:
+                        col_tel = c
+                        break
+            if col_tel:
+                from collections import Counter, defaultdict
+                todas_lineas = []
+                linea_to_suc = defaultdict(set)
+                linea_to_estado = defaultdict(set)
+                for idx, row in df_f.iterrows():
+                    val = str(row.get(col_tel, '')).strip()
+                    if not val or val.lower() in ['nan','none','']: continue
+                    suc = str(row.get('SUCURSAL','')).strip()
+                    edo = str(row.get('ESTADO','')).strip()
+                    for p in val.split('|'):
+                        for pc in p.split(','):
+                            num = pc.strip()
+                            if num and len(num)>=3:
+                                todas_lineas.append(num)
+                                if suc: linea_to_suc[num].add(suc)
+                                if edo: linea_to_estado[num].add(edo)
+                if todas_lineas:
+                    counter = Counter(todas_lineas)
+                    top_lineas = counter.most_common(20)
+                    data_rows = []
+                    for linea, fallas in top_lineas:
+                        sucs = ", ".join(sorted(linea_to_suc.get(linea, []))[:3])
+                        edos = ", ".join(sorted(linea_to_estado.get(linea, []))[:2])
+                        data_rows.append({"LINEA": linea, "FALLAS": fallas, "SUCURSAL(ES)": sucs, "ESTADO": edos})
+                    df_lineas = pd.DataFrame(data_rows)
+                    c_line1, c_line2 = st.columns([1.5,1.5])
+                    with c_line1:
+                        chart_df = df_lineas.head(10).copy()
+                        chart_line = alt.Chart(chart_df).mark_bar(color='#1e40af').encode(x='FALLAS:Q', y=alt.Y('LINEA:N', sort='-x', title='LINEA'), tooltip=['LINEA','FALLAS','SUCURSAL(ES)','ESTADO']).properties(height=200)
+                        st.altair_chart(chart_line, width='stretch')
+                    with c_line2:
+                        st.markdown("**Detalle con sucursal:**")
+                        st.dataframe(df_lineas, width='stretch', hide_index=True, height=180)
+                        csv_lineas = df_lineas.to_csv(index=False).encode('utf-8')
+                        st.download_button("📥 Descargar líneas CSV", csv_lineas, "lineas_mas_fallas_con_sucursal.csv", "text/csv")
+                else: st.info("No hay datos en LINEAS CON FALLA / TEL")
+            else: st.info(f"No se encontró columna de líneas. Columnas: {list(df_f.columns)[:20]}")
+        except Exception as e: st.error(f"Error graficando líneas: {e}")
+
+    with tab3:
+        st.subheader("📋 Resumen por Sucursal")
+        if 'SUCURSAL' in df_f.columns:
+            resumen = df_f.groupby(['ESTADO','SUCURSAL']).size().reset_index(name='TOTAL_REPORTES')
+            resumen = resumen.sort_values('TOTAL_REPORTES', ascending=False)
+            html = """<style>.resumen-wrap { width:100%; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); max-height:220px; overflow-y:auto; overflow-x:hidden; }.resumen-table { width:100%; border-collapse:collapse; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size:12px; }.resumen-table th { background:#f8fafc; color:#64748b; font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; padding:6px 10px; border-bottom:1px solid #e2e8f0; text-align:left; position:sticky; top:0; z-index:1; }.resumen-table th:last-child { text-align:center !important; }.resumen-table td { padding:5px 10px; border-bottom:1px solid #f1f5f9; color:#334155; font-weight:400; }.resumen-table td:last-child { text-align:center !important; }.resumen-table tr:hover { background:#f8fafc; }</style><div class="resumen-wrap"><table class="resumen-table"><thead><tr><th style="width:20%">ESTADO</th><th style="width:45%">SUCURSAL</th><th style="width:35%; text-align:center;">TOTAL_REPORTES</th></tr></thead><tbody>"""
+            for _, r in resumen.iterrows():
+                html += f"<tr><td>{r['ESTADO']}</td><td>{r['SUCURSAL']}</td><td style='text-align:center;'>{int(r['TOTAL_REPORTES'])}</td></tr>"
+            html += "</tbody></table></div>"
+            st.markdown(html, unsafe_allow_html=True)
+            csv = resumen.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Descargar reporte CSV", csv, "reporte_sucursales_mas_fallas.csv", "text/csv")
+
     st.stop()
 
 # --- BUSCAR REPORTES - PRIVADO Y COMPACTO ---

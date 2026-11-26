@@ -1,8 +1,3 @@
-git status
-git add APP.py
-git commit -m "Dashboard compacto: Top10 + anillo lado a lado, pestañas, leyenda anillo sin encimar"
-git push origin prueba
-
 import streamlit as st
 from datetime import datetime, timedelta
 import hashlib

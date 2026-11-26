@@ -508,7 +508,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             domain_estados = por_edo['ESTADO'].tolist()
             range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
             total_edo = int(por_edo['REPORTES'].sum())
-                       chart3 = alt.Chart(por_edo).mark_arc(innerRadius=50, outerRadius=85, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
+            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=50, outerRadius=85, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
                 theta=alt.Theta('REPORTES:Q', stack=True),
                 color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="bottom", columns=3)),
                 tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],

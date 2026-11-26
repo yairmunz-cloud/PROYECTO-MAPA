@@ -510,10 +510,10 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             total_edo = int(por_edo['REPORTES'].sum())
             chart3 = alt.Chart(por_edo).mark_arc(innerRadius=50, outerRadius=85, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
                 theta=alt.Theta('REPORTES:Q', stack=True),
-                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="bottom", columns=3)),
+                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="bottom", columns=2, labelLimit=200, symbolSize=80, labelFontSize=11)),
                 tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
                 order=alt.Order('REPORTES:Q', sort='descending')
-            ).properties(height=220, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
+            ).properties(height=260, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
             st.altair_chart(chart3, width='stretch')
 
     tab1, tab2, tab3 = st.tabs(["✅ Cerrados", "⏱ Tiempo / Líneas", "📋 Resumen"])

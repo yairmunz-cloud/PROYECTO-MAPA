@@ -492,7 +492,6 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             chart = alt.Chart(top10).mark_bar(color='#1e40af').encode(x='REPORTES:Q', y=alt.Y('SUCURSAL:N', sort='-x'), tooltip=['SUCURSAL','REPORTES']).properties(height=260)
             st.altair_chart(chart, width='stretch')
     with c2:
-            with c2:
         st.subheader("✅ Últimos reportes cerrados")
         st.caption("Los 10 más recientes")
         try:

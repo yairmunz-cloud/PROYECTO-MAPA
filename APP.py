@@ -532,60 +532,22 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
             st.info("No se pudo cargar cerrados")
     # --- RESTAURADO V47: Graficas que se perdieron en v39-v46 al recortar Dashboard ---
     c3, c4 = st.columns(2)
-    with c3:
         st.subheader("🗺 Fallas por Estado")
-        st.caption("Paleta azul-gris • Anillo")
-        if 'ESTADO' in df_f.columns:
-            por_edo = df_f['ESTADO'].value_counts().reset_index()
-            por_edo.columns = ['ESTADO','REPORTES']
-            blues_grays = ['#0f172a','#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#dbeafe','#e0e7ff','#cbd5e1','#94a3b8','#64748b','#475569','#334155']
-            domain_estados = por_edo['ESTADO'].tolist()
-            range_colors = (blues_grays * ((len(domain_estados)//len(blues_grays))+1))[:len(domain_estados)]
-            total_edo = int(por_edo['REPORTES'].sum())
-            chart3 = alt.Chart(por_edo).mark_arc(innerRadius=75, outerRadius=130, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
-                theta=alt.Theta('REPORTES:Q', stack=True),
-                color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="right")),
-                tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
-                order=alt.Order('REPORTES:Q', sort='descending')
-            ).properties(height=280, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
-            st.altair_chart(chart3, width='stretch')
-    with c4:
-        def mes_a_letra(m):
-            mapa = {'1':'Enero','2':'Febrero','3':'Marzo','4':'Abril','5':'Mayo','6':'Junio','7':'Julio','8':'Agosto','9':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre',1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre','01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'}
-            try:
-                s = str(m).strip()
-                if not s: return s
-                key = s.lstrip('0')
-                if key == '': key = '0'
-                if key in mapa: return mapa[key]
-                try: return mapa[int(s)]
-                except: return mapa.get(s, s)
-            except: return str(m)
-        st.subheader("📊 Reportes por Día / Hora / Mes")
-        vista = st.selectbox("Ver por:", ["DIA del mes","HORA_REGISTRO","MES"], index=2, key="vista_dashboard_final_v47")
-        if vista == "DIA del mes" and 'DIA' in df_f.columns:
-            data = df_f['DIA'].value_counts().sort_index().reset_index()
-            data.columns = ['DIA','REPORTES']
-            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('DIA:O', title='Día del mes'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['DIA','REPORTES']).properties(height=250)
-            st.altair_chart(chart4, width='stretch')
-        elif vista == "HORA_REGISTRO" and 'HORA_REGISTRO' in df_f.columns:
-            try:
-                df_f['_HORA'] = df_f['HORA_REGISTRO'].astype(str).str[:2]
-                data = df_f['_HORA'].value_counts().sort_index().reset_index()
-                data.columns = ['HORA','REPORTES']
-                chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, color='#f59e0b').encode(x=alt.X('HORA:O', title='Hora del día'), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=['HORA','REPORTES']).properties(height=250)
-                st.altair_chart(chart4, width='stretch')
-            except Exception as e: st.error(str(e))
-        elif vista == "MES" and 'MES' in df_f.columns:
-            data = df_f['MES'].value_counts().sort_index().reset_index()
-            data.columns = ['MES','REPORTES']
-            data['MES_LETRA'] = data['MES'].apply(lambda x: mes_a_letra(x))
-            try:
-                data['MES_NUM'] = pd.to_numeric(data['MES'], errors='coerce')
-                data = data.sort_values('MES_NUM')
-            except: pass
-            chart4 = alt.Chart(data).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color='#3b82f6').encode(x=alt.X('MES_LETRA:O', title='Mes', sort=None), y=alt.Y('REPORTES:Q', title='Reportes'), tooltip=[alt.Tooltip('MES_LETRA:N', title='Mes'), alt.Tooltip('REPORTES:Q', title='Reportes')]).properties(height=250)
-            st.altair_chart(chart4, width='stretch')
+    st.caption("Paleta azul-gris • Anillo")
+    if 'ESTADO' in df_f.columns:
+        por_edo = df_f['ESTADO'].value_counts().reset_index()
+        por_edo.columns = ['ESTADO', 'REPORTES']
+        blues_grays = ['#0f172a', '#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe', '#e0e7ff', '#cbd5e1', '#94a3b8', '#64748b', '#475569', '#334155']
+        domain_estados = por_edo['ESTADO'].tolist()
+        range_colors = (blues_grays * ((len(domain_estados) // len(blues_grays)) + 1))[:len(domain_estados)]
+        total_edo = int(por_edo['REPORTES'].sum())
+        chart3 = alt.Chart(por_edo).mark_arc(innerRadius=50, outerRadius=85, cornerRadius=6, stroke="#ffffff", strokeWidth=2.5).encode(
+            theta=alt.Theta('REPORTES:Q', stack=True),
+            color=alt.Color('ESTADO:N', scale=alt.Scale(domain=domain_estados, range=range_colors), legend=alt.Legend(title="Estado", orient="bottom", columns=2)),
+            tooltip=[alt.Tooltip('ESTADO:N', title='Estado'), alt.Tooltip('REPORTES:Q', title='Reportes')],
+            order=alt.Order('REPORTES:Q', sort='descending')
+        ).properties(height=260, title=alt.TitleParams(text=f"Total: {total_edo} reportes", fontSize=12, color="#64748b"))
+        st.altair_chart(chart3, width='stretch')
     st.markdown("---")
     st.subheader("⏱ Tiempo de reparación / Cierre")
     try:

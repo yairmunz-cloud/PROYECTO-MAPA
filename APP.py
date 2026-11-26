@@ -531,8 +531,7 @@ if st.session_state.get('pagina') == "📊 Dashboard Analítica":
         except Exception as _e:
             st.info("No se pudo cargar cerrados")
     # --- RESTAURADO V47: Graficas que se perdieron en v39-v46 al recortar Dashboard ---
-    c3, c4 = st.columns(2)
-        st.subheader("🗺 Fallas por Estado")
+    st.subheader("🗺 Fallas por Estado")
     st.caption("Paleta azul-gris • Anillo")
     if 'ESTADO' in df_f.columns:
         por_edo = df_f['ESTADO'].value_counts().reset_index()
